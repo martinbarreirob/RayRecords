@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 no ejecuta scripts de instalación salvo que se autoricen aquí.
+onlyBuiltDependencies:
+  - esbuild

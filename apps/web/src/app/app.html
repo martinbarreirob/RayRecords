@@ -1,0 +1,17 @@
+<header class="topbar">
+  <a class="brand" routerLink="/">RayRecords</a>
+
+  <nav aria-label="Principal">
+    <a routerLink="/notas" routerLinkActive="active">Notas</a>
+    <a routerLink="/listas" routerLinkActive="active">Listas</a>
+    <a routerLink="/calendario" routerLinkActive="active">Calendario</a>
+    <a routerLink="/gastos" routerLinkActive="active">Gastos</a>
+    <a routerLink="/cuentas" routerLinkActive="active">Cuentas</a>
+  </nav>
+
+  <app-capture-bar />
+</header>
+
+<main>
+  <router-outlet />
+</main>

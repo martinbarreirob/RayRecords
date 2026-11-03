@@ -1,0 +1,2 @@
+# LF en todo el repo: los Dockerfile, nginx.conf y scripts no deben llegar con CRLF a Docker o a CI.
+* text=auto eol=lf

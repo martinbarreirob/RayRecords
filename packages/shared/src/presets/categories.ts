@@ -1,0 +1,113 @@
+import type { Category, CreateRule } from '../schemas/category';
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  { key: 'supermercado', name: 'Supermercado', color: '#4caf50' },
+  { key: 'restaurantes', name: 'Restaurantes', color: '#ff9800' },
+  { key: 'transporte', name: 'Transporte', color: '#2196f3' },
+  { key: 'vivienda', name: 'Vivienda', color: '#795548' },
+  { key: 'suscripciones', name: 'Suscripciones', color: '#9c27b0' },
+  { key: 'ocio', name: 'Ocio', color: '#e91e63' },
+  { key: 'salud', name: 'Salud', color: '#00bcd4' },
+  { key: 'ingresos', name: 'Ingresos', color: '#009688' },
+  { key: 'otros', name: 'Otros', color: '#9e9e9e' },
+];
+
+/** Los patrones se comparan contra la descripción normalizada (minúsculas, sin acentos). */
+export const DEFAULT_RULES: CreateRule[] = [
+  {
+    pattern: 'mercadona',
+    matchType: 'contains',
+    categoryKey: 'supermercado',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'carrefour',
+    matchType: 'contains',
+    categoryKey: 'supermercado',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'lidl',
+    matchType: 'contains',
+    categoryKey: 'supermercado',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: '\\bdia\\b',
+    matchType: 'regex',
+    categoryKey: 'supermercado',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'telepizza',
+    matchType: 'contains',
+    categoryKey: 'restaurantes',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'restaurante',
+    matchType: 'contains',
+    categoryKey: 'restaurantes',
+    priority: 0,
+    active: true,
+  },
+  { pattern: 'renfe', matchType: 'contains', categoryKey: 'transporte', priority: 0, active: true },
+  {
+    pattern: 'repsol',
+    matchType: 'contains',
+    categoryKey: 'transporte',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'cabify',
+    matchType: 'contains',
+    categoryKey: 'transporte',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'alquiler',
+    matchType: 'contains',
+    categoryKey: 'vivienda',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'iberdrola',
+    matchType: 'contains',
+    categoryKey: 'vivienda',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'netflix',
+    matchType: 'contains',
+    categoryKey: 'suscripciones',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'spotify',
+    matchType: 'contains',
+    categoryKey: 'suscripciones',
+    priority: 0,
+    active: true,
+  },
+  {
+    pattern: 'gimnasio',
+    matchType: 'contains',
+    categoryKey: 'suscripciones',
+    priority: 0,
+    active: true,
+  },
+  { pattern: 'cines', matchType: 'contains', categoryKey: 'ocio', priority: 0, active: true },
+  { pattern: 'steam', matchType: 'contains', categoryKey: 'ocio', priority: 0, active: true },
+  { pattern: 'farmacia', matchType: 'contains', categoryKey: 'salud', priority: 0, active: true },
+  { pattern: 'nomina', matchType: 'contains', categoryKey: 'ingresos', priority: 10, active: true },
+];

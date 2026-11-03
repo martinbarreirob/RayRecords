@@ -1,0 +1,53 @@
+# Producción (Hetzner CX23, 4 GB). Solo hay dos servicios: nginx con los estáticos y la API.
+# MongoDB NO está aquí: se usa la instancia que ya corre en el servidor, con una BD propia.
+# Las imágenes se construyen en CI; el servidor solo hace `docker compose pull && up -d`.
+#
+# Presupuesto de memoria de este stack: 64 + 256 = 320 MB (Mongo se cuenta aparte).
+name: rayrecords
+
+services:
+  web:
+    image: ghcr.io/${GHCR_OWNER:-martinbarreirob}/rayrecords-web:${TAG:-latest}
+    restart: unless-stopped
+    mem_limit: 64m
+    memswap_limit: 64m # = mem_limit: sin swap, para que un fallo no degrade el servidor entero
+    cpus: 0.5
+    depends_on:
+      api:
+        condition: service_healthy
+    # Por defecto solo escucha en localhost; `tailscale serve` publica ese puerto con HTTPS
+    # dentro de la tailnet. No se expone a internet.
+    ports:
+      - '${BIND_ADDR:-127.0.0.1}:${WEB_PORT:-8080}:80'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, NET_BIND_SERVICE]
+
+  api:
+    image: ghcr.io/${GHCR_OWNER:-martinbarreirob}/rayrecords-api:${TAG:-latest}
+    restart: unless-stopped
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 1
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      MONGO_URI: ${MONGO_URI:?Define MONGO_URI en deploy/.env}
+      MONGO_DB: ${MONGO_DB:-rayrecords}
+      # El heap de V8 por debajo del límite del contenedor, para que el GC actúe antes del OOM-kill.
+      NODE_OPTIONS: --max-old-space-size=192
+    # Para un Mongo instalado en el host: MONGO_URI=mongodb://…@host.docker.internal:27017/rayrecords
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    expose:
+      - '3000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]

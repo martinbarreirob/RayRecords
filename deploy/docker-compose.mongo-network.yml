@@ -1,0 +1,13 @@
+# Override opcional: conecta la API a la red Docker donde ya vive el MongoDB del otro proyecto.
+# Se activa con COMPOSE_FILE=docker-compose.yml:docker-compose.mongo-network.yml (ver .env.example).
+# Con esto MONGO_URI puede apuntar al nombre del servicio, p. ej. mongodb://rayrecords:…@mongo:27017/rayrecords
+services:
+  api:
+    networks:
+      - default
+      - mongo
+
+networks:
+  mongo:
+    external: true
+    name: ${MONGO_NETWORK:?Define MONGO_NETWORK en deploy/.env}

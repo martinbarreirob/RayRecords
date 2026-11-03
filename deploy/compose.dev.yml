@@ -1,0 +1,23 @@
+# Desarrollo local: solo MongoDB. La API y la web se ejecutan en el host con `pnpm dev:api` / `pnpm dev:web`.
+# Replica los ajustes de producción: caché de WiredTiger de 0,5 GB y límite de memoria.
+name: rayrecords-dev
+
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    command: ['--wiredTigerCacheSizeGB', '0.5']
+    mem_limit: 1g
+    memswap_limit: 1g
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo-data:
