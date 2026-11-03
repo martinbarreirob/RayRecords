@@ -49,7 +49,16 @@ Dispositivo (en la tailnet) ──HTTPS──► tailscale serve ──► 127.0
 
 ## Actualizar
 
-CI publica `rayrecords-api` y `rayrecords-web` en GHCR en cada push a `main`. En el servidor:
+CI publica `rayrecords-api` y `rayrecords-web` en GHCR en cada push a `main`. **El workflow todavía no está subido al repo** (ver el [roadmap](../docs/ROADMAP.md#estado-del-repositorio)); hasta entonces las imágenes se construyen y se suben a mano desde la raíz del repo:
+
+```bash
+docker build -f apps/api/Dockerfile -t ghcr.io/martinbarreirob/rayrecords-api:latest .
+docker build -f apps/web/Dockerfile -t ghcr.io/martinbarreirob/rayrecords-web:latest .
+docker push ghcr.io/martinbarreirob/rayrecords-api:latest
+docker push ghcr.io/martinbarreirob/rayrecords-web:latest
+```
+
+En el servidor:
 
 ```bash
 cd deploy && docker compose pull && docker compose up -d

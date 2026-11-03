@@ -85,8 +85,4 @@ Reglas y casos límite cubiertos por los tests:
 
 ## Siguiente fase
 
-1. Autenticación: usuario único, argon2, sesión persistente, `users`/`sessions` con TTL. Passkeys como mejora posterior.
-2. CRUD de listas, elementos y notas, y captura rápida conectada a la API.
-3. Importación del CSV del banco (`;`, decimales con coma, `dd/mm/yyyy`, Windows-1252), apoyada en `prepareTransactions`, que ya hace hash y categorización. Falta una muestra del fichero real para fijar las columnas.
-4. Calendario, gráficos de gastos y cuentas.
-5. Estética: sistema de tokens de diseño.
+Las fases pendientes, con sus tareas, decisiones abiertas y bloqueos, están en [ROADMAP.md](ROADMAP.md). Los endpoints previstos, en [API.md](API.md).
