@@ -6,12 +6,12 @@ The visual reference is the six screens on the design canvas (`A1` notes, `A2` n
 
 ## When to use PrimeNG and when custom CSS
 
-| Use **PrimeNG** (complex, accessible behavior already solved)                | Use **custom CSS** (what defines the identity or is very specific)               |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `p-table`: sorting, filters, row selection, cell editing, pagination         | Top bar, navigation, command palette (with capture)                              |
-| `p-select`, `p-multiselect`, `p-datepicker`: selectors and dates             | Notes canvas (cards, groups, dragging)                                           |
-| `p-dialog`, `p-confirmdialog`, `p-toast`: modals and notices                 | Kanban board and its dragging                                                    |
-| `p-tooltip`, `p-checkbox`, `p-toggleswitch` when needed                      | Calendar grid, cards, chips, simple buttons, simple forms                        |
+| Use **PrimeNG** (complex, accessible behavior already solved)        | Use **custom CSS** (what defines the identity or is very specific) |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `p-table`: sorting, filters, row selection, cell editing, pagination | Top bar, navigation, command palette (with capture)                |
+| `p-select`, `p-multiselect`, `p-datepicker`: selectors and dates     | Notes canvas (cards, groups, dragging)                             |
+| `p-dialog`, `p-confirmdialog`, `p-toast`: modals and notices         | Kanban board and its dragging                                      |
+| `p-tooltip`, `p-checkbox`, `p-toggleswitch` when needed              | Calendar grid, cards, chips, simple buttons, simple forms          |
 
 Rule of thumb: if you would have to reimplement keyboard handling, focus, ARIA and edge cases (tables, selectors, dialogs), use PrimeNG. If it is a visual piece of the design, use custom CSS with the tokens. **Do not mix**: a normal button is `.btn`, not `p-button`.
 
@@ -28,17 +28,17 @@ Shape: `--radius-sm|md|lg|xl|pill`, `--shadow-sm|md|lg`, `--space-1…7` (4–48
 
 ## Reusable global classes (`styles/_components.scss` and `_base.scss`)
 
-| Class                                                                                | Use                                                                                                                        |
-| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `.page`                                                                              | Page container (max width and margins). Every screen starts with it.                                                       |
-| `.page-header`, `.page-eyebrow`, `h1`                                                | Screen header: title on the left, actions on the right.                                                                    |
-| `.btn` + `.primary` / `.ghost` / `.danger` / `.sm` / `.icon`                         | Buttons. Only one `.primary` per area.                                                                                     |
-| `.input`, `.select`, `.textarea`, `.field`                                           | Form fields (`.field` wraps label + control).                                                                              |
-| `.card`, `.chip` (`.accent`), `.badge` (`.accent/.success/.warning/.danger`), `.kbd` | Surfaces and labels.                                                                                                       |
-| `.segmented`                                                                         | View switch (Lista · Kanban · Cuadrícula). Children `button`/`a`; the active one has `aria-pressed="true"` or `.active`.   |
-| `.alert` (`.info/.success`), `.empty`                                                | Notices and empty states (dashed border, text that says what to do).                                                       |
-| `.table`                                                                             | Simple table. For complex tables, `p-table`.                                                                               |
-| `.muted`, `.num`, `.stack`, `.row`, `.spacer`, `.sr-only`                            | Utilities.                                                                                                                 |
+| Class                                                                                | Use                                                                                                                      |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `.page`                                                                              | Page container (max width and margins). Every screen starts with it.                                                     |
+| `.page-header`, `.page-eyebrow`, `h1`                                                | Screen header: title on the left, actions on the right.                                                                  |
+| `.btn` + `.primary` / `.ghost` / `.danger` / `.sm` / `.icon`                         | Buttons. Only one `.primary` per area.                                                                                   |
+| `.input`, `.select`, `.textarea`, `.field`                                           | Form fields (`.field` wraps label + control).                                                                            |
+| `.card`, `.chip` (`.accent`), `.badge` (`.accent/.success/.warning/.danger`), `.kbd` | Surfaces and labels.                                                                                                     |
+| `.segmented`                                                                         | View switch (Lista · Kanban · Cuadrícula). Children `button`/`a`; the active one has `aria-pressed="true"` or `.active`. |
+| `.alert` (`.info/.success`), `.empty`                                                | Notices and empty states (dashed border, text that says what to do).                                                     |
+| `.table`                                                                             | Simple table. For complex tables, `p-table`.                                                                             |
+| `.muted`, `.num`, `.stack`, `.row`, `.spacer`, `.sr-only`                            | Utilities.                                                                                                               |
 
 If a screen needs a piece that will be reused on another, add it here (and to this table); do not copy it between components.
 

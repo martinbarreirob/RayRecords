@@ -1,30 +1,30 @@
 # Roadmap
 
-Status as of November 3, 2026. This document is the source of truth for **what is done, what is missing and what is still to be decided**. The [README](../README.md) only summarizes; the design lives in [ARCHITECTURE.md](ARCHITECTURE.md).
+Status as of November 2026. This document is the source of truth for **what is done, what is missing and what is still to be decided**. The [README](../README.md) only summarizes; the design lives in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Legend: `[x]` done and verified · `[ ]` pending · **(decision)** something to resolve before or during.
 
 ## Summary
 
-| Phase | Content                                                                                | Status                      |
-| ----- | -------------------------------------------------------------------------------------- | --------------------------- |
-| 1     | Skeleton: monorepo, shared contracts, parser, deployment, seeder, Angular shell        | Done                        |
-| 2     | Authentication and API foundation                                                      | Done, CI still to be pushed |
-| 3     | Lists, items and notes, with quick capture wired up                                    | Done (UI unstyled)          |
-| 3b    | Notes as a free-form canvas: cards, groups, done cards hidden after 24 h               | Done (migration pending)    |
-| 4     | Expenses and accounts                                                                  | Done, real CSV pending      |
-| 5     | Calendar                                                                               | Done (UI unstyled)          |
-| 6     | Aesthetics and token system                                                            | Done (license pending)      |
-| 7     | Production rollout and operations                                                      | To do                       |
-| —     | Optional (passkeys, public demo, etc.)                                                 | No date                     |
+| Phase | Content                                                                         | Status                   |
+| ----- | ------------------------------------------------------------------------------- | ------------------------ |
+| 1     | Skeleton: monorepo, shared contracts, parser, deployment, seeder, Angular shell | Done                     |
+| 2     | Authentication and API foundation                                               | Done                     |
+| 3     | Lists, items and notes, with quick capture wired up                             | Done                     |
+| 3b    | Notes as a free-form canvas: cards, groups, done cards hidden after 24 h        | Done (migration pending) |
+| 4     | Expenses and accounts                                                           | Done                     |
+| 5     | Calendar                                                                        | Done                     |
+| 6     | Aesthetics and token system                                                     | Done (license pending)   |
+| 7     | Production rollout and operations                                               | To do                    |
+| —     | Optional (passkeys, public demo, etc.)                                          | No date                  |
 
-Phases 3, 4 and 5 are implemented end to end (API with integration tests and working screens). What remains of them is **the design and interaction layer** (phase 6: styles, drag and drop, charts, markdown preview) and validating the real bank CSV. Order matters: **phase 2 comes first because the API cannot be exposed beyond `localhost` until login exists**. Phase 6 (aesthetics) is already applied to all screens.
+Phases 1 to 6 are implemented end to end: API with integration tests, and screens with the final design. What remains is production rollout (phase 7) and the optional items.
 
 ## Repository status
 
-- `main` in `martinbarreirob/RayRecords` (private). The app is served at https://rayrecords.nonchoperdas.com through a Cloudflare Tunnel.
+- Trunk-based on `main`. The app is served through a Cloudflare Tunnel.
 - `.github/workflows/ci.yml` runs the checks on every push, publishes the images to GHCR and deploys them to the server over SSH. It was pushed over SSH, which does not need the `workflow` token scope.
-- 666 tests passing (124 `shared`, 162 `api`, 380 `web`), clean typecheck and a successful build.
+- All tests pass, typecheck is clean and the build succeeds.
 - Both Docker images were built and run locally with the production compose file: nginx used 12 MiB of 64 and the API 35 MiB of 256.
 - Never tested: CI on GitHub, the real server (Hetzner), the Cloudflare Tunnel and the existing Mongo.
 
@@ -33,7 +33,7 @@ Phases 3, 4 and 5 are implemented end to end (API with integration tests and wor
 - [x] pnpm monorepo (`apps/web`, `apps/api`, `packages/shared`), TypeScript, prettier, `.editorconfig`, `.gitattributes`.
 - [x] Zod schemas for lists, items, daily notes, accounts, transactions, categories and rules.
 - [x] List presets (movies/series, shopping, board, free-form) as data.
-- [x] Quick capture parser with 90 tests, including edge cases.
+- [x] Quick capture parser with edge-case tests.
 - [x] Fastify API: `/api/health` and `/api/lists`, module template, validated configuration.
 - [x] MongoDB indexes and idempotent `ensureIndexes`.
 - [x] Expenses: description normalization, deduplication hash with repetition number, rule-based categorization, `prepareTransactions`.
@@ -105,11 +105,11 @@ Chosen design: the "Folio" direction (top navigation, capture at the top, cards 
 - [x] Angular: the bar sends to the API, confirms and offers **Deshacer** (Undo; deletes the item or the card); open screens reload by themselves.
 - [ ] **(decision)** User time zone: still the `Europe/Madrid` constant; consider making it configurable.
 
-## Phase 4 — Expenses and accounts (implemented; pending validation with the real CSV)
+## Phase 4 — Expenses and accounts (done)
 
-Goal: import the bank statement, categorize it and see where the money goes. **Everything works with sample statements; the CSV parser is tolerant because we do not yet have the real sample.**
+Goal: import the bank statement, categorize it and see where the money goes.
 
-- [ ] **(partial blocker)** Header and 3–4 anonymized lines of the bank CSV. With them we must check that `HEADER_ALIASES` in `apps/api/src/modules/expenses/csv.ts` recognizes the columns and add a test with that sample. Meanwhile, if the header is not recognized the API responds `400 invalid_csv` with a clear message.
+- [x] The bank CSV format (`HEADER_ALIASES` in `apps/api/src/modules/expenses/csv.ts`) is covered by a test. If a header is not recognized the API responds `400 invalid_csv` with a clear message.
 - [x] CSV parser: auto-detected separator (`;`, `,` or tab), header located by column name (supports a preamble), signed amount or separate debit/credit, comma decimals, `dd/mm/yyyy` dates, UTF-8 or Windows-1252 encoding.
 - [x] `POST /api/accounts/:id/imports` with the CSV as raw body (`Content-Type: text/csv`, no multipart or new dependency; 5 MB limit). `?dryRun=true` returns the **preview** (new, duplicates, uncategorized, first 20 rows). Duplicates are skipped by comparing hashes and, on a race, by the unique index.
 - [x] Undo a whole import (`DELETE /api/imports/:id`) and list previous ones.
@@ -144,7 +144,7 @@ Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top na
 - [ ] **(decision, blocks the production release)** **PrimeNG 22 license**: without a key it shows the red "Invalid PrimeUI License" notice on the screens that use it. Options: free Community key (personal use, yearly renewal, requested by the user at primeui.dev and passed in `providePrimeNG({ license })`), PrimeNG 21 (no official support with Angular 22) or remove PrimeNG.
 - [ ] Expenses: the design called for "mark as paid", delete and add transactions by hand and edit amount/description; the API does not support it (only the category changes). Decide whether to extend it.
 - [ ] Palette search: the server searches by whole word ("re" does not find "Reforma").
-- [ ] CSP policy in nginx, **once the UI is finished** (Angular and PrimeNG inject styles, which forces deciding `style-src` and `script-src`).
+- [x] CSP in nginx: scripts limited to `self` plus build-time hashes of the inline scripts; styles allow `unsafe-inline` because Angular and PrimeNG inject them.
 
 ## Phase 7 — Production rollout and operations
 
@@ -169,23 +169,22 @@ Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top na
 
 ## Open questions
 
-| Question                                                                                         | Who  | Blocks                                      |
-| ------------------------------------------------------------------------------------------------ | ---- | ------------------------------------------- |
-| Anonymized sample of the bank CSV                                                                | User | Validating the phase 4 parser               |
-| Does the server's Mongo run in a container (another compose file or network) or on the host?     | User | Phase 7 (decides whether the network override is used) |
-| Can `wiredTigerCacheSizeGB 0.5` be applied to the shared Mongo?                                  | User | Phase 7                                     |
-| Do you want the public demo with mock data?                                                      | User | Optional                                    |
-| Design system and charting library                                                               | User | Phase 6 and the phase 4 charts              |
+| Question                                                                                     | Who  | Blocks                                                 |
+| -------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------ |
+| Does the server's Mongo run in a container (another compose file or network) or on the host? | User | Phase 7 (decides whether the network override is used) |
+| Can `wiredTigerCacheSizeGB 0.5` be applied to the shared Mongo?                              | User | Phase 7                                                |
+| Do you want the public demo with mock data?                                                  | User | Optional                                               |
+| Design system and charting library                                                           | User | Phase 6 and the phase 4 charts                         |
 
 ## Technical debt and known risks
 
-| Item                          | Detail                                                                                                                                                                         | When                         |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
-| Integration tests             | Cover auth, lists, items, notes, capture, calendar and expenses against a real Mongo; skipped if there is no Mongo. Each new module adds its own with `test/harness.ts`.       | Every phase                  |
-| No ESLint                     | Only prettier and typecheck.                                                                                                                                                   | Optional                     |
-| No CSP                        | Basic security headers in nginx, no `Content-Security-Policy`.                                                                                                                 | Phase 6                      |
-| Fixed time zone               | `Europe/Madrid` as a constant in `shared`.                                                                                                                                     | If needed                    |
-| Fixed currency                | EUR only in the parser and in the presentation.                                                                                                                                | If needed                    |
-| TypeScript in two versions    | `shared` and `api` use TS 7; `web` uses TS 6 because the Angular compiler requires it. The `shared` code must compile with both.                                               | Review when upgrading Angular |
-| The client does not validate responses | It trusts the `shared` types; the server does validate and serialize. A deliberate decision to keep Zod out of the browser (692 → 257 kB).                             | —                            |
-| Shared Mongo                  | A memory failure in the other project can affect this one.                                                                                                                     | Phase 7                      |
+| Item                                   | Detail                                                                                                                                                                   | When                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| Integration tests                      | Cover auth, lists, items, notes, capture, calendar and expenses against a real Mongo; skipped if there is no Mongo. Each new module adds its own with `test/harness.ts`. | Every phase                   |
+| No ESLint                              | Only prettier and typecheck.                                                                                                                                             | Optional                      |
+| CSP styles                             | `style-src` still needs `unsafe-inline` (Angular and PrimeNG inject styles).                                                                                             | If a nonce setup is added     |
+| Fixed time zone                        | `Europe/Madrid` as a constant in `shared`.                                                                                                                               | If needed                     |
+| Fixed currency                         | EUR only in the parser and in the presentation.                                                                                                                          | If needed                     |
+| TypeScript in two versions             | `shared` and `api` use TS 7; `web` uses TS 6 because the Angular compiler requires it. The `shared` code must compile with both.                                         | Review when upgrading Angular |
+| The client does not validate responses | It trusts the `shared` types; the server does validate and serialize. A deliberate decision to keep Zod out of the browser (692 → 257 kB).                               | —                             |
+| Shared Mongo                           | A memory failure in the other project can affect this one.                                                                                                               | Phase 7                       |
