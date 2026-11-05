@@ -6,6 +6,8 @@ const EnvSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   MONGO_URI: z.string().min(1).optional(),
   MONGO_DB: z.string().min(1).optional(),
+  // Orígenes extra aceptados en peticiones que modifican datos (separados por comas). Normalmente vacío.
+  ALLOWED_ORIGINS: z.string().default(''),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 
@@ -16,6 +18,7 @@ export interface Config {
   mongoUri: string;
   mongoDb: string;
   logLevel: string;
+  allowedOrigins: string[];
 }
 
 /** Valida el entorno. En producción la conexión a Mongo es obligatoria: no hay valores por defecto. */
@@ -36,5 +39,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mongoUri,
     mongoDb,
     logLevel: parsed.LOG_LEVEL,
+    allowedOrigins: parsed.ALLOWED_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
   };
 }

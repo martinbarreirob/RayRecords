@@ -8,7 +8,10 @@ import { z } from 'zod';
 export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/health',
-    { schema: { response: { 200: z.object({ status: z.literal('ok'), db: z.boolean() }) } } },
+    {
+      config: { public: true },
+      schema: { response: { 200: z.object({ status: z.literal('ok'), db: z.boolean() }) } },
+    },
     async () => {
       const db = await app.db.db
         .command({ ping: 1 }, { timeoutMS: 2_000 })

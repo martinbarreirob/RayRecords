@@ -3,12 +3,17 @@ import type { Config } from '../config';
 import type {
   AccountDoc,
   CategoryDoc,
+  CredentialDoc,
   DailyNoteDoc,
   ImportBatchDoc,
   ItemDoc,
   ListDoc,
+  NoteCardDoc,
+  NoteGroupDoc,
   RuleDoc,
+  SessionDoc,
   TransactionDoc,
+  UserDoc,
 } from './documents';
 
 export function getCollections(db: Db) {
@@ -16,11 +21,16 @@ export function getCollections(db: Db) {
     lists: db.collection<ListDoc>('lists'),
     items: db.collection<ItemDoc>('items'),
     dailyNotes: db.collection<DailyNoteDoc>('daily_notes'),
+    noteCards: db.collection<NoteCardDoc>('note_cards'),
+    noteGroups: db.collection<NoteGroupDoc>('note_groups'),
     accounts: db.collection<AccountDoc>('accounts'),
     transactions: db.collection<TransactionDoc>('transactions'),
     categories: db.collection<CategoryDoc>('categories'),
     rules: db.collection<RuleDoc>('categorization_rules'),
     importBatches: db.collection<ImportBatchDoc>('import_batches'),
+    users: db.collection<UserDoc>('users'),
+    sessions: db.collection<SessionDoc>('sessions'),
+    credentials: db.collection<CredentialDoc>('credentials'),
   };
 }
 

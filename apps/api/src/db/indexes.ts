@@ -38,6 +38,11 @@ export async function ensureIndexes(c: Collections): Promise<void> {
 
     c.dailyNotes.createIndexes([{ key: { date: 1 }, unique: true, name: 'date_unique' }]),
 
+    c.noteCards.createIndexes([
+      { key: { groupId: 1 }, name: 'group' }, // tarjetas de un grupo; liberarlas al borrarlo
+      { key: { doneAt: 1 }, name: 'doneAt' }, // filtro de las 24 h y vista de terminadas
+    ]),
+
     c.accounts.createIndexes([{ key: { archived: 1, name: 1 }, name: 'archived_name' }]),
 
     c.transactions.createIndexes([
@@ -45,6 +50,18 @@ export async function ensureIndexes(c: Collections): Promise<void> {
       { key: { accountId: 1, hash: 1 }, unique: true, name: 'account_hash_unique' },
       { key: { accountId: 1, date: -1 }, name: 'account_date' },
       { key: { month: 1, category: 1 }, name: 'month_category' }, // agregaciones de gráficos
+      {
+        // Cola de revisión: solo indexa lo pendiente, así que sigue pequeño aunque haya miles de movimientos.
+        key: { merchantKey: 1, date: -1 },
+        partialFilterExpression: { categorySource: 'none' },
+        name: 'pending_merchant_partial',
+      },
+      {
+        // Historial por comercio para sugerir categoría.
+        key: { merchantKey: 1, category: 1 },
+        partialFilterExpression: { category: { $type: 'string' } },
+        name: 'merchant_category_partial',
+      },
       {
         key: { importBatchId: 1 },
         partialFilterExpression: { importBatchId: { $exists: true } },
@@ -55,5 +72,18 @@ export async function ensureIndexes(c: Collections): Promise<void> {
     c.rules.createIndexes([{ key: { active: 1, priority: -1 }, name: 'active_priority' }]),
 
     c.importBatches.createIndexes([{ key: { createdAt: -1 }, name: 'created' }]),
+
+    c.users.createIndexes([{ key: { username: 1 }, unique: true, name: 'username_unique' }]),
+
+    c.sessions.createIndexes([
+      // TTL: Mongo elimina la sesión en cuanto `expiresAt` queda atrás (con un retraso de hasta ~1 min).
+      { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'expires_ttl' },
+      { key: { userId: 1 }, name: 'user' }, // revocar todas las sesiones de un usuario
+    ]),
+
+    c.credentials.createIndexes([
+      { key: { credentialId: 1 }, unique: true, name: 'credentialId_unique' },
+      { key: { userId: 1 }, name: 'user' },
+    ]),
   ]);
 }

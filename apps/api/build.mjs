@@ -6,8 +6,13 @@ const pkg = JSON.parse(await readFile(new URL('./package.json', import.meta.url)
 // Se empaqueta el código propio, incluido @rayrecords/shared (devDependency, es TypeScript sin compilar),
 // y se dejan como externas las dependencias de runtime, que la imagen instala con `pnpm deploy --prod`.
 await build({
-  entryPoints: ['src/server.ts'],
-  outfile: 'dist/server.js',
+  entryPoints: [
+    'src/server.ts',
+    'src/cli/create-user.ts',
+    'src/cli/migrate-notes.ts',
+    'src/cli/sync-catalog.ts',
+  ],
+  outdir: 'dist',
   bundle: true,
   platform: 'node',
   format: 'esm',
