@@ -143,26 +143,38 @@ interface SectionCard {
           (ngModelChange)="setQuery($event)"
         />
       </label>
-      <label class="rule-toggle" for="mv-rule">
-        <p-checkbox
-          [binary]="true"
-          inputId="mv-rule"
-          [ngModel]="createRule()"
-          (ngModelChange)="createRule.set($event)"
+      <button
+        type="button"
+        class="btn icon opts-toggle"
+        aria-controls="mv-options"
+        aria-label="Más opciones"
+        [attr.aria-expanded]="options()"
+        (click)="options.set(!options())"
+      >
+        <i class="pi pi-sliders-h" aria-hidden="true"></i>
+      </button>
+      <div id="mv-options" class="options" [class.open]="options()">
+        <label class="rule-toggle" for="mv-rule">
+          <p-checkbox
+            [binary]="true"
+            inputId="mv-rule"
+            [ngModel]="createRule()"
+            (ngModelChange)="createRule.set($event)"
+          />
+          <span>Crear regla al cambiar una categoría</span>
+        </label>
+        <span class="spacer"></span>
+        <p-select
+          class="sort-select"
+          [options]="sortChoices"
+          optionLabel="label"
+          optionValue="id"
+          [ngModel]="sortId()"
+          (ngModelChange)="setSortChoice($event)"
+          ariaLabel="Ordenar por"
+          appendTo="body"
         />
-        <span>Crear regla al cambiar una categoría</span>
-      </label>
-      <span class="spacer"></span>
-      <p-select
-        class="sort-select"
-        [options]="sortChoices"
-        optionLabel="label"
-        optionValue="id"
-        [ngModel]="sortId()"
-        (ngModelChange)="setSortChoice($event)"
-        ariaLabel="Ordenar por"
-        appendTo="body"
-      />
+      </div>
     </div>
 
     @if (error(); as message) {
@@ -366,6 +378,8 @@ export class MovementsPanel {
   protected readonly section = signal<SectionFilter>('all');
   protected readonly query = signal('');
   protected readonly createRule = signal(false);
+  /** Phone only: sorting and «create rule» stay folded away until asked for. */
+  protected readonly options = signal(false);
 
   // Sorting and paging
   protected readonly sortField = signal<string>('date');

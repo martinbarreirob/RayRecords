@@ -23,6 +23,9 @@ import { LIST_PRESETS, type List, type ListKind } from '@rayrecords/shared';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { apiErrorMessage } from '../../core/api/errors';
+import { AddButton } from '../../core/ui/add-button';
+import { PageHeader } from '../../core/ui/page-header';
+import { formatNoteDate } from '../notes/note-board.logic';
 import { aliasError, cleanAlias, movedMessage, stepIndex } from './lists-logic';
 import { ListsSkeleton } from './lists-skeleton';
 import { ListsStore } from './lists.store';
@@ -38,6 +41,8 @@ const KIND_LABELS: Record<ListKind, string> = {
 @Component({
   selector: 'app-lists-page',
   imports: [
+    AddButton,
+    PageHeader,
     RouterLink,
     ConfirmDialogModule,
     CdkDropList,
@@ -51,17 +56,9 @@ const KIND_LABELS: Record<ListKind, string> = {
   styleUrl: './lists-page.scss',
   template: `
     <div class="page">
-      <header class="page-header">
-        <h1>Listas</h1>
-        <button
-          type="button"
-          class="btn primary"
-          [attr.aria-expanded]="creating()"
-          (click)="creating.set(!creating())"
-        >
-          {{ creating() ? 'Cerrar' : 'Nueva lista' }}
-        </button>
-      </header>
+      <app-page-header title="Listas" [eyebrow]="today">
+        <app-add-button label="Nueva lista" [iconOnMobile]="true" (pressed)="openCreate()" />
+      </app-page-header>
 
       @if (error(); as message) {
         <p class="alert create" role="alert">{{ message }}</p>
@@ -253,6 +250,7 @@ export class ListsPage {
 
   protected readonly presets = LIST_PRESETS;
   protected readonly kinds = PRESET_KINDS;
+  protected readonly today = formatNoteDate(new Date());
   protected readonly creating = signal(false);
   protected readonly selectedKind = signal<ListKind>('media');
   protected readonly name = signal(LIST_PRESETS.media.name);
@@ -287,6 +285,12 @@ export class ListsPage {
     effect(() => {
       if (this.store.lists()?.length === 0) untracked(() => this.creating.set(true));
     });
+  }
+
+  /** Opens the creation form; if it is already open, puts the cursor back in the name. */
+  protected openCreate(): void {
+    if (this.creating()) this.nameInput()?.nativeElement.select();
+    else this.creating.set(true);
   }
 
   protected kindLabel(list: List): string {

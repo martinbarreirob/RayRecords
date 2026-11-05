@@ -11,16 +11,16 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import type { Observable } from 'rxjs';
 import { DEFAULT_TIME_ZONE, monthOf, todayIn, type CalendarEntry } from '@rayrecords/shared';
-import { SelectModule } from 'primeng/select';
 import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { RefreshBus } from '../../core/refresh';
+import { AddButton } from '../../core/ui/add-button';
+import { PageHeader } from '../../core/ui/page-header';
 import { DateField } from '../../core/ui/date-field';
 import { TimeField } from '../../core/ui/time-field';
-import { ListsStore } from '../lists/lists.store';
 import {
   arrowTarget,
   buildMonthGrid,
@@ -46,25 +46,22 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
 
 @Component({
   selector: 'app-calendar-page',
-  imports: [RouterLink, NgTemplateOutlet, FormsModule, SelectModule, DateField, TimeField],
+  imports: [AddButton, PageHeader, RouterLink, NgTemplateOutlet, DateField, TimeField],
   template: `
     <div class="page">
-      <header class="page-header">
-        <div class="title">
-          <h1>Calendario</h1>
-          <span class="page-eyebrow" aria-live="polite">{{ monthLabel() }}</span>
-        </div>
-
+      <app-page-header title="Calendario" [eyebrow]="monthLabel()" [split]="true">
         <div class="tools">
           <div class="row nav" role="group" aria-label="Cambiar de mes">
             <button type="button" class="btn icon" aria-label="Mes anterior" (click)="go(-1)">
               <i class="pi pi-chevron-left" aria-hidden="true"></i>
             </button>
-            <button type="button" class="btn" (click)="goToday()">Hoy</button>
+            <button type="button" class="btn today" (click)="goToday()">Hoy</button>
             <button type="button" class="btn icon" aria-label="Mes siguiente" (click)="go(1)">
               <i class="pi pi-chevron-right" aria-hidden="true"></i>
             </button>
           </div>
+
+          <span class="break" aria-hidden="true"></span>
 
           <div class="segmented" role="group" aria-label="Vista">
             <button
@@ -83,12 +80,11 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
             </button>
           </div>
 
-          <button type="button" class="btn primary" (click)="openAdd(selected())">
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            Añadir
-          </button>
+          <button type="button" class="btn ghost today-row" (click)="goToday()">Hoy</button>
+
+          <app-add-button label="Nuevo evento" (pressed)="openAdd(selected())" />
         </div>
-      </header>
+      </app-page-header>
 
       <p class="sr-only" role="status">{{ loading() ? 'Cargando el calendario…' : '' }}</p>
 
@@ -119,35 +115,12 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
             <label for="cal-time">Hora (opcional)</label>
             <app-time-field inputId="cal-time" [(value)]="newTime" />
           </div>
-          <label class="field list-field">
-            <span>Lista</span>
-            <p-select
-              [options]="lists()"
-              optionLabel="name"
-              optionValue="id"
-              [ngModel]="effectiveListId()"
-              [ngModelOptions]="{ standalone: true }"
-              (onChange)="listId.set($event.value ?? '')"
-              ariaLabel="Lista"
-              appendTo="body"
-              styleClass="w-full"
-            />
-          </label>
           <div class="row actions">
             <button type="button" class="btn ghost" (click)="adding.set(false)">Cancelar</button>
-            <button
-              type="submit"
-              class="btn primary"
-              [disabled]="!newTitle().trim() || !newDate() || !effectiveListId()"
-            >
+            <button type="submit" class="btn primary" [disabled]="!newTitle().trim() || !newDate()">
               Añadir
             </button>
           </div>
-          @if (!lists().length) {
-            <p class="muted hint">
-              Aún no hay listas: <a routerLink="/listas">crea una</a> para poder añadir elementos.
-            </p>
-          }
         </form>
       }
 
@@ -316,7 +289,7 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
               </article>
             } @empty {
               <p class="empty">
-                No hay nada con fecha en {{ monthLabel() }}. Pulsa «Añadir» para crear un elemento.
+                No hay nada con fecha en {{ monthLabel() }}. Pulsa «Añadir» para crear un evento.
               </p>
             }
           }
@@ -354,8 +327,20 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
               <span class="badge danger">Vencida</span>
             }
           </div>
-          <a class="list-link" [routerLink]="['/listas', entry.listSlug]">{{ entry.listName }}</a>
+          @if (entry.kind === 'item') {
+            <a class="list-link" [routerLink]="['/listas', entry.listSlug]">{{ entry.listName }}</a>
+          }
         </div>
+        @if (entry.kind === 'event') {
+          <button
+            type="button"
+            class="btn icon ghost remove"
+            [attr.aria-label]="'Eliminar: ' + entry.title"
+            (click)="removeEvent(entry)"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i>
+          </button>
+        }
       </li>
     </ng-template>
   `,
@@ -364,7 +349,6 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
 export class CalendarPage {
   private readonly api = inject(ApiClient);
   private readonly bus = inject(RefreshBus);
-  private readonly listsStore = inject(ListsStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
@@ -395,11 +379,7 @@ export class CalendarPage {
   protected readonly newTitle = signal('');
   protected readonly newDate = signal('');
   protected readonly newTime = signal('');
-  protected readonly listId = signal('');
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
-
-  protected readonly lists = computed(() => this.listsStore.lists() ?? []);
-  protected readonly effectiveListId = computed(() => this.listId() || this.lists()[0]?.id || '');
 
   protected readonly grid = computed(() => buildMonthGrid(this.month()));
   private readonly key = computed(() => rangeKey(this.grid()));
@@ -530,25 +510,16 @@ export class CalendarPage {
   protected add(event: Event): void {
     event.preventDefault();
     const title = this.newTitle().trim();
-    const listId = this.effectiveListId();
     const date = this.newDate();
-    if (!title || !listId || !date) return;
+    if (!title || !date) return;
     this.api
-      .createItem({
-        listId,
-        title,
-        dueDate: date,
-        ...(this.newTime() && { time: this.newTime() }),
-        tags: [],
-        extra: {},
-        source: 'manual',
-      })
+      .createEvent({ title, date, ...(this.newTime() && { time: this.newTime() }) })
       .subscribe({
         next: () => {
           this.newTitle.set('');
           this.newTime.set('');
           this.error.set('');
-          // Shows the day where the item ended up.
+          // Shows the day where the event ended up.
           this.month.set(monthOf(date));
           this.selected.set(date);
           this.titleInput()?.nativeElement.focus();
@@ -559,7 +530,19 @@ export class CalendarPage {
   }
 
   protected toggleDone(entry: CalendarEntry, done: boolean): void {
-    this.api.updateItem(entry.id, { done }).subscribe({
+    const request: Observable<unknown> =
+      entry.kind === 'event'
+        ? this.api.updateEvent(entry.id, { done })
+        : this.api.updateItem(entry.id, { done });
+    request.subscribe({
+      next: () => this.bus.changed(),
+      error: (error: unknown) => this.error.set(apiErrorMessage(error)),
+    });
+  }
+
+  /** Only events can be removed here; list items are managed from their list. */
+  protected removeEvent(entry: CalendarEntry): void {
+    this.api.deleteEvent(entry.id).subscribe({
       next: () => this.bus.changed(),
       error: (error: unknown) => this.error.set(apiErrorMessage(error)),
     });

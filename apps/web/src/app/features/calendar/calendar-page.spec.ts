@@ -11,9 +11,50 @@ const entry = {
   id: 'a'.repeat(24),
   title: 'Llamar al dentista',
   dueDate: today,
+  kind: 'item',
   listName: 'Tareas',
   listSlug: 'tareas',
 } as CalendarEntry;
+
+describe('CalendarPage: adding events', () => {
+  it('creates an event without asking for a list, even when there are no lists', async () => {
+    const created: unknown[] = [];
+    const api = {
+      lists: () => of([]),
+      calendar: () => of([]),
+      createEvent: (input: unknown) => {
+        created.push(input);
+        return of({});
+      },
+    };
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    root.querySelector<HTMLButtonElement>('app-add-button button')!.click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('form.add')).not.toBeNull();
+    expect(root.querySelector('form.add p-select')).toBeNull();
+    expect(root.textContent).not.toContain('Aún no hay listas');
+
+    const input = root.querySelector<HTMLInputElement>('form.add input[name="title"]')!;
+    input.value = 'Dentista';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const submit = root.querySelector<HTMLButtonElement>('form.add button[type="submit"]')!;
+    expect(submit.disabled).toBe(false);
+    root.querySelector<HTMLFormElement>('form.add')!.dispatchEvent(new Event('submit'));
+
+    expect(created).toEqual([{ title: 'Dentista', date: today }]);
+  });
+});
 
 describe('CalendarPage: loading', () => {
   let requests: { from: string; to: string; subject: Subject<CalendarEntry[]> }[];

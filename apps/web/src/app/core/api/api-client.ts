@@ -1,7 +1,10 @@
 import type {
   AccountSummary,
   CalendarEntry,
+  CalendarEvent,
   CaptureResponse,
+  CreateEvent,
+  UpdateEvent,
   Category,
   ReviewApply,
   ReviewApplyResult,
@@ -83,7 +86,12 @@ export abstract class ApiClient {
 
   abstract capture(text: string): Observable<CaptureResponse>;
 
+  /** Dated list items plus the calendar's own events. */
   abstract calendar(from: string, to: string): Observable<CalendarEntry[]>;
+  /** Events live only in the calendar and need no list. */
+  abstract createEvent(input: CreateEvent): Observable<CalendarEvent>;
+  abstract updateEvent(id: string, input: UpdateEvent): Observable<CalendarEvent>;
+  abstract deleteEvent(id: string): Observable<void>;
 
   abstract accounts(): Observable<AccountSummary[]>;
   abstract createAccount(input: CreateAccount): Observable<AccountSummary>;

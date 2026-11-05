@@ -1,18 +1,3 @@
-.page-header {
-  align-items: center;
-}
-
-.title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-3);
-}
-
-.page-eyebrow {
-  font-size: var(--text-lg);
-}
-
 .tools {
   display: flex;
   flex-wrap: wrap;
@@ -25,6 +10,12 @@
   gap: var(--space-1);
 }
 
+/* Phone only (see the media query at the end). */
+.break,
+.today-row {
+  display: none;
+}
+
 .alert {
   margin-bottom: var(--space-4);
 }
@@ -32,7 +23,7 @@
 /* Create form */
 .add {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 168px 120px 200px auto;
+  grid-template-columns: minmax(0, 1fr) 168px 120px auto;
   align-items: end;
   gap: var(--space-3);
   margin-bottom: var(--space-5);
@@ -45,11 +36,6 @@
 .add .actions {
   flex-wrap: nowrap;
   justify-content: flex-end;
-}
-
-.add .hint {
-  grid-column: 1 / -1;
-  font-size: var(--text-sm);
 }
 
 /* Month: grid + day detail */
@@ -287,8 +273,13 @@ td.outside .chips {
 
 .row-entry .body {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
+}
+
+.row-entry .remove {
+  flex: none;
 }
 
 .row-entry .line {
@@ -410,7 +401,6 @@ td.outside .chips {
   }
 
   .add .title-field,
-  .add .list-field,
   .add .actions {
     grid-column: 1 / -1;
   }
@@ -446,15 +436,40 @@ td.outside .chips {
     display: flex;
   }
 
-  .page-header {
-    align-items: flex-start;
-  }
-
+  /*
+   * The header's actions flow into two rows: [title + month ... arrows] and then
+   * [Mes|Agenda  Hoy ... Nuevo evento]. The header lets them through (display: contents).
+   */
   .tools {
-    width: 100%;
+    display: contents;
   }
 
-  .tools .primary {
+  .nav {
+    order: 1;
+  }
+
+  .break {
+    display: block;
+    order: 2;
+    flex: 0 0 100%;
+    height: 0;
+  }
+
+  .segmented {
+    order: 3;
+  }
+
+  .today-row {
+    display: inline-flex;
+    order: 4;
+  }
+
+  .nav .today {
+    display: none;
+  }
+
+  app-add-button {
+    order: 5;
     margin-left: auto;
   }
 
@@ -466,14 +481,18 @@ td.outside .chips {
     width: var(--touch-target);
   }
 
-  .add .btn,
-  .add .input,
-  .add .select,
-  .add-here {
-    min-height: var(--touch-target);
+  .segmented > button {
+    min-height: calc(var(--touch-target) - 6px);
+    padding: 0 var(--space-3);
   }
 
-  .add ::ng-deep .p-select {
+  .today-row {
+    padding: 0 var(--space-2);
+  }
+
+  .add .btn,
+  .add .input,
+  .add-here {
     min-height: var(--touch-target);
   }
 

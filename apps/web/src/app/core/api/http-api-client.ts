@@ -3,7 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import type {
   AccountSummary,
   CalendarEntry,
+  CalendarEvent,
   CaptureResponse,
+  CreateEvent,
+  UpdateEvent,
   Category,
   ReviewApply,
   ReviewApplyResult,
@@ -140,6 +143,18 @@ export class HttpApiClient extends ApiClient {
 
   override calendar(from: string, to: string): Observable<CalendarEntry[]> {
     return this.http.get<CalendarEntry[]>('/api/calendar', { params: { from, to } });
+  }
+
+  override createEvent(input: CreateEvent): Observable<CalendarEvent> {
+    return this.http.post<CalendarEvent>('/api/events', input);
+  }
+
+  override updateEvent(id: string, input: UpdateEvent): Observable<CalendarEvent> {
+    return this.http.patch<CalendarEvent>(`/api/events/${id}`, input);
+  }
+
+  override deleteEvent(id: string): Observable<void> {
+    return this.http.delete<null>(`/api/events/${id}`).pipe(map(() => undefined));
   }
 
   override accounts(): Observable<AccountSummary[]> {
