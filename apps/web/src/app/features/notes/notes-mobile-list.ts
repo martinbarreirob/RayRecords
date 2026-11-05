@@ -1,5 +1,5 @@
-import { Component, computed, inject, input, output } from '@angular/core';
-import { formatDuration, remainingMs, type NoteCard } from '@rayrecords/shared';
+import { Component, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { formatDuration, remainingMs, type NoteCard, type NoteGroup } from '@rayrecords/shared';
 import { NoteBoardStore } from './note-board.store';
 import { NoteRow } from './note-row';
 
@@ -17,7 +17,19 @@ import { NoteRow } from './note-row';
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       background: var(--surface-2);
-      overflow: hidden;
+    }
+
+    /* No overflow: hidden (it would clip the menu), so the corners are rounded by hand. */
+    .group > summary {
+      border-radius: var(--radius-lg);
+    }
+
+    .group[open] > summary {
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .group[open] > :last-child {
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     }
 
     summary {
@@ -53,6 +65,69 @@ import { NoteRow } from './note-row';
     .count {
       color: var(--muted);
       font-size: var(--text-sm);
+      font-weight: 400;
+    }
+
+    summary {
+      position: relative;
+    }
+
+    /* Pushed to the right of the title and count. */
+    .menu-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--touch-target);
+      height: var(--touch-target);
+      margin: 0 -10px 0 auto;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .menu-btn[aria-expanded='true'] {
+      color: var(--text);
+    }
+
+    .menu {
+      position: absolute;
+      top: calc(100% - 4px);
+      right: var(--space-3);
+      z-index: 5;
+      min-width: 220px;
+      padding: var(--space-1);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+    }
+
+    .menu button {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 0 var(--space-3);
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-2) var(--space-3);
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text);
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .menu button:active {
+      background: var(--surface-2);
+    }
+
+    .menu small {
+      grid-column: 2;
+      color: var(--muted);
+      font-size: var(--text-xs);
       font-weight: 400;
     }
 
@@ -108,6 +183,26 @@ import { NoteRow } from './note-row';
         <summary>
           {{ group.title || 'Grupo sin título' }}
           <span class="count">{{ inGroup(group.id).length }}</span>
+          <!-- preventDefault: pressing the menu must not fold or unfold the group -->
+          <button
+            type="button"
+            class="menu-btn"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="menuFor() === group.id"
+            [attr.aria-label]="'Menú del grupo ' + (group.title || 'sin título')"
+            (click)="toggleMenu($event, group.id)"
+          >
+            <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+          </button>
+          @if (menuFor() === group.id) {
+            <div class="menu" role="menu" (click)="$event.preventDefault()">
+              <button type="button" role="menuitem" (click)="dissolve($event, group)">
+                <i class="pi pi-clone" aria-hidden="true"></i>
+                Disolver grupo
+                <small>Las notas se quedan sueltas</small>
+              </button>
+            </div>
+          }
         </summary>
         @for (card of inGroup(group.id); track card.id) {
           <app-note-row
@@ -145,7 +240,10 @@ import { NoteRow } from './note-row';
       </p>
     }
     <p class="note">Vista de lista: las notas siguen el orden que tienen en el lienzo</p>
-    <button type="button" class="fab" aria-label="Nueva nota" (click)="created.emit()">+</button>
+    <!-- Hidden while a note is being edited: it would cover the Cancelar / Listo buttons. -->
+    @if (!editingId()) {
+      <button type="button" class="fab" aria-label="Nueva nota" (click)="created.emit()">+</button>
+    }
   `,
 })
 export class NotesMobileList {
@@ -159,6 +257,29 @@ export class NotesMobileList {
   readonly finished = output<{ card: NoteCard; value: string }>();
   readonly removed = output<NoteCard>();
   readonly created = output<void>();
+  readonly dissolved = output<NoteGroup>();
+
+  /** Group whose menu is open. */
+  protected readonly menuFor = signal<string | null>(null);
+
+  protected toggleMenu(event: Event, groupId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.menuFor.update((open) => (open === groupId ? null : groupId));
+  }
+
+  protected dissolve(event: Event, group: NoteGroup): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.menuFor.set(null);
+    this.dissolved.emit(group);
+  }
+
+  /** Tapping anywhere else closes the menu. */
+  @HostListener('document:click')
+  protected closeMenu(): void {
+    if (this.menuFor() !== null) this.menuFor.set(null);
+  }
 
   protected readonly loose = computed(() => this.store.byPosition(this.store.looseCards()));
 

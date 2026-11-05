@@ -1,11 +1,15 @@
 import type { NoteCard, NoteGroup } from '@rayrecords/shared';
 import {
   DRAG_THRESHOLD,
+  BOARD_PADDING,
   advanceDrag,
   dragPreview,
   draggedIds,
   dropMoves,
+  GROUP_GAP,
   groupAround,
+  moveAvoiding,
+  resizeAvoiding,
   startDrag,
 } from './note-drag';
 
@@ -87,6 +91,50 @@ describe('advanceDrag', () => {
     const drag = startDrag('group', 'g1', { x: 0, y: 0 }, group);
 
     expect(advanceDrag(drag, { x: 50, y: 50 }, [group]).over).toBeNull();
+  });
+});
+
+describe('advanceDrag inside the visible canvas', () => {
+  // The canvas is 1000 x 600 and the card (x 50, y 50, 280 wide, 100 tall) is what travels.
+  const limits = { area: { w: 1000, h: 600 }, extent: { x: 50, y: 50, w: 280, h: 100 } };
+  const start = () => startDrag('card', 'a', { x: 100, y: 100 }, { x: 50, y: 50, w: 280, h: 100 });
+
+  it('stops at the right border, keeping the padding', () => {
+    const next = advanceDrag(start(), { x: 5000, y: 100 }, [], limits);
+
+    expect(next.x).toBe(1000 - BOARD_PADDING - 280);
+  });
+
+  it('stops at the bottom border, keeping the padding', () => {
+    const next = advanceDrag(start(), { x: 100, y: 5000 }, [], limits);
+
+    expect(next.y).toBe(600 - BOARD_PADDING - 100);
+  });
+
+  it('keeps a little space on the left and on top', () => {
+    const next = advanceDrag(start(), { x: -500, y: -500 }, [], limits);
+
+    expect(next).toMatchObject({ x: BOARD_PADDING, y: BOARD_PADDING });
+  });
+
+  it('limits a selection by its outermost card, not by the grabbed one', () => {
+    // The other selected card sticks out 200 px to the right of the grabbed one.
+    const wide = { area: limits.area, extent: { x: 50, y: 50, w: 480, h: 100 } };
+
+    const next = advanceDrag(start(), { x: 5000, y: 100 }, [], wide);
+
+    expect(next.x).toBe(1000 - BOARD_PADDING - 480);
+  });
+
+  it('a group cannot be resized past the border', () => {
+    const drag = startDrag('resize', 'g1', { x: 0, y: 0 }, group);
+
+    const next = advanceDrag(drag, { x: 5000, y: 5000 }, [group], limits);
+
+    expect(next).toMatchObject({
+      w: 1000 - BOARD_PADDING - group.x,
+      h: 600 - BOARD_PADDING - group.y,
+    });
   });
 });
 
@@ -265,5 +313,58 @@ describe('dragPreview', () => {
     const preview = dragPreview(moved('a', 0, 0), [card('a', 5, 5)], new Set(), absolute);
 
     expect(preview[0]).toMatchObject({ x: 0, y: 0 });
+  });
+});
+
+describe('groups next to each other', () => {
+  const mine = { x: 0, y: 0, w: 200, h: 200 };
+  const right = { x: 400, y: 0, w: 200, h: 200 };
+  const below = { x: 0, y: 400, w: 200, h: 200 };
+
+  it('resizing can grow vertically as well as horizontally', () => {
+    expect(resizeAvoiding(mine, { w: 300, h: 500 }, [])).toEqual({ w: 300, h: 500 });
+  });
+
+  it('resizing stops against a group on the right, keeping the gap', () => {
+    expect(resizeAvoiding(mine, { w: 700, h: 200 }, [right])).toEqual({
+      w: 400 - GROUP_GAP,
+      h: 200,
+    });
+  });
+
+  it('resizing stops against a group below, keeping the gap', () => {
+    expect(resizeAvoiding(mine, { w: 200, h: 900 }, [below])).toEqual({
+      w: 200,
+      h: 400 - GROUP_GAP,
+    });
+  });
+
+  it('resizing into a group on a diagonal cuts only one axis', () => {
+    const size = resizeAvoiding(mine, { w: 600, h: 600 }, [{ x: 300, y: 300, w: 200, h: 200 }]);
+    expect(size.w === 300 - GROUP_GAP || size.h === 300 - GROUP_GAP).toBe(true);
+  });
+
+  it('moving a group stops at the gap instead of passing over another one', () => {
+    expect(moveAvoiding(mine, { x: 600, y: 0 }, [right])).toEqual({
+      x: 400 - GROUP_GAP - 200,
+      y: 0,
+    });
+    expect(moveAvoiding(mine, { x: 0, y: 700 }, [below])).toEqual({
+      x: 0,
+      y: 400 - GROUP_GAP - 200,
+    });
+  });
+
+  it('moving away from a group that already touches is free', () => {
+    const touching = { x: 150, y: 0, w: 200, h: 200 };
+    expect(moveAvoiding(mine, { x: -50, y: 0 }, [touching])).toEqual({ x: -50, y: 0 });
+  });
+
+  it('the drag state applies the limits for a resize and for a move', () => {
+    const others = [{ ...group, id: 'g2', x: 400, y: 0, w: 200, h: 200 }];
+    const resize = startDrag('resize', 'g1', { x: 0, y: 0 }, { x: 0, y: 0, w: 200, h: 200 });
+    expect(advanceDrag(resize, { x: 500, y: 0 }, others).w).toBe(400 - GROUP_GAP);
+    const move = startDrag('group', 'g1', { x: 0, y: 0 }, { x: 0, y: 0, w: 200, h: 200 });
+    expect(advanceDrag(move, { x: 500, y: 0 }, others).x).toBe(400 - GROUP_GAP - 200);
   });
 });

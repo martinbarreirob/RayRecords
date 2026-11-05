@@ -43,6 +43,95 @@ export const MIN_GROUP = 160;
  */
 export const DRAG_THRESHOLD = 8;
 
+/** Free space kept between the canvas border and what is dragged or resized inside it. */
+export const BOARD_PADDING = 8;
+
+/**
+ * Where a drag may go. `area` is the visible canvas (its width and height when the drag started);
+ * `extent` is everything that moves together (the selected cards, or the group), at the start.
+ * Nothing can be dragged out of the area, and it keeps BOARD_PADDING from every border.
+ */
+export interface DragLimits {
+  area: { w: number; h: number };
+  extent: Rect;
+}
+
+/** `delta` cut so an item at `from` with length `size` stays inside [padding, max - padding]. */
+function fitDelta(delta: number, from: number, size: number, max: number): number {
+  const lowest = BOARD_PADDING - from;
+  const highest = max - BOARD_PADDING - (from + size);
+  // An extent bigger than the area cannot fit: it goes to the top/left.
+  return highest < lowest ? lowest : Math.min(highest, Math.max(lowest, delta));
+}
+
+/** Free space kept between two groups when one is moved or resized against the other. */
+export const GROUP_GAP = 16;
+
+/** True if `a` is closer than `gap` to `b` (or overlaps it). */
+function tooClose(a: Rect, b: Rect, gap: number): boolean {
+  return (
+    a.x < b.x + b.w + gap && a.x + a.w + gap > b.x && a.y < b.y + b.h + gap && a.y + a.h + gap > b.y
+  );
+}
+
+/**
+ * Size a group can take when resized from its top-left corner (which stays put): the requested
+ * size, cut where it would reach another group (keeping GROUP_GAP). A group it already touches is
+ * ignored, and a cut never shrinks the group below the size it started with.
+ */
+export function resizeAvoiding(
+  origin: Rect,
+  size: { w: number; h: number },
+  others: readonly Rect[],
+): { w: number; h: number } {
+  let { w, h } = size;
+  for (let pass = 0; pass < 2; pass++) {
+    for (const other of others) {
+      if (tooClose(origin, other, 0)) continue;
+      if (!tooClose({ x: origin.x, y: origin.y, w, h }, other, GROUP_GAP)) continue;
+      const rightOf = other.x >= origin.x + origin.w;
+      const below = other.y >= origin.y + origin.h;
+      const wLimit = other.x - GROUP_GAP - origin.x;
+      const hLimit = other.y - GROUP_GAP - origin.y;
+      // Cut the axis that loses less when the other group is diagonal to this one.
+      const cutW = rightOf && (!below || w - wLimit <= h - hLimit);
+      if (cutW) w = Math.min(w, Math.max(wLimit, origin.w));
+      else if (below) h = Math.min(h, Math.max(hLimit, origin.h));
+    }
+  }
+  return { w, h };
+}
+
+/**
+ * Where a group dragged from `from` can go to reach `to`: axis by axis (x first), stopping
+ * GROUP_GAP short of any group in the way. Groups it already touches are ignored.
+ */
+export function moveAvoiding(from: Rect, to: Point, others: readonly Rect[]): Point {
+  let x = to.x;
+  for (const o of others) {
+    if (tooClose(from, o, 0)) continue;
+    const sameRow = from.y < o.y + o.h + GROUP_GAP && from.y + from.h + GROUP_GAP > o.y;
+    if (!sameRow) continue;
+    if (x > from.x && o.x >= from.x + from.w) {
+      x = Math.min(x, Math.max(from.x, o.x - GROUP_GAP - from.w));
+    } else if (x < from.x && o.x + o.w <= from.x) {
+      x = Math.max(x, Math.min(from.x, o.x + o.w + GROUP_GAP));
+    }
+  }
+  let y = to.y;
+  for (const o of others) {
+    if (tooClose(from, o, 0)) continue;
+    const sameColumn = x < o.x + o.w + GROUP_GAP && x + from.w + GROUP_GAP > o.x;
+    if (!sameColumn) continue;
+    if (y > from.y && o.y >= from.y + from.h) {
+      y = Math.min(y, Math.max(from.y, o.y - GROUP_GAP - from.h));
+    } else if (y < from.y && o.y + o.h <= from.y) {
+      y = Math.max(y, Math.min(from.y, o.y + o.h + GROUP_GAP));
+    }
+  }
+  return { x, y };
+}
+
 export function startDrag(
   kind: Drag['kind'],
   id: string,
@@ -70,22 +159,44 @@ export function startDrag(
 }
 
 /** New drag state with the pointer at `pointer`. A minimal movement does not count. */
-export function advanceDrag(drag: Drag, pointer: Point, groups: readonly NoteGroup[]): Drag {
-  const dx = pointer.x - drag.startX;
-  const dy = pointer.y - drag.startY;
+export function advanceDrag(
+  drag: Drag,
+  pointer: Point,
+  groups: readonly NoteGroup[],
+  limits?: DragLimits,
+): Drag {
+  let dx = pointer.x - drag.startX;
+  let dy = pointer.y - drag.startY;
   if (!drag.moved && Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return drag;
-
-  if (drag.kind === 'resize') {
-    return {
-      ...drag,
-      moved: true,
-      w: Math.max(MIN_GROUP, clampCoord(drag.originW + dx)),
-      h: Math.max(MIN_GROUP, clampCoord(drag.originH + dy)),
-    };
+  if (limits && drag.kind !== 'resize') {
+    const { area, extent } = limits;
+    dx = fitDelta(dx, extent.x, extent.w, area.w);
+    dy = fitDelta(dy, extent.y, extent.h, area.h);
   }
 
-  const x = clampCoord(drag.originX + dx);
-  const y = clampCoord(drag.originY + dy);
+  // A group never overlaps another one: it stops against it, leaving GROUP_GAP.
+  const others = drag.kind === 'card' ? [] : groups.filter((g) => g.id !== drag.id);
+
+  if (drag.kind === 'resize') {
+    // The group's top-left corner stays put: it can only grow up to the area's border.
+    const maxW = limits ? limits.area.w - BOARD_PADDING - drag.originX : Infinity;
+    const maxH = limits ? limits.area.h - BOARD_PADDING - drag.originY : Infinity;
+    const size = resizeAvoiding(
+      { x: drag.originX, y: drag.originY, w: drag.originW, h: drag.originH },
+      {
+        w: Math.max(MIN_GROUP, Math.min(maxW, clampCoord(drag.originW + dx))),
+        h: Math.max(MIN_GROUP, Math.min(maxH, clampCoord(drag.originH + dy))),
+      },
+      others,
+    );
+    return { ...drag, moved: true, ...size };
+  }
+
+  let x = clampCoord(drag.originX + dx);
+  let y = clampCoord(drag.originY + dy);
+  if (drag.kind === 'group') {
+    ({ x, y } = moveAvoiding({ x: drag.x, y: drag.y, w: drag.w, h: drag.h }, { x, y }, others));
+  }
   // The card drops into the group under its centre.
   const over =
     drag.kind === 'card'

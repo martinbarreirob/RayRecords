@@ -3,8 +3,8 @@ import type { NoteGroup } from '@rayrecords/shared';
 
 /**
  * Canvas group: box with a draggable header, editable title, «Disolver» and a resize handle.
- * The group's cards are projected into a stack, one under another at full width; with cards the
- * height comes from the content (without them, the saved height).
+ * The group's cards are projected into a stack, one under another at full width. The saved height
+ * is the size of the box; with cards it is a minimum, and the content makes it taller if needed.
  */
 @Component({
   selector: 'app-note-group',
@@ -17,6 +17,7 @@ import type { NoteGroup } from '@rayrecords/shared';
     '[style.top.px]': 'box().y',
     '[style.width.px]': 'box().w',
     '[style.height.px]': 'count() > 0 ? null : box().h',
+    '[style.min-height.px]': 'count() > 0 ? box().h : null',
   },
   styles: `
     /*

@@ -274,7 +274,10 @@ import { NoteEditor } from './note-editor';
     }
   `,
   template: `
-    <app-note-check [checked]="!!card().doneAt" label="Hecha" (toggled)="toggled.emit()" />
+    <!-- A note being written for the first time has nothing to tick yet: the check appears once saved. -->
+    @if (!creating()) {
+      <app-note-check [checked]="!!card().doneAt" label="Hecha" (toggled)="toggled.emit()" />
+    }
     @if (editing()) {
       <textarea
         #editor
@@ -350,6 +353,7 @@ export class NoteCardComponent {
   readonly removed = output<void>();
 
   protected readonly parts = computed(() => splitNoteText(this.card().text));
+  protected readonly creating = computed(() => this.editing() && this.card().text === '');
   protected readonly label = computed(() => {
     const { title } = this.parts();
     return `${this.card().doneAt ? 'Hecha: ' : ''}${title || 'Nota vacía'}`;

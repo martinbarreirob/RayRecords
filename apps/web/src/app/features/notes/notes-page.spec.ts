@@ -53,7 +53,7 @@ describe('NotesPage', () => {
   });
 
   const buttons = (el: HTMLElement) =>
-    [...el.querySelectorAll('header .actions button')].map((b) =>
+    [...el.querySelectorAll('header .page-actions button')].map((b) =>
       (b.getAttribute('aria-label') ?? b.textContent ?? '').replace(/\s+/g, ' ').trim(),
     );
 
@@ -114,7 +114,7 @@ describe('NotesPage', () => {
       fixture.detectChanges();
 
       expect(buttons(el)).toEqual([
-        'Nueva nota N',
+        'Nueva nota Alt N',
         'Ordenar notas',
         'Terminadas (0)',
         'Bloquear la disposición',

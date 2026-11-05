@@ -8,7 +8,11 @@ import { NoteEditor } from './note-editor';
 @Component({
   selector: 'app-note-row',
   imports: [NoteCheck, NoteEditor],
-  host: { '[class.grouped]': 'grouped()', '[class.done]': '!!card().doneAt' },
+  host: {
+    '[class.grouped]': 'grouped()',
+    '[class.done]': '!!card().doneAt',
+    '[class.creating]': 'creating()',
+  },
   styles: `
     :host {
       display: flex;
@@ -120,19 +124,30 @@ import { NoteEditor } from './note-editor';
       box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
+    /* Two equal, wide buttons side by side (never a narrow tall pair). */
     .actions {
       display: flex;
-      justify-content: space-between;
       gap: var(--space-2);
-      margin-top: var(--space-2);
+      margin-top: var(--space-3);
     }
 
     .actions .btn {
+      flex: 1;
       min-height: var(--touch-target);
+      padding: 0 var(--space-4);
+      font-size: var(--text-base);
+      white-space: nowrap;
+    }
+
+    /* A note being created has no check to tick yet: the editor takes the whole row. */
+    :host(.creating) {
+      padding: var(--space-3);
     }
   `,
   template: `
-    <app-note-check [checked]="!!card().doneAt" label="Hecha" (toggled)="toggled.emit()" />
+    @if (!creating()) {
+      <app-note-check [checked]="!!card().doneAt" label="Hecha" (toggled)="toggled.emit()" />
+    }
     <div class="main">
       @if (editing()) {
         <textarea
@@ -147,17 +162,29 @@ import { NoteEditor } from './note-editor';
         ></textarea>
         <div class="actions">
           <!-- pointerdown keeps the field from losing focus and saving before acting -->
+          @if (creating()) {
+            <!-- A blank text is discarded without leaving anything to undo -->
+            <button
+              type="button"
+              class="btn"
+              (pointerdown)="$event.preventDefault()"
+              (click)="editor.value = ''; editor.blur()"
+            >
+              Cancelar
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="btn danger"
+              (pointerdown)="$event.preventDefault()"
+              (click)="removed.emit()"
+            >
+              Borrar
+            </button>
+          }
           <button
             type="button"
-            class="btn danger sm"
-            (pointerdown)="$event.preventDefault()"
-            (click)="removed.emit()"
-          >
-            Borrar
-          </button>
-          <button
-            type="button"
-            class="btn primary sm"
+            class="btn primary"
             (pointerdown)="$event.preventDefault()"
             (click)="editor.blur()"
           >
@@ -192,4 +219,6 @@ export class NoteRow {
   readonly removed = output<void>();
 
   protected readonly parts = computed(() => splitNoteText(this.card().text));
+  /** A note being written for the first time: nothing saved yet, so no check and «Cancelar». */
+  protected readonly creating = computed(() => this.editing() && this.card().text === '');
 }

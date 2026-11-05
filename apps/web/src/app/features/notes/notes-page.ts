@@ -14,6 +14,7 @@ import {
 import {
   CARD_ESTIMATED_HEIGHT,
   arrangeInGrid,
+  boundingBox,
   clampCoord,
   formatDuration,
   remainingMs,
@@ -27,6 +28,8 @@ import {
 } from '@rayrecords/shared';
 import { PaletteService } from '../../core/palette/palette.service';
 import { RefreshBus } from '../../core/refresh';
+import { AddButton } from '../../core/ui/add-button';
+import { PageHeader } from '../../core/ui/page-header';
 import {
   arrangeItems,
   arrowMove,
@@ -39,8 +42,11 @@ import {
 import { NoteBoardStore } from './note-board.store';
 import {
   DRAG_THRESHOLD,
+  BOARD_PADDING,
   advanceDrag,
+  type DragLimits,
   dragPreview,
+  draggedIds,
   dropMoves,
   groupAround,
   startDrag,
@@ -115,6 +121,7 @@ function isControl(target: EventTarget | null): boolean {
 @Component({
   selector: 'app-notes-page',
   imports: [
+    AddButton,
     NgTemplateOutlet,
     NoteCardComponent,
     NoteGroupComponent,
@@ -122,6 +129,7 @@ function isControl(target: EventTarget | null): boolean {
     NotesHints,
     NotesMobileList,
     NotesSkeleton,
+    PageHeader,
   ],
   providers: [NoteBoardStore],
   host: {
@@ -131,19 +139,15 @@ function isControl(target: EventTarget | null): boolean {
   },
   styleUrl: './notes-page.scss',
   template: `
-    <header class="page-header">
-      <div class="title-block">
-        <h1>Notas</h1>
-        <span class="page-eyebrow">{{ today }}</span>
-      </div>
+    <app-page-header title="Notas" [eyebrow]="today">
+      @if (!compact()) {
+        <app-add-button label="Nueva nota" (pressed)="newCard()" />
+      }
       <div class="actions">
         @if (!compact()) {
-          <button type="button" class="btn primary sm" (click)="newCard()">
-            Nueva nota <span class="kbd">N</span>
-          </button>
           <button
             type="button"
-            class="btn sm"
+            class="btn"
             aria-label="Ordenar notas"
             title="Ordenar: coloca las notas en una rejilla limpia (se puede deshacer)"
             (click)="arrange()"
@@ -154,7 +158,7 @@ function isControl(target: EventTarget | null): boolean {
         }
         <button
           type="button"
-          class="btn sm"
+          class="btn"
           aria-controls="notes-finished"
           aria-describedby="notes-finished-help"
           title="Las notas hechas se ocultan del lienzo a las 24 h; aquí puedes recuperarlas."
@@ -169,7 +173,7 @@ function isControl(target: EventTarget | null): boolean {
         @if (!compact()) {
           <button
             type="button"
-            class="btn sm icon"
+            class="btn icon"
             aria-label="Bloquear la disposición"
             [attr.aria-pressed]="locked()"
             [attr.title]="lockTitle()"
@@ -184,7 +188,7 @@ function isControl(target: EventTarget | null): boolean {
           </button>
         }
       </div>
-    </header>
+    </app-page-header>
 
     @if (store.error(); as message) {
       <p class="alert" role="alert">
@@ -214,6 +218,7 @@ function isControl(target: EventTarget | null): boolean {
         (finished)="finishEdit($event.card, $event.value)"
         (removed)="removeCard($event)"
         (created)="newCard()"
+        (dissolved)="dissolve($event)"
       />
     } @else {
       <div
@@ -402,6 +407,10 @@ export class NotesPage {
       );
   });
 
+  private readonly storedHeights = computed(
+    () => new Map(this.store.groups().map((group) => [group.id, group.h])),
+  );
+
   protected readonly boardHeight = computed(() => {
     const bottoms = [
       ...this.store.looseCards().map((card) => card.y + CARD_ESTIMATED_HEIGHT),
@@ -546,7 +555,8 @@ export class NotesPage {
     if (drag && drag.id === group.id && (drag.kind === 'group' || drag.kind === 'resize')) {
       return { x: drag.x, y: drag.y, w: drag.w, h: drag.h };
     }
-    return { x: group.x, y: group.y, w: group.w, h: group.h };
+    // The saved height, not the measured one: with cards it is only the group's minimum height.
+    return { x: group.x, y: group.y, w: group.w, h: this.storedHeights().get(group.id) ?? group.h };
   }
 
   protected lockTitle(): string {
@@ -829,11 +839,15 @@ export class NotesPage {
     return { x: event.clientX + (board?.scrollLeft ?? 0), y: event.clientY + window.scrollY };
   }
 
+  /** Where the drag in progress may go; fixed when it starts, so dragging never grows the canvas. */
+  private dragLimits: DragLimits | undefined;
+
   private beginDrag(drag: Drag, event: PointerEvent): void {
     this.cancelLanding();
     this.stopDragListeners?.();
     this.lastPointer = event;
     this.drag.set(drag);
+    this.dragLimits = this.limitsFor(drag);
 
     const move = (e: PointerEvent) => {
       this.lastPointer = e;
@@ -942,8 +956,31 @@ export class NotesPage {
     const drag = this.drag();
     const pointer = this.lastPointer;
     if (drag && pointer) {
-      this.drag.set(advanceDrag(drag, this.pointerOf(pointer), this.layoutGroups()));
+      this.drag.set(
+        advanceDrag(drag, this.pointerOf(pointer), this.layoutGroups(), this.dragLimits),
+      );
     }
+  }
+
+  /** The visible canvas and the box of everything that travels with the drag. */
+  private limitsFor(drag: Drag): DragLimits | undefined {
+    const board = this.boardRef()?.nativeElement;
+    if (!board) return undefined;
+    const own: Rect = { x: drag.originX, y: drag.originY, w: drag.originW, h: drag.originH };
+    const moving =
+      drag.kind === 'card'
+        ? [...draggedIds(drag, this.selected())].map((id) => this.slots().get(id) ?? own)
+        : [own];
+    const extent = boundingBox(moving) ?? own;
+    // Something that already sits beyond the visible area (a card from an older layout) is not
+    // pulled back: it can only move from where it is.
+    return {
+      area: {
+        w: Math.max(board.clientWidth, extent.x + extent.w + BOARD_PADDING),
+        h: Math.max(board.clientHeight, extent.y + extent.h + BOARD_PADDING),
+      },
+      extent,
+    };
   }
 
   private cancelLanding(): void {

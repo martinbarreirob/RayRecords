@@ -4,12 +4,16 @@
  * the window under the header and the capture. --notes-top is what everything above takes up (it is
  * measured in the page); if the notes go lower, the page grows.
  */
+/* A custom element is inline by default, which drops the side padding of .page on a phone. */
+:host(.page) {
+  display: block;
+}
+
 @media (width >= 768px) {
   :host(.page) {
     display: flex;
     flex-direction: column;
     min-height: calc(100dvh - var(--notes-top, 0px));
-    padding-top: var(--space-3);
     padding-bottom: var(--space-3);
   }
 }
@@ -33,34 +37,15 @@
   cursor: pointer;
 }
 
-/* Single-row header: title and date on the left, actions on the right. */
-.page-header {
+app-page-header {
   flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-4);
-  margin-bottom: var(--space-3);
 }
 
-.title-block {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--space-3);
-}
-
-.title-block h1 {
-  font-size: var(--text-xl);
-}
-
+/* The secondary buttons next to the add button. */
 .actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.actions .kbd {
-  margin-left: var(--space-1);
 }
 
 .actions .btn[aria-expanded='true'],
@@ -72,12 +57,6 @@
 /* Icons of the header buttons (Ordenar has icon and text; the lock, icon only). */
 .actions .btn .pi {
   font-size: var(--text-sm);
-}
-
-/* Icon-only button (lock): square, as tall as the small buttons. */
-.actions .btn.icon {
-  width: 28px;
-  min-width: 28px;
 }
 
 /* Locked is the safe default state; unlocked is highlighted so it does not go unnoticed. */
@@ -226,25 +205,12 @@
     padding-bottom: 96px;
   }
 
-  /* Title and date on top; below, the buttons in a row that fits or scrolls. */
-  .title-block h1 {
-    font-size: var(--text-2xl);
-    letter-spacing: -0.02em;
-  }
-
-  .page-header {
-    margin-bottom: var(--space-3);
-  }
-
-  .actions {
-    flex: 1 0 100%;
-    overflow-x: auto;
-  }
-
-  /* 44 px touch targets. */
+  /* 44 px touch targets. «Terminadas» sits on the title's row, on the right. */
   .actions .btn {
     flex: none;
     min-height: var(--touch-target);
+    padding: 0 var(--space-2);
+    font-size: var(--text-xs);
   }
 
   .alert .close {
