@@ -7,7 +7,7 @@ import {
   type ListPreset,
 } from '@rayrecords/shared';
 import { ObjectId } from 'mongodb';
-import type { DailyNoteDoc, ItemDoc, ListDoc } from '../db/documents';
+import type { ItemDoc, ListDoc, NoteCardDoc, NoteGroupDoc } from '../db/documents';
 
 interface ItemSeed {
   title: string;
@@ -275,25 +275,54 @@ export function buildCatalog(now: Date, today: DateOnly) {
     ),
   ];
 
-  const noteTexts = [
-    '## Hoy\n- Revisar el diseño de la API\n- Llamar al dentista',
-    'Reunión con el equipo. Quedan por cerrar los plazos de la entrega.',
-    'Paseo largo por la tarde. Idea: **resumen semanal** de gastos por correo.',
-    '- Comprar pan\n- Pagar el recibo del gimnasio\n- Leer 30 min',
-    'Día tranquilo. Terminé el capítulo 5 del libro.',
-    'Cena con Ana. Recomendó *Perfect Days*.',
-    '## Notas de la semana\nEmpezar a ordenar los gastos del trimestre.',
-    'Mucho trabajo. Pendiente: factura de octubre.',
-    'Fin de semana: monte y cine. Peli: Dune.',
-    'Primer día de la nueva rutina de ejercicio.',
-  ];
-  const dailyNotes: DailyNoteDoc[] = noteTexts.map((content, i) => ({
+  // Notas: un grupo con tres tarjetas (una hecha hace 3 h) y varias sueltas en el lienzo. Una más
+  // se marcó hecha hace 30 h: ya no se ve en el lienzo, pero aparece en «Terminadas».
+  const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
+  const group: NoteGroupDoc = {
     _id: new ObjectId(),
-    date: addDays(today, -i),
-    content,
+    title: 'Reforma del baño',
+    x: 40,
+    y: 40,
+    w: 420,
+    h: 300,
     createdAt: now,
     updatedAt: now,
-  }));
+  };
+  let z = 0;
+  const card = (
+    text: string,
+    x: number,
+    y: number,
+    extra: { groupId?: ObjectId; doneAt?: Date } = {},
+  ): NoteCardDoc => ({
+    _id: new ObjectId(),
+    text,
+    x,
+    y,
+    w: 280,
+    z: z++,
+    groupId: extra.groupId ?? null,
+    doneAt: extra.doneAt ?? null,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const noteCards: NoteCardDoc[] = [
+    card('Pedir presupuesto del alicatado', 16, 56, { groupId: group._id }),
+    card('Elegir grifería', 16, 130, { groupId: group._id }),
+    card('Desmontar el mueble del lavabo', 16, 204, { groupId: group._id, doneAt: hoursAgo(3) }),
+    card('Llamar al fontanero. Preguntar por el desagüe nuevo.', 500, 40),
+    card('Idea para el salón: mover la estantería a la pared este. Medir antes: 2,10 m.', 800, 40),
+    card('Reunión con el equipo. Quedan por cerrar los plazos de la entrega.', 500, 170),
+    card('Idea: **resumen semanal** de gastos por correo.', 800, 170),
+    card('Cena con Ana. Recomendó *Perfect Days*.', 500, 300),
+    card('Llamar al dentista', 800, 300, { doneAt: hoursAgo(22) }),
+    card('Renovar el carné de la biblioteca', 40, 380, { doneAt: hoursAgo(30) }),
+  ];
 
-  return { lists: [films, series, shopping, tasks, board, ideas], items, dailyNotes };
+  return {
+    lists: [films, series, shopping, tasks, board, ideas],
+    items,
+    noteGroups: [group],
+    noteCards,
+  };
 }

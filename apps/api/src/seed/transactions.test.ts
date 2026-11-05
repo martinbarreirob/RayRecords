@@ -3,11 +3,7 @@ import { ObjectId } from 'mongodb';
 import { describe, expect, it } from 'vitest';
 import { prepareTransactions } from '../modules/expenses/prepare';
 import { createRng } from './rng';
-import {
-  generateCheckingTransactions,
-  generateSavingsTransactions,
-  withRunningBalance,
-} from './transactions';
+import { generateCheckingTransactions, withRunningBalance } from './transactions';
 
 const TODAY = '2026-11-03';
 const generate = (seed = 42) => generateCheckingTransactions(TODAY, createRng(seed));
@@ -66,19 +62,5 @@ describe('withRunningBalance', () => {
       1_000,
     );
     expect(rows.map((r) => r.balanceAfterCents)).toEqual([900, 1_250]);
-  });
-});
-
-describe('generateSavingsTransactions', () => {
-  it('hace un traspaso por mes el día 28 sin pasar de hoy', () => {
-    // El 28 de noviembre aún no ha llegado, así que el último es el de octubre.
-    const rows = generateSavingsTransactions(TODAY);
-    expect(rows.map((r) => r.date)).toEqual([
-      '2026-06-28',
-      '2026-07-28',
-      '2026-08-28',
-      '2026-09-28',
-      '2026-10-28',
-    ]);
   });
 });

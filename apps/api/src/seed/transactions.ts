@@ -82,18 +82,6 @@ export function generateCheckingTransactions(
   return rows.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Traspaso mensual a la cuenta de ahorro. */
-export function generateSavingsTransactions(today: DateOnly, months = 6): RawTransaction[] {
-  const rows: RawTransaction[] = [];
-  for (let back = months - 1; back >= 0; back--) {
-    const date = `${shiftMonth(today, -back)}-28`;
-    if (date <= today) {
-      rows.push({ date, description: 'TRASPASO DESDE CUENTA CORRIENTE', amountCents: 20_000 });
-    }
-  }
-  return rows;
-}
-
 /** Añade el saldo tras cada movimiento (como lo traería un extracto con columna de saldo). */
 export function withRunningBalance(
   rows: readonly RawTransaction[],

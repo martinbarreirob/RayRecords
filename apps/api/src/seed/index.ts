@@ -13,11 +13,8 @@ import { ensureIndexes } from '../db/indexes';
 import { prepareTransactions } from '../modules/expenses/prepare';
 import { buildCatalog } from './catalog';
 import { createRng } from './rng';
-import {
-  generateCheckingTransactions,
-  generateSavingsTransactions,
-  withRunningBalance,
-} from './transactions';
+import { seedUser } from './user';
+import { generateCheckingTransactions, withRunningBalance } from './transactions';
 
 /**
  * Seeder de desarrollo y demo: BORRA la base de datos y la rellena con datos de ejemplo.
@@ -43,8 +40,14 @@ async function main() {
     const today = todayIn(DEFAULT_TIME_ZONE, now);
 
     console.log(`Sembrando "${config.mongoDb}"…`);
-    await database.db.dropDatabase();
+    // Las colecciones de acceso se conservan al vaciar y el usuario de desarrollo se recrea después.
+    const keep = new Set(['users', 'sessions', 'credentials']);
+    for (const { name } of await database.db.listCollections({}, { nameOnly: true }).toArray()) {
+      if (!keep.has(name)) await database.db.dropCollection(name);
+    }
     await ensureIndexes(c);
+
+    const username = await seedUser(c, process.env);
 
     // Categorías y reglas
     await c.categories.insertMany(
@@ -56,17 +59,17 @@ async function main() {
     const catalog = buildCatalog(now, today);
     await c.lists.insertMany(catalog.lists);
     await c.items.insertMany(catalog.items);
-    await c.dailyNotes.insertMany(catalog.dailyNotes);
+    await c.noteGroups.insertMany(catalog.noteGroups);
+    await c.noteCards.insertMany(catalog.noteCards);
 
     // Cuentas y transacciones
     const rng = createRng(42);
     const checkingRows = generateCheckingTransactions(today, rng);
-    const savingsRows = generateSavingsTransactions(today);
     const openingDate = addDays(checkingRows[0]!.date, -1);
 
     const checking: AccountDoc = {
       _id: new ObjectId(),
-      name: 'Cuenta corriente',
+      name: 'Cuenta',
       bank: 'Banco Demo',
       type: 'checking',
       currency: 'EUR',
@@ -75,18 +78,7 @@ async function main() {
       archived: false,
       createdAt: now,
     };
-    const savings: AccountDoc = {
-      _id: new ObjectId(),
-      name: 'Cuenta ahorro',
-      bank: 'Banco Demo',
-      type: 'savings',
-      currency: 'EUR',
-      openingBalanceCents: 500_000,
-      openingDate,
-      archived: false,
-      createdAt: now,
-    };
-    await c.accounts.insertMany([checking, savings]);
+    await c.accounts.insertOne(checking);
 
     const batch: ImportBatchDoc = {
       _id: new ObjectId(),
@@ -104,22 +96,16 @@ async function main() {
       importBatchId: batch._id,
     }).map((doc) => ({ _id: new ObjectId(), ...doc }));
 
-    // Una corrección manual de ejemplo: la ferretería no tiene regla y se asigna a mano a "vivienda".
+    // Una corrección manual de ejemplo: la ferretería no tiene regla y se asigna a mano a "hogar".
     const corrected = checkingDocs.find(
       (t) => t.category === null && t.description.includes('FERRETERIA'),
     );
     if (corrected) {
-      corrected.category = 'vivienda';
+      corrected.category = 'hogar';
       corrected.categorySource = 'manual';
     }
 
-    const savingsDocs: TransactionDoc[] = prepareTransactions({
-      accountId: savings._id,
-      rows: withRunningBalance(savingsRows, savings.openingBalanceCents),
-      rules: DEFAULT_RULES,
-    }).map((doc) => ({ _id: new ObjectId(), ...doc }));
-
-    await c.transactions.insertMany([...checkingDocs, ...savingsDocs]);
+    await c.transactions.insertMany(checkingDocs);
 
     console.log(
       [
@@ -127,9 +113,10 @@ async function main() {
         `  reglas:        ${DEFAULT_RULES.length}`,
         `  listas:        ${catalog.lists.length}`,
         `  elementos:     ${catalog.items.length}`,
-        `  notas del día: ${catalog.dailyNotes.length}`,
-        `  cuentas:       2`,
-        `  transacciones: ${checkingDocs.length + savingsDocs.length}`,
+        `  notas:         ${catalog.noteCards.length} (en ${catalog.noteGroups.length} grupo)`,
+        `  cuentas:       1`,
+        `  usuario:       ${username}`,
+        `  transacciones: ${checkingDocs.length}`,
       ].join('\n'),
     );
     console.log('Listo.');
