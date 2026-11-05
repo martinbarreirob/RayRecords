@@ -75,9 +75,17 @@ Replaced by cards. The endpoints are still there so old data can be read, but th
 
 ## Calendar
 
-| Method | Path                      | Response          | Notes                                                                                                                            |
-| ------ | ------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/api/calendar?from=&to=` | `CalendarEntry[]` | Items with a `dueDate` in the range (both ends inclusive, max 400 days) from non-archived lists, with `listName` and `listSlug`. |
+| Method | Path                      | Response          | Notes                                                                                                                                                                                                                                 |
+| ------ | ------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/calendar?from=&to=` | `CalendarEntry[]` | Items with a `dueDate` in the range (both ends inclusive, max 400 days) from non-archived lists (`kind: "item"`, with `listName` and `listSlug`), plus the calendar's own events (`kind: "event"`, no list). Sorted by date and time. |
+
+Events are things with a date that do not belong to any list (lists are for things to do or remember some day).
+
+| Method   | Path              | Response        | Notes                                                                                 |
+| -------- | ----------------- | --------------- | ------------------------------------------------------------------------------------- |
+| `POST`   | `/api/events`     | `CalendarEvent` | `CreateEvent`: `title`, `date`, optional `time`.                                      |
+| `PATCH`  | `/api/events/:id` | `CalendarEvent` | `UpdateEvent`: `title`, `date`, `time` (`null` clears it) and `done`. 404 if missing. |
+| `DELETE` | `/api/events/:id` | 204             | 404 if missing.                                                                       |
 
 ## Accounts
 

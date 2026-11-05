@@ -388,7 +388,11 @@ describe.skipIf(!h)('lists, items, notes, capture and calendar (integration)', (
 
       const entries = (await call('GET', '/calendar?from=2027-03-01&to=2027-03-31')).body;
       expect(entries.map((e: { title: string }) => e.title)).toEqual(['Entrega', 'Comprar pan']);
-      expect(entries[0]).toMatchObject({ listName: 'Proyecto', listSlug: 'proyecto' });
+      expect(entries[0]).toMatchObject({
+        kind: 'item',
+        listName: 'Proyecto',
+        listSlug: 'proyecto',
+      });
 
       expect((await call('GET', '/calendar?from=2027-03-31&to=2027-03-01')).status).toBe(400);
       expect((await call('GET', '/calendar?from=2020-01-01&to=2027-01-01')).status).toBe(400);
@@ -400,6 +404,61 @@ describe.skipIf(!h)('lists, items, notes, capture and calendar (integration)', (
       await call('PATCH', `/lists/${list.id}`, { archived: true });
       const entries = (await call('GET', '/calendar?from=2027-04-01&to=2027-04-30')).body;
       expect(entries).toEqual([]);
+    });
+
+    it('creates events without a list and mixes them with dated items, in order', async () => {
+      const created = await call('POST', '/events', {
+        title: 'Dentista',
+        date: '2027-06-10',
+        time: '08:00',
+      });
+      expect(created.status).toBe(201);
+      expect(created.body).toMatchObject({ title: 'Dentista', date: '2027-06-10', time: '08:00' });
+      await call('POST', '/events', { title: 'Cumpleaños', date: '2027-06-10' });
+      await call('POST', '/items', { listId: board.id, title: 'Entrega', dueDate: '2027-06-10' });
+      await call('POST', '/events', { title: 'Fuera', date: '2027-07-01' });
+
+      const entries = (await call('GET', '/calendar?from=2027-06-01&to=2027-06-30')).body;
+      expect(entries.map((e: { title: string }) => e.title)).toEqual([
+        'Entrega',
+        'Cumpleaños',
+        'Dentista',
+      ]);
+      expect(entries[0]).toMatchObject({ kind: 'item', listName: 'Proyecto' });
+      expect(entries[1]).toMatchObject({ kind: 'event', dueDate: '2027-06-10' });
+      expect(entries[1].listName).toBeUndefined();
+    });
+
+    it('marks an event as done, edits it and removes it', async () => {
+      const { body: event } = await call('POST', '/events', {
+        title: 'Llamar',
+        date: '2027-08-02',
+        time: '10:00',
+      });
+
+      const done = await call('PATCH', `/events/${event.id}`, { done: true });
+      expect(done.body.doneAt).toBeDefined();
+
+      const edited = await call('PATCH', `/events/${event.id}`, {
+        title: 'Llamar al banco',
+        time: null,
+        done: false,
+      });
+      expect(edited.body.title).toBe('Llamar al banco');
+      expect(edited.body.time).toBeUndefined();
+      expect(edited.body.doneAt).toBeUndefined();
+
+      expect((await call('DELETE', `/events/${event.id}`)).status).toBe(204);
+      expect((await call('DELETE', `/events/${event.id}`)).status).toBe(404);
+      expect((await call('PATCH', `/events/${event.id}`, { done: true })).status).toBe(404);
+    });
+
+    it('rejects an event without a valid date or title', async () => {
+      expect((await call('POST', '/events', { title: 'Sin fecha' })).status).toBe(400);
+      expect((await call('POST', '/events', { title: '', date: '2027-01-01' })).status).toBe(400);
+      expect((await call('POST', '/events', { title: 'Mal', date: '2027-13-40' })).status).toBe(
+        400,
+      );
     });
   });
 });

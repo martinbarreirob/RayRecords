@@ -5,6 +5,7 @@ import type {
   CategoryDoc,
   CredentialDoc,
   DailyNoteDoc,
+  EventDoc,
   ImportBatchDoc,
   ItemDoc,
   ListDoc,
@@ -20,6 +21,7 @@ export function getCollections(db: Db) {
   return {
     lists: db.collection<ListDoc>('lists'),
     items: db.collection<ItemDoc>('items'),
+    events: db.collection<EventDoc>('events'),
     dailyNotes: db.collection<DailyNoteDoc>('daily_notes'),
     noteCards: db.collection<NoteCardDoc>('note_cards'),
     noteGroups: db.collection<NoteGroupDoc>('note_groups'),

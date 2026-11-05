@@ -36,6 +36,8 @@ export async function ensureIndexes(c: Collections): Promise<void> {
       },
     ]),
 
+    c.events.createIndexes([{ key: { date: 1 }, name: 'date' }]), // calendar range queries
+
     c.dailyNotes.createIndexes([{ key: { date: 1 }, unique: true, name: 'date_unique' }]),
 
     c.noteCards.createIndexes([

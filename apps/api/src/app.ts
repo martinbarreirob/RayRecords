@@ -12,6 +12,7 @@ import { reviewRoutes } from './modules/expenses/review-routes';
 import { healthRoutes } from './modules/health/routes';
 import { accountsRoutes } from './modules/accounts/routes';
 import { calendarRoutes } from './modules/calendar/routes';
+import { eventsRoutes } from './modules/calendar/events';
 import { captureRoutes } from './modules/capture/routes';
 import { itemsRoutes } from './modules/items/routes';
 import { listsRoutes } from './modules/lists/routes';
@@ -73,6 +74,7 @@ export async function buildApp({ config, database }: AppOptions): Promise<Fastif
       await api.register(noteCardsRoutes);
       await api.register(captureRoutes);
       await api.register(calendarRoutes);
+      await api.register(eventsRoutes);
       await api.register(accountsRoutes);
       await api.register(expensesRoutes);
       await api.register(reviewRoutes);

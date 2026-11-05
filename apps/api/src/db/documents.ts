@@ -1,6 +1,7 @@
 import type { ObjectId } from 'mongodb';
 import type {
   Account,
+  CalendarEvent,
   CategorizationRule,
   Category,
   DailyNote,
@@ -22,6 +23,9 @@ export type ListDoc = Omit<List, 'id' | 'createdAt' | 'updatedAt'> & Timestamps 
 
 export type ItemDoc = Omit<Item, 'id' | 'listId' | 'doneAt' | 'createdAt' | 'updatedAt'> &
   Timestamps & { _id: ObjectId; listId: ObjectId; doneAt?: Date };
+
+export type EventDoc = Omit<CalendarEvent, 'id' | 'doneAt' | 'createdAt' | 'updatedAt'> &
+  Timestamps & { _id: ObjectId; doneAt?: Date };
 
 export type DailyNoteDoc = Omit<DailyNote, 'id' | 'createdAt' | 'updatedAt'> &
   Timestamps & { _id: ObjectId };
