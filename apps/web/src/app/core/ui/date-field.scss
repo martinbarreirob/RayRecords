@@ -1,0 +1,111 @@
+// Estilos de `app-date-field` (sin encapsulado: el panel de PrimeNG se anexa al `body`). Todo cuelga de
+// `.rr-date-field` (el campo) o `.rr-date-panel` (el calendario desplegable), y solo usa tokens.
+
+.rr-date-field {
+  display: block;
+  min-width: 0;
+
+  .rr-date-box,
+  .p-datepicker {
+    display: flex;
+    width: 100%;
+  }
+
+  .p-datepicker-input {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: var(--control-height);
+    padding-block: 0;
+    font-size: var(--text-base);
+    transition:
+      border-color 0.12s,
+      box-shadow 0.12s;
+
+    &:focus,
+    &:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+  }
+
+  // Con el dedo: objetivo táctil de 44 px y tipografía de 16 px (iOS amplía la página con menos).
+  @media (width <= 767px), (pointer: coarse) {
+    .p-datepicker-input,
+    input[type='date'] {
+      min-height: var(--touch-target);
+      font-size: max(16px, var(--text-base));
+    }
+  }
+
+  // El campo nativo (táctil) iguala la altura del resto de controles.
+  input[type='date'] {
+    min-height: var(--control-height);
+    font-family: inherit;
+    font-size: var(--text-base);
+  }
+}
+
+.rr-date-panel {
+  --p-datepicker-panel-background: var(--surface);
+  --p-datepicker-panel-border-color: var(--line);
+  --p-datepicker-panel-color: var(--text);
+  --p-datepicker-panel-border-radius: var(--radius-lg);
+  --p-datepicker-panel-shadow: var(--shadow-md);
+  --p-datepicker-panel-padding: var(--space-3);
+  --p-datepicker-header-background: var(--surface);
+  --p-datepicker-header-border-color: var(--surface);
+  --p-datepicker-header-color: var(--text);
+  --p-datepicker-title-font-weight: 600;
+  --p-datepicker-select-month-hover-background: var(--surface-2);
+  --p-datepicker-select-month-hover-color: var(--text);
+  --p-datepicker-select-month-color: var(--text);
+  --p-datepicker-select-year-hover-background: var(--surface-2);
+  --p-datepicker-select-year-hover-color: var(--text);
+  --p-datepicker-select-year-color: var(--text);
+  --p-datepicker-week-day-color: var(--muted);
+  --p-datepicker-week-day-font-weight: 500;
+  --p-datepicker-date-width: 2.25rem;
+  --p-datepicker-date-height: 2.25rem;
+  --p-datepicker-date-border-radius: var(--radius-md);
+  --p-datepicker-date-color: var(--text);
+  --p-datepicker-date-hover-background: var(--surface-2);
+  --p-datepicker-date-hover-color: var(--text);
+  --p-datepicker-date-selected-background: var(--accent);
+  --p-datepicker-date-selected-color: var(--on-accent);
+  --p-datepicker-date-range-selected-background: var(--accent-soft);
+  --p-datepicker-date-range-selected-color: var(--accent);
+  --p-datepicker-month-border-radius: var(--radius-md);
+  --p-datepicker-year-border-radius: var(--radius-md);
+  --p-datepicker-today-background: var(--accent-soft);
+  --p-datepicker-today-color: var(--accent);
+  --p-datepicker-buttonbar-border-color: var(--line-soft);
+  --p-datepicker-buttonbar-padding: var(--space-2) 0 0;
+  --p-focus-ring-width: 2px;
+  --p-focus-ring-style: solid;
+  --p-focus-ring-color: var(--accent);
+  --p-focus-ring-offset: 1px;
+  --p-focus-ring-shadow: none;
+
+  // «Hoy» y «Borrar»: botones de texto discretos; «Hoy» con el acento.
+  .p-datepicker-buttonbar {
+    --p-button-text-secondary-color: var(--muted);
+    --p-button-text-secondary-hover-background: var(--surface-2);
+    --p-button-text-secondary-active-background: var(--surface-2);
+    --p-button-sm-font-size: var(--text-sm);
+
+    justify-content: space-between;
+  }
+
+  .p-datepicker-today-button {
+    --p-button-text-secondary-color: var(--accent);
+    --p-button-text-secondary-hover-background: var(--accent-soft);
+    --p-button-text-secondary-active-background: var(--accent-soft);
+  }
+
+  // El día de hoy sin seleccionar se distingue por el fondo suave; el seleccionado manda sobre él.
+  .p-datepicker-day-selected {
+    font-weight: 600;
+  }
+}

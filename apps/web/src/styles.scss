@@ -1,1 +1,6 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@fontsource-variable/inter';
+@use 'primeicons/primeicons.css';
+@use './styles/tokens';
+@use './styles/base';
+@use './styles/components';
+@use './styles/primeng';

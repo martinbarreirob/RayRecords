@@ -1,0 +1,217 @@
+// Los componentes de PrimeNG se visten con los tokens propios: así cambian solos con el tema claro/oscuro
+// y la app tiene un único origen de colores. El preset (core/theme/primeng-preset.ts) solo fija la escala
+// del acento; el resto se mapea aquí. `:root[data-theme]` sube la especificidad para ganar a las variables
+// que PrimeNG inyecta después en `:root`.
+
+:root[data-theme] {
+  --p-primary-color: var(--accent);
+  --p-primary-contrast-color: var(--on-accent);
+  --p-primary-hover-color: var(--accent-hover);
+  --p-text-color: var(--text);
+  --p-text-muted-color: var(--muted);
+  --p-text-hover-muted-color: var(--text);
+  --p-content-background: var(--surface);
+  --p-content-border-color: var(--line);
+  --p-content-hover-background: var(--surface-2);
+  --p-content-hover-color: var(--text);
+  --p-highlight-background: var(--accent-soft);
+  --p-highlight-color: var(--accent);
+  --p-highlight-focus-background: var(--accent-soft);
+  --p-highlight-focus-color: var(--accent);
+  --p-form-field-background: var(--surface);
+  --p-form-field-border-color: var(--line);
+  --p-form-field-hover-border-color: var(--line-strong);
+  --p-form-field-focus-border-color: var(--accent);
+  --p-form-field-color: var(--text);
+  --p-form-field-placeholder-color: var(--muted);
+  --p-form-field-border-radius: var(--radius-sm);
+  --p-overlay-select-background: var(--surface);
+  --p-overlay-select-border-color: var(--line);
+  --p-overlay-popover-background: var(--surface);
+  --p-overlay-popover-border-color: var(--line);
+  --p-overlay-modal-background: var(--surface);
+  --p-overlay-modal-border-color: var(--line);
+  --p-mask-background: var(--overlay);
+  --p-focus-ring-color: var(--accent);
+  --p-list-option-selected-background: var(--accent-soft);
+  --p-list-option-selected-color: var(--accent);
+  --p-list-option-focus-background: var(--surface-2);
+  --p-navigation-item-focus-background: var(--surface-2);
+
+  // Casillas: borde visible en reposo (en oscuro se perdía contra la superficie) y acento al marcarlas.
+  --p-checkbox-width: 18px;
+  --p-checkbox-height: 18px;
+  --p-checkbox-border-radius: 5px;
+  --p-checkbox-background: var(--surface);
+  --p-checkbox-border-color: var(--line-strong);
+  --p-checkbox-hover-border-color: var(--muted);
+  --p-checkbox-checked-background: var(--accent);
+  --p-checkbox-checked-border-color: var(--accent);
+  --p-checkbox-checked-hover-background: var(--accent-hover);
+  --p-checkbox-checked-hover-border-color: var(--accent-hover);
+  --p-checkbox-icon-checked-color: var(--on-accent);
+  --p-checkbox-icon-checked-hover-color: var(--on-accent);
+
+  // Diálogos: superficie opaca, borde fino y aire en cabecera, contenido y pie.
+  --p-dialog-background: var(--surface);
+  --p-dialog-color: var(--text);
+  --p-dialog-border-color: var(--line);
+  --p-dialog-border-radius: var(--radius-xl);
+  --p-dialog-shadow: var(--shadow-lg);
+  --p-dialog-header-padding: 1.25rem 1.5rem 0.75rem;
+  --p-dialog-title-font-size: 1.05rem;
+  --p-dialog-title-font-weight: 600;
+  --p-dialog-content-padding: 0.5rem 1.5rem 1.5rem;
+  --p-dialog-footer-padding: 1rem 1.5rem;
+  --p-dialog-footer-gap: 0.5rem;
+
+  // Desplegables (p-select): mismo aspecto que `.input`, y panel redondeado y ligero.
+  --p-select-background: var(--surface);
+  --p-select-border-color: var(--line);
+  --p-select-hover-border-color: var(--line-strong);
+  --p-select-focus-border-color: var(--accent);
+  --p-select-color: var(--text);
+  --p-select-placeholder-color: var(--muted);
+  --p-select-border-radius: var(--radius-sm);
+  --p-select-padding-x: 0.75rem;
+  --p-select-padding-y: 0.45rem;
+  --p-select-dropdown-color: var(--muted);
+  --p-select-dropdown-width: 2rem;
+  --p-select-clear-icon-color: var(--muted);
+  --p-select-shadow: none;
+  --p-select-overlay-background: var(--surface);
+  --p-select-overlay-border-color: var(--line);
+  --p-select-overlay-border-radius: var(--radius-lg);
+  --p-select-overlay-color: var(--text);
+  --p-select-overlay-shadow: var(--shadow-md);
+  --p-select-list-padding: 0.35rem;
+  --p-select-list-gap: 2px;
+  --p-select-option-padding: 0.5rem 0.65rem;
+  --p-select-option-border-radius: var(--radius-sm);
+  --p-select-option-color: var(--text);
+  --p-select-option-focus-background: var(--surface-2);
+  --p-select-option-focus-color: var(--text);
+  --p-select-option-selected-background: var(--accent-soft);
+  --p-select-option-selected-color: var(--accent);
+  --p-select-option-selected-focus-background: var(--accent-soft);
+  --p-select-option-selected-focus-color: var(--accent);
+}
+
+.p-dialog {
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+
+  .p-dialog-footer {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .p-dialog-header-actions .p-button {
+    color: var(--muted);
+  }
+}
+
+.p-select {
+  min-height: var(--control-height);
+  font-size: var(--text-base);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+
+  &.p-focus,
+  &:not(.p-disabled):focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  &.w-full {
+    width: 100%;
+  }
+}
+
+.p-select-overlay {
+  margin-top: 4px;
+}
+
+.p-select-option {
+  font-size: var(--text-base);
+}
+
+.p-select-option-selected::after {
+  content: '✓';
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* Tabla: plana y silenciosa. Líneas muy suaves entre filas, cabecera discreta y sin cuadrícula. */
+:root[data-theme] {
+  // Las variables derivadas (`body-cell-border-color`, …) se resuelven en :root, así que hay que fijarlas
+  // aquí una a una: cambiar solo `--p-datatable-border-color` en `.p-datatable` no llega a ellas.
+  --p-datatable-border-color: var(--line-soft);
+  --p-datatable-body-cell-border-color: var(--line-soft);
+  --p-datatable-header-cell-border-color: var(--line-soft);
+  --p-datatable-footer-cell-border-color: var(--line-soft);
+  --p-datatable-header-cell-background: var(--surface-2);
+  --p-datatable-header-cell-hover-background: var(--surface-2);
+  --p-datatable-header-cell-selected-background: var(--surface-2);
+  --p-datatable-header-cell-color: var(--muted);
+  --p-datatable-header-cell-hover-color: var(--text);
+  --p-datatable-header-cell-padding: 0.6rem 0.875rem;
+  --p-datatable-body-cell-padding: 0.6rem 0.875rem;
+  --p-datatable-footer-cell-padding: 0.6rem 0.875rem;
+  --p-datatable-footer-cell-background: var(--surface);
+  --p-datatable-row-background: var(--surface);
+  --p-datatable-row-hover-background: var(--surface-2);
+  --p-datatable-row-selected-background: var(--accent-soft);
+  --p-datatable-row-selected-color: var(--text);
+  --p-datatable-column-title-font-weight: 500;
+  --p-datatable-sort-icon-color: var(--muted);
+  --p-datatable-sort-icon-hover-color: var(--text);
+}
+
+.p-datatable {
+  font-size: var(--text-base);
+
+  .p-datatable-thead > tr > th {
+    border-bottom: 1px solid var(--line-soft);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .p-datatable-tbody > tr > td {
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+  }
+
+  .p-datatable-tbody > tr:last-child > td {
+    border-bottom-color: transparent;
+  }
+
+  // Iconos de orden: pequeños, pegados al título y centrados en su línea.
+  .p-datatable-sortable-column {
+    cursor: pointer;
+  }
+
+  .p-sortable-column-icon,
+  .p-datatable-sort-icon {
+    width: 0.7rem;
+    height: 0.7rem;
+    margin-left: 0.35rem;
+    vertical-align: -0.1em;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  .p-datatable-sortable-column[aria-sort='ascending'] .p-sortable-column-icon,
+  .p-datatable-sortable-column[aria-sort='descending'] .p-sortable-column-icon {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  .p-datatable-tbody > tr > td.num,
+  .p-datatable-thead > tr > th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}

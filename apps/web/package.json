@@ -4,19 +4,24 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --proxy-config proxy.conf.json",
+    "start": "ng serve --port 4300 --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --no-watch"
   },
   "dependencies": {
+    "@angular/cdk": "^22.2.5",
     "@angular/common": "^22.2.0",
     "@angular/compiler": "^22.2.0",
     "@angular/core": "^22.2.0",
     "@angular/forms": "^22.2.0",
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@primeuix/themes": "^3.1.0",
     "@rayrecords/shared": "workspace:*",
+    "primeicons": "^8.0.2",
+    "primeng": "22.1.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

@@ -1,0 +1,385 @@
+// Clases reutilizables para lo que no necesita PrimeNG. Contrato documentado en docs/DESIGN.md.
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+    text-decoration: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+  }
+
+  &.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--muted);
+
+    &:hover:not(:disabled) {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+  }
+
+  &.danger {
+    color: var(--danger);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-soft);
+    }
+  }
+
+  &.sm {
+    min-height: 28px;
+    padding: 0 var(--space-3);
+    font-size: var(--text-xs);
+  }
+
+  &.icon {
+    width: var(--control-height);
+    padding: 0;
+  }
+}
+
+/* Campos de formulario */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+
+  &::placeholder {
+    color: var(--muted);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+
+.textarea {
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+
+  > span:first-child {
+    color: var(--muted);
+  }
+}
+
+/* Superficies */
+.card {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+
+  &.accent {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+
+  &.accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  &.success {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+
+  &.warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+
+  &.danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Interruptor de vista (Lista | Kanban | …) */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+
+  > button,
+  > a {
+    min-height: 28px;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    text-decoration: none;
+
+    &[aria-pressed='true'],
+    &.active {
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 500;
+      box-shadow: var(--shadow-sm);
+    }
+  }
+}
+
+/* Avisos y estados vacíos */
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--text-sm);
+
+  &.info {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  &.success {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+}
+
+.empty {
+  padding: var(--space-5);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  color: var(--muted);
+  text-align: center;
+  font-size: var(--text-sm);
+}
+
+/* Tablas simples (para las complejas se usa p-table, ver _primeng.scss) */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+
+  th {
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    text-align: left;
+  }
+
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  // Resaltado de fila al pasar el ratón (solo con puntero real, para que no se quede pegado en táctil).
+  @media (hover: hover) {
+    tbody tr:hover td {
+      background: var(--surface-2);
+    }
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Colores categóricos: `class="hue-blue"` define --hue, --hue-soft y --hue-text para el elemento y sus hijos. */
+@each $name in 'blue', 'green', 'amber', 'rose', 'violet', 'teal' {
+  .hue-#{$name} {
+    --hue: var(--hue-#{$name});
+    --hue-soft: var(--hue-#{$name}-soft);
+    --hue-text: var(--hue-#{$name}-text);
+  }
+}
+
+/* Etiqueta con color: usar junto a `.hue-*`. */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--hue-soft, var(--surface-2));
+  color: var(--hue-text, var(--muted));
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--hue, var(--muted));
+  }
+}
+
+/* Enlace externo como icono junto a un título (sin botón ni texto). */
+.link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-2);
+  color: var(--muted);
+  font-size: 12px;
+  vertical-align: middle;
+  opacity: 0.8;
+
+  &:hover {
+    color: var(--accent);
+    opacity: 1;
+    text-decoration: none;
+  }
+}
+
+/* Esqueletos de carga: bloques grises con un brillo suave que se mueve. Se componen con las variantes
+   de forma (`.line`, `.title`, `.pill`, `.circle`, `.block`) y se ajustan en ancho y alto con estilos
+   propios del componente, para que ocupen lo mismo que el contenido real y la página no salte. */
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    var(--line-soft) 50%,
+    var(--surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+
+  &.line {
+    height: 12px;
+  }
+
+  &.title {
+    width: 40%;
+    height: 20px;
+  }
+
+  &.pill {
+    height: 20px;
+    border-radius: var(--radius-pill);
+  }
+
+  &.circle {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+  }
+
+  &.block {
+    min-height: 64px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

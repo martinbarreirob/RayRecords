@@ -1,16 +1,52 @@
-<header class="topbar">
-  <a class="brand" routerLink="/">RayRecords</a>
+@if (auth.user(); as user) {
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" routerLink="/"><span class="dot" aria-hidden="true"></span>RayRecords</a>
 
-  <nav aria-label="Principal">
-    <a routerLink="/notas" routerLinkActive="active">Notas</a>
-    <a routerLink="/listas" routerLinkActive="active">Listas</a>
-    <a routerLink="/calendario" routerLinkActive="active">Calendario</a>
-    <a routerLink="/gastos" routerLinkActive="active">Gastos</a>
-    <a routerLink="/cuentas" routerLinkActive="active">Cuentas</a>
-  </nav>
+      <nav aria-label="Principal">
+        <a routerLink="/notas" routerLinkActive="active">Notas</a>
+        <a routerLink="/listas" routerLinkActive="active">Listas</a>
+        <a routerLink="/calendario" routerLinkActive="active">Calendario</a>
+        <a routerLink="/gastos" routerLinkActive="active">Gastos</a>
+      </nav>
 
-  <app-capture-bar />
-</header>
+      <div class="actions">
+        <button type="button" class="palette-trigger" (click)="palette.show()">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <span class="palette-label">Buscar o ejecutar…</span>
+          <span class="kbd">Ctrl K</span>
+          <span class="sr-only">Abrir la paleta de comandos</span>
+        </button>
+        <button
+          type="button"
+          class="btn ghost icon theme-toggle"
+          [attr.aria-label]="'Tema: ' + theme.label() + '. Cambiar'"
+          [title]="'Tema: ' + theme.label()"
+          (click)="theme.cycle()"
+        >
+          <i
+            class="pi"
+            [class.pi-desktop]="theme.preference() === 'system'"
+            [class.pi-sun]="theme.preference() === 'light'"
+            [class.pi-moon]="theme.preference() === 'dark'"
+            aria-hidden="true"
+          ></i>
+        </button>
+        <button
+          type="button"
+          class="btn ghost icon logout"
+          [attr.aria-label]="'Salir (' + user.username + ')'"
+          [title]="'Salir (' + user.username + ')'"
+          (click)="logout()"
+        >
+          <i class="pi pi-sign-out" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <app-command-palette />
+}
 
 <main>
   <router-outlet />

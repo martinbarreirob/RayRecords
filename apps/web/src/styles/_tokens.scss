@@ -1,0 +1,136 @@
+// Tokens de diseño de RayRecords. Estética neutra y silenciosa: grises suaves, una sola tipografía y
+// un único color de acento. Todo lo demás (componentes propios y PrimeNG) se construye sobre estas variables.
+// El tema se elige con `data-theme="light|dark"` en <html> (ver core/theme/theme.service.ts).
+
+:root {
+  --font: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+  --text-3xl: 40px;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --page-max: 1200px;
+  --page-gutter: 40px;
+  --nav-height: 56px;
+  --control-height: 36px;
+  --touch-target: 44px;
+
+  --z-nav: 20;
+  --z-overlay: 1000;
+
+  // Claro (por defecto).
+  color-scheme: light;
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f2f2ee;
+  --line: #e5e5e0;
+  --line-strong: #cfcfc8;
+  --line-soft: #eeeeea;
+
+  // Paleta categórica (columnas del tablero, etiquetas): `--hue-x` para puntos y franjas,
+  // `-soft` de fondo y `-text` para el texto sobre ese fondo (contraste ≥ 4.5).
+  --hue-blue: #3b6fe0;
+  --hue-blue-soft: #e8effc;
+  --hue-blue-text: #1d4fb8;
+  --hue-green: #2f9e6a;
+  --hue-green-soft: #e4f5ec;
+  --hue-green-text: #17704a;
+  --hue-amber: #d98a1b;
+  --hue-amber-soft: #fdf1dc;
+  --hue-amber-text: #8a5200;
+  --hue-rose: #d9455f;
+  --hue-rose-soft: #fce8ec;
+  --hue-rose-text: #a8243c;
+  --hue-violet: #7c5ce0;
+  --hue-violet-soft: #eee9fc;
+  --hue-violet-text: #5a3dbd;
+  --hue-teal: #1f9aa8;
+  --hue-teal-soft: #e0f4f6;
+  --hue-teal-text: #0e6b76;
+  --text: #1e1e1c;
+  --muted: #6a6a64;
+  --accent: #4338ca;
+  --accent-hover: #3730a3;
+  --accent-soft: #ededfb;
+  --on-accent: #ffffff;
+  --danger: #b42318;
+  --danger-soft: #fdeceb;
+  --success: #1a7f4b;
+  --success-soft: #e6f4ec;
+  --warning: #9a5b00;
+  --warning-soft: #fdf1dc;
+  --overlay: rgb(20 20 18 / 45%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 5%), 0 8px 24px rgb(0 0 0 / 7%);
+  --shadow-lg: 0 24px 64px rgb(0 0 0 / 25%);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #131312;
+  --surface: #1b1b1a;
+  --surface-2: #242423;
+  --line: #2e2e2c;
+  --line-strong: #44443f;
+  --line-soft: #262624;
+  --hue-blue: #7aa2f7;
+  --hue-blue-soft: #1d2740;
+  --hue-blue-text: #a9c1fa;
+  --hue-green: #6fcf9a;
+  --hue-green-soft: #17301f;
+  --hue-green-text: #9be3bb;
+  --hue-amber: #e8b86a;
+  --hue-amber-soft: #33280f;
+  --hue-amber-text: #f0c987;
+  --hue-rose: #f08a9d;
+  --hue-rose-soft: #3a1c24;
+  --hue-rose-text: #f7acba;
+  --hue-violet: #b39bf5;
+  --hue-violet-soft: #2a2142;
+  --hue-violet-text: #cbb9f8;
+  --hue-teal: #5cc6d3;
+  --hue-teal-soft: #123036;
+  --hue-teal-text: #8ddbe5;
+  --text: #ecece7;
+  --muted: #a2a29b;
+  --accent: #a5b4fc;
+  --accent-hover: #c7d2fe;
+  --accent-soft: #22233b;
+  --on-accent: #14142b;
+  --danger: #f4a09a;
+  --danger-soft: #3a1f1d;
+  --success: #7fd1a3;
+  --success-soft: #1a2e23;
+  --warning: #e8b86a;
+  --warning-soft: #33280f;
+  --overlay: rgb(0 0 0 / 60%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 24px 64px rgb(0 0 0 / 60%);
+}
+
+@media (width <= 767px) {
+  :root {
+    --page-gutter: 16px;
+    --text-3xl: 32px;
+    --text-2xl: 24px;
+  }
+}
