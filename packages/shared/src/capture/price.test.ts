@@ -23,29 +23,29 @@ describe('extractPrice', () => {
     expect(extractPrice(input)?.cents).toBe(cents);
   });
 
-  it.each(['89', 'Dune 2', 'eurostar 100', 'a89€', '2x1€', '89,505€', '€', 'sin precio'])(
+  it.each(['89', 'Dune 2', 'eurostar 100', 'a89€', '2x1€', '89,505€', '€', 'no price'])(
     'no confunde "%s" con un importe',
     (input) => {
       expect(extractPrice(input)).toBeNull();
     },
   );
 
-  it('devuelve el texto sin el importe y con espacios normalizados', () => {
+  it('returns the text without the amount and with normalized whitespace', () => {
     expect(extractPrice('Cafetera 89€')?.rest).toBe('Cafetera');
     expect(extractPrice('cuesta 89 € hoy')?.rest).toBe('cuesta hoy');
     expect(extractPrice('89€ Cafetera')?.rest).toBe('Cafetera');
   });
 
-  it('absorbe la puntuación que sigue al importe', () => {
+  it('absorbs punctuation that follows the amount', () => {
     expect(extractPrice('89€.')).toEqual({ cents: 8900, rest: '' });
     expect(extractPrice('precio 89,50€, ok')).toEqual({ cents: 8950, rest: 'precio ok' });
   });
 
-  it('solo extrae el primer importe', () => {
+  it('only extracts the first amount', () => {
     expect(extractPrice('lote 10€ 20€')).toEqual({ cents: 1000, rest: 'lote 20€' });
   });
 
-  it('descarta importes que no caben en un entero seguro', () => {
+  it('discards amounts that do not fit in a safe integer', () => {
     expect(extractPrice('99999999999999999999€')).toBeNull();
   });
 });

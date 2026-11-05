@@ -19,13 +19,13 @@ export const ItemSchema = z.object({
   title: z.string().trim().min(1).max(300),
   text: z.string().max(20_000).optional(),
   tags: z.array(TagSchema).max(30),
-  /** Fecha límite o fecha del evento; alimenta el calendario. */
+  /** Due date or event date; feeds the calendar. */
   dueDate: DateOnlySchema.optional(),
   time: TimeSchema.optional(),
   url: HttpUrl.optional(),
-  /** Datos específicos de la lista (precio, año, estado, puntuación…), definidos por `list.fieldDefs`. */
+  /** List-specific data (price, year, status, rating...), defined by `list.fieldDefs`. */
   extra: ExtraSchema,
-  /** Columna del tablero, solo en listas con `board`. */
+  /** Board column, only for lists with a `board`. */
   column: FieldKey.optional(),
   order: z.number(),
   doneAt: IsoDateTime.optional(),
@@ -50,11 +50,11 @@ export const CreateItemSchema = ItemSchema.pick({
 });
 export type CreateItem = z.infer<typeof CreateItemSchema>;
 
-/** En una edición parcial, `null` quita el valor opcional; en `extra`, una clave a `null` se borra. */
+/** In a partial update, `null` clears the optional value; in `extra`, a key set to `null` is removed. */
 export const UpdateItemSchema = CreateItemSchema.omit({ listId: true, source: true })
   .partial()
   .extend({
-    // Sin valor por defecto: un PATCH que no los menciona (p. ej. solo `done`) no debe vaciarlos.
+    // No defaults: a PATCH that does not mention them (e.g. only `done`) must not empty them.
     tags: z.array(TagSchema).max(30).optional(),
     extra: ExtraSchema.optional(),
     text: ItemSchema.shape.text.nullable().optional(),
@@ -66,8 +66,8 @@ export const UpdateItemSchema = CreateItemSchema.omit({ listId: true, source: tr
 export type UpdateItem = z.infer<typeof UpdateItemSchema>;
 
 /**
- * Mover o reordenar un elemento: se indica tras qué elemento queda (`afterId`; `null` = al principio)
- * y, en un tablero, a qué columna va. El servidor calcula el `order`.
+ * Move or reorder an item: say which item it goes after (`afterId`; `null` = first) and, on a
+ * board, which column it goes to. The server computes `order`.
  */
 export const MoveItemSchema = z.object({
   afterId: ObjectIdString.nullable(),

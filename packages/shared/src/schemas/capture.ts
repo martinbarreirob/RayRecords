@@ -6,8 +6,8 @@ export const CaptureInputSchema = z.object({ text: z.string().min(1).max(5_000) 
 export type CaptureInput = z.infer<typeof CaptureInputSchema>;
 
 /**
- * Resultado de `POST /api/capture`. Capturar nunca falla por el contenido:
- * lo que no encaja acaba como tarjeta de nota (con `warning` si había una intención clara).
+ * Result of `POST /api/capture`. Capturing never fails because of the content:
+ * whatever does not fit ends up as a note card (with a `warning` if the intent was clear).
  */
 export const CaptureResponseSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('empty') }),
@@ -19,7 +19,7 @@ export const CaptureResponseSchema = z.discriminatedUnion('kind', [
   }),
   z.object({
     kind: z.literal('note_card'),
-    /** Deshacer la captura es borrar esta tarjeta. */
+    /** Undoing the capture means deleting this card. */
     card: NoteCardSchema,
     warning: z.string().optional(),
   }),

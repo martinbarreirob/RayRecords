@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays, isValidDateOnly, monthOf, todayIn } from './dates';
 
 describe('isValidDateOnly', () => {
-  it('acepta fechas reales, incluido el 29 de febrero bisiesto', () => {
+  it('accepts real dates, including 29 February in a leap year', () => {
     expect(isValidDateOnly('2026-11-03')).toBe(true);
     expect(isValidDateOnly('2028-02-29')).toBe(true);
   });
@@ -16,7 +16,7 @@ describe('isValidDateOnly', () => {
 });
 
 describe('todayIn', () => {
-  it('usa la zona horaria pedida, no UTC', () => {
+  it('uses the requested time zone, not UTC', () => {
     const now = new Date('2026-11-03T23:30:00Z');
     expect(todayIn('UTC', now)).toBe('2026-11-03');
     expect(todayIn('Europe/Madrid', now)).toBe('2026-11-04');
@@ -24,21 +24,21 @@ describe('todayIn', () => {
 });
 
 describe('addDays', () => {
-  it('cruza fin de mes, fin de año y años bisiestos', () => {
+  it('crosses month ends, year ends and leap years', () => {
     expect(addDays('2026-01-31', 1)).toBe('2026-02-01');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
     expect(addDays('2026-02-28', 1)).toBe('2026-03-01');
   });
 
-  it('admite desplazamientos negativos y cero', () => {
+  it('accepts negative and zero offsets', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-03-01', 0)).toBe('2026-03-01');
   });
 });
 
 describe('monthOf', () => {
-  it('extrae YYYY-MM', () => {
+  it('extracts YYYY-MM', () => {
     expect(monthOf('2026-11-03')).toBe('2026-11');
   });
 });

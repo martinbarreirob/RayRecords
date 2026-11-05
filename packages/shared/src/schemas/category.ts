@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { FieldKey, ObjectIdString } from './common';
 
-/** La clave (`supermercado`, `ocio`…) es el identificador; no hay id aparte. */
+/** The key (`hogar`, `ocio`...) is the identifier; there is no separate id. */
 export const CategorySchema = z.object({
   key: FieldKey,
   name: z.string().trim().min(1).max(60),
@@ -13,13 +13,13 @@ export type Category = z.infer<typeof CategorySchema>;
 export const RuleMatchType = z.enum(['contains', 'startsWith', 'regex']);
 export type RuleMatchType = z.infer<typeof RuleMatchType>;
 
-/** Regla de categorización sobre la descripción normalizada (minúsculas, sin acentos). */
+/** Categorization rule applied to the normalized description (lowercase, no accents). */
 export const CategorizationRuleSchema = z.object({
   id: ObjectIdString,
   pattern: z.string().trim().min(1).max(200),
   matchType: RuleMatchType,
   categoryKey: FieldKey,
-  /** Mayor prioridad se evalúa antes; gana la primera que coincide. */
+  /** Higher priority is evaluated first; the first match wins. */
   priority: z.number().int(),
   active: z.boolean(),
 });

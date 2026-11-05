@@ -5,7 +5,7 @@ import { Cents, FieldKey, IsoDateTime, MonthSchema, ObjectIdString } from './com
 import { TransactionSchema } from './transaction';
 
 export const UpdateAccountSchema = CreateAccountSchema.partial().extend({
-  // Sin valores por defecto: un PATCH parcial no debe reiniciar la moneda ni el saldo inicial.
+  // No defaults: a partial PATCH must not reset the currency or the opening balance.
   currency: z.string().length(3).optional(),
   openingBalanceCents: Cents.optional(),
   archived: z.boolean().optional(),
@@ -16,7 +16,7 @@ export const UpdateCategorySchema = CategorySchema.omit({ key: true }).partial()
 export type UpdateCategory = z.infer<typeof UpdateCategorySchema>;
 
 export const UpdateRuleSchema = CreateRuleSchema.partial().extend({
-  // Sin valores por defecto: editar el patrón no debe reiniciar la prioridad ni reactivar la regla.
+  // No defaults: editing the pattern must not reset the priority or reactivate the rule.
   priority: z.number().int().optional(),
   active: z.boolean().optional(),
 });
@@ -25,7 +25,7 @@ export type UpdateRule = z.infer<typeof UpdateRuleSchema>;
 export const TransactionQuerySchema = z.object({
   accountId: ObjectIdString.optional(),
   month: MonthSchema.optional(),
-  /** Clave de categoría, o `none` para las que no tienen. */
+  /** Category key, or `none` for transactions without one. */
   category: z.union([FieldKey, z.literal('none')]).optional(),
   q: z.string().trim().min(1).max(100).optional(),
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -49,16 +49,16 @@ export const ImportBatchSchema = z.object({
 });
 export type ImportBatch = z.infer<typeof ImportBatchSchema>;
 
-/** Resultado (o vista previa, con `dryRun`) de importar un extracto. */
+/** Result of importing a statement (or its preview, with `dryRun`). */
 export const ImportResultSchema = z.object({
   dryRun: z.boolean(),
   batchId: ObjectIdString.optional(),
   fileName: z.string(),
-  /** Filas válidas leídas del fichero. */
+  /** Valid rows read from the file. */
   parsed: z.number().int(),
-  /** Nuevas (o que se importarían, en vista previa). */
+  /** New rows (or the ones that would be imported, in a preview). */
   imported: z.number().int(),
-  /** Duplicados ya existentes, no importados. */
+  /** Duplicates that already exist, not imported. */
   skipped: z.number().int(),
   uncategorized: z.number().int(),
   warnings: z.array(z.string()),

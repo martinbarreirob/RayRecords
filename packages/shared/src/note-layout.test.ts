@@ -20,40 +20,40 @@ import { DONE_VISIBLE_MS, NOTE_COORD_MAX } from './note-constants';
 const HOUR = 3_600_000;
 
 describe('nextFreePosition', () => {
-  it('sin nada colocado, usa la esquina con margen', () => {
+  it('with nothing placed, uses the corner with margin', () => {
     expect(nextFreePosition([])).toEqual({ x: 24, y: 24 });
   });
 
-  it('salta a la derecha si el primer hueco está ocupado', () => {
+  it('moves right if the first spot is taken', () => {
     const pos = nextFreePosition([{ x: 24, y: 24, w: 280, h: 104 }]);
     expect(pos).toEqual({ x: 320, y: 24 });
   });
 
-  it('baja de fila cuando la primera está llena', () => {
+  it('moves to the next row when the first is full', () => {
     const row = [24, 320, 616, 912].map((x) => ({ x, y: 24, w: 280, h: 104 }));
     expect(nextFreePosition(row)).toEqual({ x: 24, y: 144 });
   });
 
-  it('esquiva un grupo grande', () => {
+  it('avoids a large group', () => {
     const pos = nextFreePosition([{ x: 0, y: 0, w: 700, h: 400 }]);
     expect(pos.x).toBeGreaterThanOrEqual(700);
   });
 
-  it('con un lienzo más ancho, la primera fila admite más tarjetas', () => {
+  it('with a wider canvas, the first row fits more cards', () => {
     const row = [24, 320, 616, 912].map((x) => ({ x, y: 24, w: 280, h: 104 }));
     expect(nextFreePosition(row, undefined, 1_700)).toEqual({ x: 1_208, y: 24 });
   });
 
-  it('con un lienzo estrecho, baja de fila antes', () => {
+  it('with a narrow canvas, wraps to the next row sooner', () => {
     const row = [{ x: 24, y: 24, w: 280, h: 104 }];
     expect(nextFreePosition(row, undefined, 590)).toEqual({ x: 24, y: 144 });
   });
 
-  it('aunque la ventana sea más estrecha que una tarjeta, cabe una columna', () => {
+  it('even if the window is narrower than a card, one column fits', () => {
     expect(nextFreePosition([], undefined, 100)).toEqual({ x: 24, y: 24 });
   });
 
-  it('nunca se sale de los límites', () => {
+  it('never goes out of bounds', () => {
     const full = [{ x: 0, y: 0, w: 2_000, h: NOTE_COORD_MAX + 500 }];
     const pos = nextFreePosition(full);
     expect(pos.y).toBeLessThanOrEqual(NOTE_COORD_MAX);
@@ -61,16 +61,16 @@ describe('nextFreePosition', () => {
   });
 });
 
-describe('coordenadas de grupo', () => {
+describe('group coordinates', () => {
   const group = { x: 100, y: 200 };
 
-  it('ida y vuelta entre relativas y absolutas', () => {
+  it('round trip between relative and absolute', () => {
     const abs = toAbsolute({ x: 10, y: 20 }, group);
     expect(abs).toEqual({ x: 110, y: 220 });
     expect(toRelative(abs, group)).toEqual({ x: 10, y: 20 });
   });
 
-  it('al pasar a relativas nunca da negativos', () => {
+  it('relative coordinates are never negative', () => {
     expect(toRelative({ x: 50, y: 150 }, group)).toEqual({ x: 0, y: 0 });
   });
 });
@@ -81,21 +81,21 @@ describe('groupAtPoint', () => {
     { id: 'b', x: 100, y: 100, w: 100, h: 100 },
   ];
 
-  it('devuelve el grupo de encima cuando hay solape', () => {
+  it('returns the top group when they overlap', () => {
     expect(groupAtPoint(groups, { x: 150, y: 150 })?.id).toBe('b');
   });
 
-  it('puede excluir el grupo que se está arrastrando', () => {
+  it('can exclude the group being dragged', () => {
     expect(groupAtPoint(groups, { x: 150, y: 150 }, 'b')?.id).toBe('a');
   });
 
-  it('devuelve null fuera de cualquier grupo', () => {
+  it('returns null outside any group', () => {
     expect(groupAtPoint(groups, { x: 900, y: 900 })).toBeNull();
   });
 });
 
 describe('boundingBox', () => {
-  it('rodea los rectángulos con margen', () => {
+  it('wraps the rectangles with padding', () => {
     const box = boundingBox(
       [
         { x: 10, y: 10, w: 100, h: 50 },
@@ -106,33 +106,33 @@ describe('boundingBox', () => {
     expect(box).toEqual({ x: 2, y: 2, w: 306, h: 156 });
   });
 
-  it('sin rectángulos devuelve null', () => {
+  it('returns null without rectangles', () => {
     expect(boundingBox([])).toBeNull();
   });
 });
 
-describe('tarjetas hechas: ocultar a las 24 h', () => {
+describe('done cards: hidden after 24 h', () => {
   const doneAt = '2026-11-04T10:00:00.000Z';
   const t0 = Date.parse(doneAt);
 
-  it('las pendientes siempre se ven', () => {
+  it('open cards are always visible', () => {
     expect(isVisible(null, t0 + 1000 * HOUR)).toBe(true);
   });
 
-  it('una hecha se ve justo antes de las 24 h', () => {
+  it('a done card is visible just before 24 h', () => {
     expect(isVisible(doneAt, t0 + DONE_VISIBLE_MS - 1)).toBe(true);
   });
 
-  it('una hecha se oculta exactamente a las 24 h', () => {
+  it('a done card is hidden exactly at 24 h', () => {
     expect(isVisible(doneAt, t0 + DONE_VISIBLE_MS)).toBe(false);
   });
 
-  it('calcula el tiempo restante sin bajar de cero', () => {
+  it('computes the remaining time without going below zero', () => {
     expect(remainingMs(doneAt, t0 + 3 * HOUR)).toBe(21 * HOUR);
     expect(remainingMs(doneAt, t0 + 30 * HOUR)).toBe(0);
   });
 
-  it('formatea la duración', () => {
+  it('formats the duration', () => {
     expect(formatDuration(21 * HOUR)).toBe('21 h');
     expect(formatDuration(35 * 60_000)).toBe('35 min');
     expect(formatDuration(10_000)).toBe('menos de 1 min');
@@ -140,7 +140,7 @@ describe('tarjetas hechas: ocultar a las 24 h', () => {
 });
 
 describe('readingOrder', () => {
-  it('ordena por fila y, dentro de la fila, de izquierda a derecha', () => {
+  it('orders by row and, within a row, left to right', () => {
     const items = [
       { id: 'd', x: 500, y: 300 },
       { id: 'b', x: 500, y: 20 },
@@ -150,7 +150,7 @@ describe('readingOrder', () => {
     expect(readingOrder(items).map((i) => i.id)).toEqual(['a', 'b', 'c', 'd']);
   });
 
-  it('dos notas casi alineadas cuentan como la misma fila', () => {
+  it('two almost aligned notes count as the same row', () => {
     const items = [
       { id: 'derecha', x: 400, y: 20 },
       { id: 'izquierda', x: 10, y: 60 },
@@ -158,7 +158,7 @@ describe('readingOrder', () => {
     expect(readingOrder(items).map((i) => i.id)).toEqual(['izquierda', 'derecha']);
   });
 
-  it('no modifica la lista original', () => {
+  it('does not modify the original list', () => {
     const items = [
       { id: 'b', x: 0, y: 200 },
       { id: 'a', x: 0, y: 0 },
@@ -188,11 +188,11 @@ describe('arrangeInGrid', () => {
     }
   }
 
-  it('sin elementos no devuelve nada', () => {
+  it('returns nothing without items', () => {
     expect(arrangeInGrid([], 1_120)).toEqual([]);
   });
 
-  it('empieza arriba a la izquierda y sigue el orden de lectura', () => {
+  it('starts at the top left and follows the reading order', () => {
     const items = [card('c', 600, 400), card('a', 700, 30), card('b', 20, 36)];
     const placed = arrangeInGrid(items, 1_120);
     expect(placed.map((p) => p.id)).toEqual(['b', 'a', 'c']);
@@ -200,7 +200,7 @@ describe('arrangeInGrid', () => {
     expect(placed[1]).toEqual({ id: 'a', x: 320, y: 24 });
   });
 
-  it('baja de fila cuando se acaba el ancho (3 columnas en 1120 px)', () => {
+  it('wraps to the next row when the width runs out (3 columns in 1120 px)', () => {
     const items = ['a', 'b', 'c', 'd', 'e'].map((id, i) => card(id, i * 10, 0));
     const placed = arrangeInGrid(items, 1_120);
     expect(placed.map((p) => [p.x, p.y])).toEqual([
@@ -213,14 +213,14 @@ describe('arrangeInGrid', () => {
     noOverlap(items, placed);
   });
 
-  it('con un lienzo estrecho deja una sola columna', () => {
+  it('with a narrow canvas leaves a single column', () => {
     const items = [card('a', 0, 0), card('b', 10, 10), card('c', 20, 20)];
     const placed = arrangeInGrid(items, 200);
     expect(placed.map((p) => p.x)).toEqual([24, 24, 24]);
     expect(placed.map((p) => p.y)).toEqual([24, 144, 264]);
   });
 
-  it('cada fila mide lo que el elemento más alto (tarjetas con texto largo y grupos)', () => {
+  it('each row is as tall as its tallest item (cards with long text and groups)', () => {
     const items = [
       card('alta', 0, 0, 220),
       { id: 'grupo', x: 300, y: 0, w: 420, h: 300 },
@@ -233,12 +233,12 @@ describe('arrangeInGrid', () => {
     const byId = new Map(placed.map((p) => [p.id, p]));
     expect(byId.get('alta')).toEqual({ id: 'alta', x: 24, y: 24 });
     expect(byId.get('grupo')).toEqual({ id: 'grupo', x: 320, y: 24 });
-    // La tercera aún cabe en la primera fila; la cuarta baja bajo el grupo, que es el más alto (300).
+    // The third still fits in the first row; the fourth goes below the group, which is the tallest (300).
     expect(byId.get('x')).toEqual({ id: 'x', x: 756, y: 24 });
     expect(byId.get('y')).toEqual({ id: 'y', x: 24, y: 24 + 300 + 16 });
   });
 
-  it('no solapa nada con muchos elementos mezclados', () => {
+  it('nothing overlaps with many mixed items', () => {
     const items = Array.from({ length: 40 }, (_, i) =>
       i % 7 === 0
         ? { id: `g${i}`, x: (i * 53) % 900, y: (i * 37) % 700, w: 420, h: 300 }
@@ -248,7 +248,7 @@ describe('arrangeInGrid', () => {
       const placed = arrangeInGrid(items, width);
       expect(placed).toHaveLength(items.length);
       noOverlap(items, placed);
-      // Nunca se sale por la derecha (salvo que sea una sola columna más ancha que el lienzo).
+      // Never goes past the right edge (unless it is a single column wider than the canvas).
       for (const p of placed) {
         const w = items.find((i) => i.id === p.id)!.w;
         expect(p.x + w).toBeLessThanOrEqual(Math.max(width, 24 * 2 + 420) - 24);
@@ -256,7 +256,7 @@ describe('arrangeInGrid', () => {
     }
   });
 
-  it('es estable: ordenar lo ya ordenado no cambia nada', () => {
+  it('is stable: arranging what is already arranged changes nothing', () => {
     const items = [card('a', 0, 0), card('b', 5, 5), card('c', 9, 400), card('d', 3, 410, 150)];
     const once = arrangeInGrid(items, 1_120);
     const moved = items.map((item) => ({ ...item, ...once.find((p) => p.id === item.id)! }));
@@ -264,7 +264,7 @@ describe('arrangeInGrid', () => {
   });
 });
 
-describe('pila de un grupo', () => {
+describe('group stack', () => {
   const card = (id: string, x: number, y: number, createdAt = '2026-11-01T10:00:00.000Z') => ({
     id,
     x,
@@ -272,7 +272,7 @@ describe('pila de un grupo', () => {
     createdAt,
   });
 
-  it('ordena por y, luego x, luego fecha y por último id', () => {
+  it('orders by y, then x, then date and finally id', () => {
     const ordered = stackOrder([
       card('d', 0, 50, '2026-11-02T10:00:00.000Z'),
       card('c', 0, 50, '2026-11-01T10:00:00.000Z'),
@@ -283,7 +283,7 @@ describe('pila de un grupo', () => {
     expect(ordered.map((c) => c.id)).toEqual(['a', 'b', 'c', 'd']);
   });
 
-  it('no modifica la lista original', () => {
+  it('does not modify the original list', () => {
     const list = [card('b', 0, 20), card('a', 0, 10)];
 
     stackOrder(list);
@@ -291,13 +291,13 @@ describe('pila de un grupo', () => {
     expect(list.map((c) => c.id)).toEqual(['b', 'a']);
   });
 
-  it('la posición de la pila avanza de STACK_STEP en STACK_STEP y se acota', () => {
+  it('stack position advances in steps of STACK_STEP and is clamped', () => {
     expect(stackY(0)).toBe(0);
     expect(stackY(3)).toBe(3 * STACK_STEP);
     expect(stackY(1_000_000)).toBe(NOTE_COORD_MAX);
   });
 
-  it('el final de la pila queda tras la última tarjeta', () => {
+  it('the end of the stack goes after the last card', () => {
     expect(stackEndY([])).toBe(0);
     expect(stackEndY([{ y: 56 }, { y: 20 }])).toBe(56 + STACK_STEP);
   });

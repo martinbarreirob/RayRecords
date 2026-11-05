@@ -1,9 +1,9 @@
 import type { DateOnly } from '../dates';
 
-/** Un elemento para una lista, resuelto por su alias de captura (`peli`, `compra`, `tarea`…). */
+/** An item for a list, resolved by its capture alias (`peli`, `compra`, `tarea`...). */
 export interface CaptureItem {
   kind: 'item';
-  /** Alias de la lista destino, tal y como se registró; la API lo resuelve a `lists.captureAlias`. */
+  /** Alias of the target list as registered; the API resolves it to `lists.captureAlias`. */
   list: string;
   title: string;
   tags: string[];
@@ -13,7 +13,7 @@ export interface CaptureItem {
   dueDate?: DateOnly;
 }
 
-/** Texto libre para la nota del día. Es el destino por defecto: capturar nunca falla. */
+/** Free text for the daily note. This is the default target: capturing never fails. */
 export interface CaptureDailyNote {
   kind: 'daily_note';
   date: DateOnly;
@@ -21,7 +21,7 @@ export interface CaptureDailyNote {
   reason: 'no_prefix' | 'unknown_prefix';
 }
 
-/** No hay nada que guardar (entrada en blanco o prefijo sin contenido). */
+/** Nothing to save (blank input or a prefix with no content). */
 export interface CaptureEmpty {
   kind: 'empty';
   reason: 'blank' | 'no_title';
@@ -30,9 +30,9 @@ export interface CaptureEmpty {
 export type CaptureResult = CaptureItem | CaptureDailyNote | CaptureEmpty;
 
 export interface ParseOptions {
-  /** Alias de lista reconocidos (los `captureAlias` de las listas). Por defecto, los de los presets. */
+  /** Recognized list aliases (the lists' `captureAlias`). Defaults to the preset ones. */
   aliases?: readonly string[];
-  /** Instante de referencia para `hoy` / `mañana`. Inyectable para tests. */
+  /** Reference instant for `hoy` / `mañana`. Injectable for tests. */
   now?: Date;
   timeZone?: string;
 }

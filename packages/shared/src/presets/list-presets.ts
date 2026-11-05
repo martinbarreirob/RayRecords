@@ -1,9 +1,9 @@
 import type { CreateList, ListKind } from '../schemas/list';
 
 /**
- * Plantillas para crear listas rápido. Son solo datos: la lista se crea copiando el preset
- * y a partir de ahí es independiente (puede añadir campos, cambiar columnas, etc.).
- * Los campos `money` se guardan en céntimos dentro de `item.extra`.
+ * Templates to create lists quickly. They are plain data: a list is created by copying the preset
+ * and is independent from then on (it can add fields, change columns, etc.).
+ * `money` fields are stored in cents inside `item.extra`.
  */
 export type ListPreset = Pick<
   CreateList,

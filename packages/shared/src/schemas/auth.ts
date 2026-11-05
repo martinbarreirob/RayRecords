@@ -13,10 +13,10 @@ export const LoginInputSchema = z.object({
 });
 export type LoginInput = z.infer<typeof LoginInputSchema>;
 
-/** Longitud mínima al crear o cambiar la contraseña (no se aplica al iniciar sesión). */
+/** Minimum length when creating or changing the password (not applied at login). */
 export const MIN_PASSWORD_LENGTH = 12;
 
-/** Formato uniforme de error de toda la API. `details` solo aparece en errores de validación. */
+/** Error format shared by the whole API. `details` only appears on validation errors. */
 export const ApiErrorSchema = z.object({
   error: z.object({
     code: z.string(),

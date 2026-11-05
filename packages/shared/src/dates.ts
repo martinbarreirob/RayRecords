@@ -1,6 +1,6 @@
 /**
- * Fechas "de calendario" (sin hora) como cadenas `YYYY-MM-DD`.
- * Se evita `Date` para todo lo que no sea un instante real: así no hay desfases por zona horaria.
+ * Calendar dates (no time) as `YYYY-MM-DD` strings.
+ * `Date` is avoided for anything that is not a real instant, so time zones cannot shift a day.
  */
 export type DateOnly = string;
 
@@ -15,7 +15,7 @@ export function isValidDateOnly(value: string): boolean {
   return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
-/** Fecha de hoy en la zona horaria indicada (no la del dispositivo ni la del servidor). */
+/** Today's date in the given time zone (not the device's or the server's). */
 export function todayIn(timeZone: string, now: Date = new Date()): DateOnly {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -27,7 +27,7 @@ export function todayIn(timeZone: string, now: Date = new Date()): DateOnly {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
-/** Suma días de calendario; no depende de cambios de hora (DST). */
+/** Adds calendar days; unaffected by daylight saving changes. */
 export function addDays(date: DateOnly, days: number): DateOnly {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);

@@ -1,9 +1,9 @@
 /**
- * Importes en formato español: `89€`, `89,50€`, `€89`, `89 eur`, `1.299,99€`.
- * Devuelve céntimos enteros (sin pasar por floats) y el texto sin el importe.
+ * Amounts in Spanish format: `89€`, `89,50€`, `€89`, `89 eur`, `1.299,99€`.
+ * Returns integer cents (never through floats) and the text without the amount.
  *
- * Reglas de ambigüedad: `1.299` (punto + 3 dígitos) se lee como millar; `89.50` (punto + 1-2
- * dígitos) como decimal. Solo se reconoce con símbolo de euro, para no confundir "Dune 2" con 2 €.
+ * Ambiguity rules: `1.299` (dot + 3 digits) is read as a thousands separator; `89.50` (dot + 1-2
+ * digits) as a decimal. Only recognized with a euro marker, so "Dune 2" is not read as 2 EUR.
  */
 const NUM = String.raw`\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?`;
 
@@ -23,11 +23,11 @@ function toCents(raw: string): number | null {
 
 export interface ExtractedPrice {
   cents: number;
-  /** Texto original sin el importe y con los espacios normalizados. */
+  /** Original text without the amount, with whitespace normalized. */
   rest: string;
 }
 
-/** Extrae el primer importe del texto; los demás se quedan en el título. */
+/** Extracts the first amount in the text; any others stay in the title. */
 export function extractPrice(text: string): ExtractedPrice | null {
   const match = PRICE_RE.exec(text);
   if (!match) return null;

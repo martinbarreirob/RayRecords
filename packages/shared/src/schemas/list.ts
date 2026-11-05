@@ -2,14 +2,14 @@ import { z } from 'zod';
 import { FieldKey, IsoDateTime, ObjectIdString } from './common';
 
 /**
- * Una lista es autodescriptiva: lleva sus propias definiciones de campo (`fieldDefs`) y,
- * si es un tablero, sus columnas. Crear un tipo nuevo de lista es crear datos, no código.
- * `kind` solo indica de qué plantilla (preset) partió; no condiciona el comportamiento.
+ * A list describes itself: it carries its own field definitions (`fieldDefs`) and, if it is a board,
+ * its columns. Creating a new kind of list means creating data, not code. `kind` only records which
+ * preset it started from; it does not change behavior.
  */
 export const FieldType = z.enum([
   'text',
   'number',
-  'money', // se guarda en céntimos
+  'money', // stored in cents
   'select',
   'rating',
   'date',
@@ -35,7 +35,7 @@ export type BoardColumn = z.infer<typeof BoardColumn>;
 export const ListKind = z.enum(['media', 'shopping', 'board', 'free']);
 export type ListKind = z.infer<typeof ListKind>;
 
-/** Alias de captura rápida: letras/dígitos, sin espacios (`peli`, `compra`…). */
+/** Quick-capture alias: letters and digits, no spaces (`peli`, `compra`...). */
 export const CaptureAlias = z.string().regex(/^[a-z][a-z0-9]{1,19}$/);
 
 export const ListSchema = z.object({
@@ -67,9 +67,9 @@ export const CreateListSchema = ListSchema.pick({
 export type CreateList = z.infer<typeof CreateListSchema>;
 
 export const UpdateListSchema = CreateListSchema.partial().extend({
-  /** Sin valor por defecto: un PATCH que no los menciona no debe vaciar los campos de la lista. */
+  /** No default: a PATCH that does not mention it must not empty the list fields. */
   fieldDefs: z.array(FieldDef).max(30).optional(),
-  /** `null` quita el alias de captura. */
+  /** `null` removes the capture alias. */
   captureAlias: CaptureAlias.nullable().optional(),
   archived: z.boolean().optional(),
   order: z.number().optional(),

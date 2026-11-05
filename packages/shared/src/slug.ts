@@ -1,4 +1,4 @@
-/** "Películas de 2024!" → "peliculas-de-2024". Para los slugs de lista. */
+/** "Películas de 2024!" -> "peliculas-de-2024". Used for list slugs. */
 export function slugify(text: string): string {
   return text
     .normalize('NFD')

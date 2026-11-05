@@ -2,16 +2,16 @@ import { DEFAULT_TIME_ZONE, addDays, todayIn } from '../dates';
 import { extractPrice } from './price';
 import type { CaptureItem, CaptureResult, ParseOptions } from './types';
 
-/** Alias por defecto, los de los presets de lista. */
+/** Default aliases, the ones from the list presets. */
 export const DEFAULT_LIST_ALIASES: readonly string[] = ['peli', 'compra'];
 
-/** Lista a la que van las tareas con fecha (`hoy:` / `mañana:`). */
+/** List that dated tasks go to (`hoy:` / `mañana:`). */
 export const TASK_LIST_ALIAS = 'tarea';
 
-/** Prefijos con fecha: nombre normalizado → desplazamiento en días respecto a hoy. */
+/** Date prefixes: normalized name -> offset in days from today. */
 const DATE_PREFIXES: Record<string, number> = { hoy: 0, manana: 1 };
 
-/** Un prefijo es una palabra corta: así `https://…` o `10:30 llamar` no se interpretan como prefijo. */
+/** A prefix is a short word, so `https://...` or `10:30 llamar` are not read as a prefix. */
 const PREFIX_RE = /^\p{L}[\p{L}\p{N} _-]{0,29}$/u;
 
 const TAG_RE = /^#((?=[\p{N}_-]*\p{L})[\p{L}\p{N}_-]+)[.,;:!?]*$/u;
@@ -26,7 +26,7 @@ interface Features {
 }
 
 const LIST_FEATURES: Features = { tags: true, url: true, category: true, price: true };
-/** En una tarea con fecha no se interpretan @categoría ni importes: son texto normal. */
+/** In a dated task, @category and amounts are not interpreted: they are plain text. */
 const TASK_FEATURES: Features = { tags: true, url: true, category: false, price: false };
 
 function normalizePrefix(value: string): string {
@@ -92,16 +92,16 @@ function parseBody(body: string, features: Features) {
 }
 
 /**
- * Interpreta una línea de captura rápida. Es una función pura y nunca lanza por el contenido:
- * todo lo que no se reconoce acaba en la nota del día.
+ * Parses a quick-capture line. Pure function; it never throws because of the content:
+ * anything not recognized ends up in the daily note.
  *
- *   peli: Dune #scifi                       → elemento en la lista `peli`
- *   compra: Cafetera @hogar 89€ https://…   → elemento con categoría, precio y enlace
- *   hoy: llamar al dentista / mañana: …     → tarea con fecha
- *   cualquier otra cosa                     → nota del día
+ *   peli: Dune #scifi                       -> item in the `peli` list
+ *   compra: Cafetera @hogar 89€ https://...  -> item with category, price and link
+ *   hoy: llamar al dentista / mañana: ...    -> dated task
+ *   anything else                            -> daily note
  */
 export function parseQuickCapture(input: string, options: ParseOptions = {}): CaptureResult {
-  // NFC: un teclado que emite "n" + tilde combinada también debe reconocer "mañana".
+  // NFC: a keyboard that emits "n" plus a combining tilde must still match "mañana".
   const text = input.normalize('NFC').trim();
   if (!text) return { kind: 'empty', reason: 'blank' };
 

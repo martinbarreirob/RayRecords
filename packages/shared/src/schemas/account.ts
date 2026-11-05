@@ -5,8 +5,8 @@ export const AccountType = z.enum(['checking', 'savings', 'card', 'cash']);
 export type AccountType = z.infer<typeof AccountType>;
 
 /**
- * El saldo actual no se guarda: es `openingBalanceCents` + suma de sus transacciones.
- * Así nunca puede quedar desincronizado tras importar, corregir o borrar movimientos.
+ * The current balance is not stored: it is `openingBalanceCents` plus the sum of its transactions,
+ * so it cannot drift out of sync after importing, editing or deleting transactions.
  */
 export const AccountSchema = z.object({
   id: ObjectIdString,

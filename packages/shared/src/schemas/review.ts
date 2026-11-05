@@ -1,32 +1,32 @@
 import { z } from 'zod';
 import { Cents, DateOnlySchema, FieldKey, ObjectIdString } from './common';
 
-/** Categoría sugerida para un grupo; `source` dice de dónde sale (para ordenar y explicar). */
+/** Category suggested for a group; `source` says where it comes from (to sort and explain). */
 export const SuggestionSchema = z.object({
   category: FieldKey,
-  /** `history`: lo que ya decidiste para este comercio. `rule`: una regla. `hint`: heurística. `popular`: la más usada. */
+  /** `history`: what was already chosen for this merchant. `rule`: a rule. `hint`: a heuristic. `popular`: the most used. */
   source: z.enum(['history', 'rule', 'hint', 'popular']),
-  /** Cuántos movimientos ya categorizados respaldan la sugerencia (0 si no aplica). */
+  /** How many already categorized transactions back the suggestion (0 if not applicable). */
   count: z.number().int().nonnegative(),
 });
 export type Suggestion = z.infer<typeof SuggestionSchema>;
 
-/** Un grupo pendiente: todos los movimientos sin categoría de un mismo comercio. */
+/** A pending group: all uncategorized transactions of the same merchant. */
 export const ReviewGroupSchema = z.object({
-  /** Clave de comercio; `null` si no hay (el grupo es un único movimiento y se identifica por `ids`). */
+  /** Merchant key; `null` if there is none (the group is a single transaction, identified by `ids`). */
   merchantKey: z.string().nullable(),
-  /** Ids de los movimientos pendientes del grupo (hasta 500). */
+  /** Ids of the pending transactions in the group (up to 500). */
   ids: z.array(ObjectIdString),
   count: z.number().int().positive(),
-  /** Suma con signo, en céntimos. */
+  /** Signed sum, in cents. */
   totalCents: Cents,
   minCents: Cents,
   maxCents: Cents,
-  /** Descripción original de un movimiento de muestra y su fecha. */
+  /** Original description of a sample transaction. */
   sampleDescription: z.string(),
   firstDate: DateOnlySchema,
   lastDate: DateOnlySchema,
-  /** Importes de los últimos movimientos del grupo, más recientes primero (máx. 4). */
+  /** Amounts of the latest transactions in the group, newest first (max 4). */
   recentCents: z.array(Cents),
   suggestions: z.array(SuggestionSchema),
 });
@@ -34,7 +34,7 @@ export type ReviewGroup = z.infer<typeof ReviewGroupSchema>;
 
 export const ReviewQueueSchema = z.object({
   groups: z.array(ReviewGroupSchema),
-  /** Cuántos movimientos tiene cada categoría, de más a menos: ordena las tarjetas de la revisión. */
+  /** How many transactions each category has, most to least: orders the review cards. */
   usage: z.array(z.object({ category: FieldKey, count: z.number().int().nonnegative() })),
   pendingTransactions: z.number().int().nonnegative(),
   pendingGroups: z.number().int().nonnegative(),
@@ -49,7 +49,7 @@ export const ReviewQueueQuerySchema = z.object({
 export const ReviewApplySchema = z.object({
   ids: z.array(ObjectIdString).min(1).max(500),
   category: FieldKey,
-  /** Crea una regla por el comercio para los futuros extractos (se omite si no es segura). */
+  /** Creates a rule for the merchant for future statements (skipped if it is not safe). */
   createRule: z.boolean().default(true),
 });
 export type ReviewApply = z.infer<typeof ReviewApplySchema>;
@@ -57,7 +57,7 @@ export type ReviewApply = z.infer<typeof ReviewApplySchema>;
 export const ReviewApplyResultSchema = z.object({
   updated: z.number().int().nonnegative(),
   ruleId: ObjectIdString.nullable(),
-  /** Por qué no se creó la regla pedida (para avisar en pantalla). */
+  /** Why the requested rule was not created (to show on screen). */
   ruleSkippedReason: z.string().nullable(),
 });
 export type ReviewApplyResult = z.infer<typeof ReviewApplyResultSchema>;

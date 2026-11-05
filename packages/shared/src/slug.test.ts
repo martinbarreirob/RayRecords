@@ -9,11 +9,11 @@ describe('slugify', () => {
     ['Año Nuevo', 'ano-nuevo'],
     ['---', ''],
     ['', ''],
-  ])('"%s" → "%s"', (input, expected) => {
+  ])('"%s" -> "%s"', (input, expected) => {
     expect(slugify(input)).toBe(expected);
   });
 
-  it('limita la longitud sin dejar un guion final', () => {
+  it('limits the length without leaving a trailing dash', () => {
     const slug = slugify(`${'a'.repeat(59)} b`);
     expect(slug.length).toBeLessThanOrEqual(60);
     expect(slug.endsWith('-')).toBe(false);

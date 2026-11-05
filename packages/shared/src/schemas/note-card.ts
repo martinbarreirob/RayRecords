@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { NOTE_COORD_MAX, NOTE_GROUP_HEIGHT, NOTE_GROUP_WIDTH } from '../note-constants';
 import { IsoDateTime, ObjectIdString } from './common';
 
-/** Las notas son tarjetas colocadas en un lienzo; se pueden agrupar y marcar como hechas. */
+/** Notes are cards placed on a canvas; they can be grouped and marked as done. */
 
 const Coord = z.number().int().min(0).max(NOTE_COORD_MAX);
 const CardWidth = z.number().int().min(160).max(1_000);
@@ -12,11 +12,11 @@ const CardText = z.string().max(5_000);
 export const NoteCardSchema = z.object({
   id: ObjectIdString,
   text: CardText,
-  /** Con `groupId`, `x` e `y` son relativas a la esquina del grupo; si no, al lienzo. */
+  /** With a `groupId`, `x` and `y` are relative to the group corner; otherwise to the canvas. */
   x: Coord,
   y: Coord,
   w: CardWidth,
-  /** Orden de apilado: la última tarjeta movida queda delante. */
+  /** Stacking order: the last card moved is on top. */
   z: z.number().int().min(0),
   groupId: ObjectIdString.nullable(),
   doneAt: IsoDateTime.nullable(),
@@ -37,14 +37,14 @@ export const NoteGroupSchema = z.object({
 });
 export type NoteGroup = z.infer<typeof NoteGroupSchema>;
 
-/** Lo que se pinta en el lienzo: sin las tarjetas hechas hace más de 24 h. */
+/** What is drawn on the canvas: without cards done more than 24 h ago. */
 export const NoteBoardSchema = z.object({
   cards: z.array(NoteCardSchema),
   groups: z.array(NoteGroupSchema),
 });
 export type NoteBoard = z.infer<typeof NoteBoardSchema>;
 
-/** Sin `x`/`y` el servidor elige el primer hueco libre (captura rápida, móvil). */
+/** Without `x`/`y` the server picks the first free spot (quick capture, mobile). */
 export const CreateNoteCardSchema = z.object({
   text: CardText.default(''),
   x: Coord.optional(),
@@ -60,14 +60,14 @@ export const UpdateNoteCardSchema = z
     y: Coord,
     w: CardWidth,
     groupId: ObjectIdString.nullable(),
-    /** `true` fija `doneAt` (una vez); `false` lo borra. */
+    /** `true` sets `doneAt` (once); `false` clears it. */
     done: z.boolean(),
   })
   .partial()
-  .refine((value) => Object.keys(value).length > 0, 'No hay nada que actualizar');
+  .refine((value) => Object.keys(value).length > 0, 'Nothing to update');
 export type UpdateNoteCard = z.infer<typeof UpdateNoteCardSchema>;
 
-/** Mover varias tarjetas de una vez (p. ej. al agrupar una selección). */
+/** Move several cards at once (e.g. when grouping a selection). */
 export const MoveNoteCardsSchema = z.object({
   moves: z
     .array(
@@ -101,5 +101,5 @@ export const UpdateNoteGroupSchema = z
     h: GroupSize,
   })
   .partial()
-  .refine((value) => Object.keys(value).length > 0, 'No hay nada que actualizar');
+  .refine((value) => Object.keys(value).length > 0, 'Nothing to update');
 export type UpdateNoteGroup = z.infer<typeof UpdateNoteGroupSchema>;

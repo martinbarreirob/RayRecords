@@ -1,14 +1,13 @@
 import { z } from 'zod';
 import { Cents, DateOnlySchema, FieldKey, MonthSchema, ObjectIdString } from './common';
 
-/** `rule`: asignada por una regla. `manual`: corregida por el usuario y nunca se sobrescribe. */
+/** `rule`: assigned by a rule. `manual`: set by the user and never overwritten. */
 export const CategorySource = z.enum(['rule', 'manual', 'none']);
 export type CategorySource = z.infer<typeof CategorySource>;
 
 /**
- * DTO de una transacción. El hash de deduplicación y la descripción normalizada
- * son detalles internos de la API y no viajan al cliente.
- * Convención de signo: gastos negativos, ingresos positivos.
+ * Transaction DTO. The deduplication hash and the normalized description are API internals and
+ * are not sent to the client. Sign convention: expenses are negative, income is positive.
  */
 export const TransactionSchema = z.object({
   id: ObjectIdString,
@@ -24,14 +23,14 @@ export const TransactionSchema = z.object({
 });
 export type Transaction = z.infer<typeof TransactionSchema>;
 
-/** Corrección manual de categoría; `createRule` además guarda una regla para el futuro. */
+/** Manual category fix; `createRule` also saves a rule for the future. */
 export const SetTransactionCategorySchema = z.object({
   category: FieldKey.nullable(),
   createRule: z.boolean().default(false),
 });
 export type SetTransactionCategory = z.infer<typeof SetTransactionCategorySchema>;
 
-/** Una fila del gráfico mensual: gasto o ingreso agregado por mes y categoría. */
+/** One row of the monthly chart: spending or income aggregated by month and category. */
 export const MonthlyCategoryTotalSchema = z.object({
   month: MonthSchema,
   category: FieldKey.nullable(),
