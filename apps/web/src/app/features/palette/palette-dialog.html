@@ -1,0 +1,162 @@
+@if (palette.isOpen()) {
+  <div
+    class="backdrop"
+    [style.--vv-height]="viewport().height"
+    [style.--vv-top]="viewport().top"
+    (mousedown)="onBackdropMousedown($event)"
+  >
+    <div
+      class="panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Paleta de comandos"
+      (mousedown)="keepInputFocus($event)"
+    >
+      <div class="search">
+        @if (mode() === 'capture') {
+          <span class="mode-chip">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Nueva nota o tarea
+            <button
+              type="button"
+              class="mode-exit"
+              tabindex="-1"
+              aria-label="Salir de nueva nota o tarea y volver a buscar"
+              [disabled]="saving()"
+              (click)="exitCapture()"
+            >
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          </span>
+        } @else {
+          <i class="pi pi-search" aria-hidden="true"></i>
+        }
+        <input
+          #field
+          type="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          [attr.role]="mode() === 'search' ? 'combobox' : null"
+          [attr.aria-autocomplete]="mode() === 'search' ? 'list' : null"
+          [attr.aria-expanded]="mode() === 'search' ? 'true' : null"
+          [attr.aria-controls]="mode() === 'search' ? 'palette-listbox' : null"
+          [attr.aria-activedescendant]="mode() === 'search' ? activeId() : null"
+          [attr.aria-label]="mode() === 'search' ? 'Buscar o ejecutar' : 'Texto de la nota o tarea'"
+          [attr.aria-busy]="saving()"
+          [attr.enterkeyhint]="mode() === 'search' ? 'go' : 'send'"
+          [placeholder]="
+            mode() === 'search'
+              ? 'Buscar, ejecutar o escribir / para crear…'
+              : 'compra: leche semidesnatada'
+          "
+          [readOnly]="saving()"
+          [value]="query()"
+          (input)="onInput(field.value)"
+        />
+        <button
+          type="button"
+          class="kbd close"
+          tabindex="-1"
+          aria-label="Cerrar la paleta"
+          (click)="palette.hide()"
+        >
+          <span class="esc">Esc</span>
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      @if (mode() === 'capture') {
+        <app-palette-capture
+          [preview]="preview()"
+          [suggestions]="suggestions()"
+          [prefixes]="prefixes()"
+          [feedback]="feedback()"
+          [error]="statusError()"
+          [saving]="saving()"
+          (picked)="pickPrefix($event)"
+          (submitted)="submit()"
+          (undone)="undo()"
+          (opened)="open($event)"
+        />
+      } @else {
+        <div class="filters" role="group" aria-label="Filtrar por tipo">
+          @for (option of filters; track option.id) {
+            <button
+              type="button"
+              class="chip"
+              tabindex="-1"
+              [class.accent]="filter() === option.id"
+              [attr.aria-pressed]="filter() === option.id"
+              (click)="setFilter(option.id)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+
+        <div #list class="results" id="palette-listbox" role="listbox" aria-label="Resultados">
+          @for (group of groups(); track group.id) {
+            <div class="group" role="group" [attr.aria-labelledby]="'palette-group-' + group.id">
+              <div class="group-title" [id]="'palette-group-' + group.id">
+                {{ group.label }}
+              </div>
+              @for (row of group.rows; track row.id) {
+                <div
+                  class="row"
+                  role="option"
+                  [id]="optionId(row)"
+                  [class.active]="row.index === activeIndex()"
+                  [attr.aria-selected]="row.index === activeIndex()"
+                  (mousemove)="onRowHover($event, row)"
+                  (click)="run(row)"
+                >
+                  <span class="label">
+                    <b>
+                      @for (part of highlight(row); track $index) {
+                        <span [class.hit]="part.match">{{ part.text }}</span>
+                      }
+                    </b>
+                    @if (row.hint) {
+                      <span class="hint"> · {{ row.hint }}</span>
+                    }
+                  </span>
+                  <span class="keys">
+                    @for (key of row.shortcut ?? []; track $index) {
+                      <span class="kbd" aria-hidden="true">{{ key }}</span>
+                    }
+                    @if (row.index === activeIndex()) {
+                      <span class="kbd enter" aria-hidden="true">Enter</span>
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          }
+          <div class="status" [class.error]="!!statusError()" aria-live="polite">
+            {{ statusMessage() }}
+          </div>
+        </div>
+      }
+
+      <div class="foot">
+        @if (mode() === 'capture') {
+          <span>Enter añadir</span>
+          @if (suggestions().length) {
+            <span>Tab completar el prefijo</span>
+          }
+          <span>{{ escHint() }}</span>
+        } @else {
+          <span>↑↓ navegar</span>
+          <span>Enter abrir</span>
+          <span>Tab filtrar por tipo</span>
+          <span>/ escribir una nota o tarea</span>
+          @if (trimmedQuery()) {
+            <span>Ctrl Enter guardar</span>
+          }
+          <span class="goto">Ir a: {{ goHint }}</span>
+        }
+      </div>
+    </div>
+  </div>
+}

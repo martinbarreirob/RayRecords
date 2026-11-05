@@ -1,0 +1,261 @@
+:host {
+  display: block;
+}
+
+.negative {
+  color: var(--danger);
+}
+
+.positive {
+  color: var(--success);
+}
+
+/* Periodo, cuenta y total general */
+.topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.period {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.grand {
+  margin-left: auto;
+  text-align: right;
+}
+
+.grand-label,
+.grand-detail {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.grand-value {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* Fichas por categoría (las «secciones» del diseño) */
+.sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 120px;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+
+  &:hover {
+    background: var(--surface-2);
+  }
+
+  &.active {
+    padding: calc(var(--space-2) - 0.5px) calc(var(--space-3) - 0.5px);
+    border: 1.5px solid var(--accent);
+    background: var(--accent-soft);
+
+    .section-name {
+      color: var(--accent);
+      font-weight: 500;
+    }
+  }
+
+  &.is-empty {
+    border-style: dashed;
+    background: transparent;
+
+    &.active {
+      background: var(--accent-soft);
+    }
+  }
+}
+
+.section-name {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.section-total {
+  font-weight: 500;
+}
+
+/* Esqueleto del balance y de las fichas (la animación de aparición está en movements-table.scss). */
+.ghost-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: calc(var(--text-2xl) * 1.2);
+}
+
+.ghost-balance {
+  width: 150px;
+  height: 22px;
+}
+
+.ghost-detail {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: calc(var(--text-xs) * 1.5);
+}
+
+.ghost-detail-bar {
+  width: 230px;
+  max-width: 100%;
+  height: 10px;
+}
+
+.ghost-section {
+  flex: none;
+  height: calc(var(--text-sm) * 1.5 + var(--text-base) * 1.5 + var(--space-4) + 2px);
+  border-radius: var(--radius-md);
+}
+
+/* Barra de herramientas de la tabla */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+
+  h2 {
+    margin-right: var(--space-2);
+  }
+}
+
+.search {
+  width: 240px;
+  max-width: 100%;
+
+  .input {
+    appearance: none;
+  }
+}
+
+.rule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text);
+  }
+}
+
+.sort-select {
+  display: none;
+}
+
+.alert {
+  margin-bottom: var(--space-3);
+}
+
+/* Móvil */
+@media (width <= 767px) {
+  .topline {
+    align-items: stretch;
+  }
+
+  .grand {
+    order: -1;
+    flex-basis: 100%;
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .ghost-value,
+  .ghost-detail {
+    justify-content: flex-start;
+  }
+
+  .period {
+    flex: 1 1 100%;
+
+    .btn.icon {
+      width: var(--touch-target);
+      min-height: var(--touch-target);
+    }
+  }
+
+  /* Controles de PrimeNG a la altura táctil. */
+  :host ::ng-deep {
+    .sort-select {
+      width: 100%;
+    }
+
+    .topline .p-select,
+    .toolbar .p-select {
+      min-height: var(--touch-target);
+    }
+  }
+
+  .search .input {
+    min-height: var(--touch-target);
+  }
+
+  .rule-toggle {
+    flex: 1 1 100%;
+    min-height: var(--touch-target);
+  }
+
+  .sections {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-right: calc(-1 * var(--page-gutter));
+    padding-right: var(--page-gutter);
+    scrollbar-width: none;
+  }
+
+  .section {
+    flex: none;
+    min-height: var(--touch-target);
+  }
+
+  .search {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .toolbar {
+    h2 {
+      flex: 1 1 100%;
+    }
+  }
+
+  .sort-select {
+    display: flex;
+    flex: 1 1 100%;
+  }
+
+  .spacer {
+    display: none;
+  }
+}

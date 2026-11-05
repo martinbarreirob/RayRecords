@@ -1,0 +1,287 @@
+/*
+ * A escritorio la pantalla usa la columna .page tal cual (mismo ancho máximo y márgenes que la
+ * cabecera global y la barra de captura) y solo conserva el alto: una altura mínima igual a lo que
+ * queda de ventana bajo la cabecera y la captura. --notes-top es lo que ocupa todo lo de encima (se
+ * mide en la pantalla); si las notas bajan más, la página crece.
+ */
+@media (width >= 768px) {
+  :host(.page) {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--notes-top, 0px));
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.alert .close {
+  flex: none;
+  margin-left: auto;
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Cabecera de una sola fila: título y fecha a la izquierda, acciones a la derecha. */
+.page-header {
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.title-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+}
+
+.title-block h1 {
+  font-size: var(--text-xl);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.actions .kbd {
+  margin-left: var(--space-1);
+}
+
+.actions .btn[aria-expanded='true'],
+.actions .btn[aria-pressed='true'] {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+/* Iconos de los botones de la cabecera (Ordenar lleva icono y texto; el candado, solo icono). */
+.actions .btn .pi {
+  font-size: var(--text-sm);
+}
+
+/* Botón de solo icono (candado): cuadrado, del alto de los botones pequeños. */
+.actions .btn.icon {
+  width: 28px;
+  min-width: 28px;
+}
+
+/* Candado cerrado = estado por defecto y seguro; abierto se resalta para que no pase desapercibido. */
+.actions .btn.icon[aria-pressed='false'] .pi {
+  color: var(--accent);
+}
+
+/*
+ * La zona donde se pueden colocar las notas. Se desplaza con el dedo por el fondo (las tarjetas y las
+ * cabeceras de grupo capturan el gesto) y tiene scroll horizontal propio si hay tarjetas más allá del
+ * borde derecho. Crece con el contenido (min-height) y, si sobra ventana, la llena (flex).
+ */
+.board {
+  position: relative;
+  isolation: isolate;
+  flex: 1 0 auto;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x pan-y;
+  user-select: none;
+  border-radius: var(--radius-lg);
+  /* Caja acotada y sutil. El borde es una sombra interior, no border: así el origen de las tarjetas (left/top) coincide con x/y. */
+  box-shadow: inset 0 0 0 1px var(--line);
+  /* El contorno existe siempre, transparente: solo se anima su color (el estilo no se anima). */
+  outline: 1.5px dashed transparent;
+  outline-offset: -1px;
+  transition: outline-color 0.12s ease-out;
+}
+
+/* Primera carga: la caja del lienzo con el esqueleto dentro; ni se coloca ni se desplaza nada. */
+.board.loading {
+  overflow: hidden;
+  cursor: progress;
+}
+
+/* Mientras se arrastra o se redimensiona algo se ve hasta dónde se puede colocar. */
+.board.active {
+  outline-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Un poco de lienzo más allá de lo más lejano (--board-right): se puede desplazar hasta ahí. */
+.board::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--board-right, 0);
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.board-empty {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  width: min(100%, 420px);
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+.marquee {
+  position: absolute;
+  z-index: 9500;
+  /* Translúcido, con borde fino: deja ver las tarjetas que se están seleccionando. */
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  pointer-events: none;
+}
+
+/* Capa invisible mientras se arrastra: fija el cursor en toda la ventana y evita hovers y selecciones. */
+.drag-shield {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  cursor: grabbing;
+}
+
+.drag-shield.resize {
+  cursor: nwse-resize;
+}
+
+/* Avisos flotantes («Deshacer», «Disposición bloqueada»): apilados y centrados sobre la barra de atajos. */
+.toasts {
+  position: fixed;
+  bottom: 64px;
+  left: 50%;
+  z-index: calc(var(--z-nav) + 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100% - var(--space-5));
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.undo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-sm);
+  pointer-events: auto;
+  animation: rise 0.18s ease-out;
+}
+
+.undo button {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.undo button:hover {
+  background: var(--line-strong);
+  color: var(--text);
+}
+
+.undo .dismiss {
+  padding: 0;
+  width: 32px;
+  font-size: var(--text-lg);
+  font-weight: 400;
+  line-height: 1;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+@media (width <= 767px) {
+  :host(.page) {
+    padding-bottom: 96px;
+  }
+
+  /* Título y fecha arriba; debajo, los botones en una fila que cabe o se desplaza. */
+  .title-block h1 {
+    font-size: var(--text-2xl);
+    letter-spacing: -0.02em;
+  }
+
+  .page-header {
+    margin-bottom: var(--space-3);
+  }
+
+  .actions {
+    flex: 1 0 100%;
+    overflow-x: auto;
+  }
+
+  /* Objetivos táctiles de 44 px. */
+  .actions .btn {
+    flex: none;
+    min-height: var(--touch-target);
+  }
+
+  .alert .close {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-2);
+  }
+
+  /* A la izquierda del botón flotante de «Nueva nota», a su misma altura. */
+  .toasts {
+    right: 96px;
+    bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+    left: var(--space-4);
+    max-width: none;
+    align-items: stretch;
+    translate: none;
+  }
+
+  .undo {
+    min-height: 56px;
+    border-radius: var(--radius-lg);
+  }
+
+  .undo button {
+    min-height: var(--touch-target);
+  }
+
+  .undo .dismiss {
+    width: var(--touch-target);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .undo {
+    animation: none;
+  }
+
+  .board {
+    transition: none;
+  }
+}

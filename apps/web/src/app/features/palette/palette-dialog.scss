@@ -1,0 +1,330 @@
+:host {
+  display: contents;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 14vh var(--space-4) var(--space-4);
+  background: var(--overlay);
+  animation: palette-fade 120ms ease-out;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(660px, 100%);
+  max-height: calc(100dvh - 14vh - var(--space-4));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: palette-pop 140ms ease-out;
+}
+
+.search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search .pi {
+  color: var(--accent);
+  font-size: var(--text-lg);
+}
+
+/* Etiqueta del modo «escribir una nota o tarea»: la «/» que lo activa ya está consumida. */
+.mode-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-1) 2px var(--space-3);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+
+  .pi {
+    font-size: var(--text-xs);
+  }
+}
+
+.mode-exit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface);
+  }
+
+  .pi {
+    font-size: 10px;
+  }
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-lg);
+}
+
+.search input::placeholder {
+  color: var(--muted);
+}
+
+.search input:focus-visible {
+  outline: none;
+}
+
+/* Cerrar: «Esc» en escritorio, una cruz en táctil (donde no hay tecla). */
+.close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover {
+    border-color: var(--line-strong);
+    color: var(--text);
+  }
+
+  .pi {
+    display: none;
+    font-size: var(--text-sm);
+  }
+}
+
+.filters {
+  display: flex;
+  flex: none;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filters .chip {
+  flex: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.filters .chip:hover {
+  color: var(--text);
+}
+
+.filters .chip.accent {
+  color: var(--accent);
+}
+
+.results {
+  flex: 1;
+  /* Altura mínima: la lista no encoge ni da saltos al teclear y cambiar el número de resultados. */
+  min-height: min(260px, 40dvh);
+  padding: var(--space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.group + .group {
+  margin-top: 6px;
+}
+
+.group-title {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 9px var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.row.active {
+  background: var(--accent-soft);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label b {
+  font-weight: 500;
+}
+
+/* Lo que coincide con lo escrito. */
+.hit {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.keys {
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
+.keys .kbd.enter {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+
+.status {
+  padding: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.status.error {
+  color: var(--danger);
+}
+
+.foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--space-1) 18px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.foot .goto {
+  margin-left: auto;
+}
+
+@keyframes palette-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes palette-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    animation: none;
+  }
+}
+
+@media (hover: none) {
+  .keys {
+    display: none;
+  }
+}
+
+/* Móvil: la capa ocupa casi toda el área visible (sin el teclado, que se mide con visualViewport). */
+@media (width <= 767px) {
+  .backdrop {
+    inset: auto;
+    top: var(--vv-top, 0);
+    right: 0;
+    left: 0;
+    height: var(--vv-height, 100dvh);
+    padding: var(--space-2);
+  }
+
+  .panel {
+    width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-lg);
+  }
+
+  .search {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .search input {
+    min-height: var(--touch-target);
+    /* 16 px como mínimo: con menos, iOS hace zoom al enfocar el campo. */
+    font-size: max(var(--text-lg), 16px);
+  }
+
+  .mode-exit {
+    width: 32px;
+    height: 32px;
+  }
+
+  .close {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    border-radius: var(--radius-md);
+
+    .esc {
+      display: none;
+    }
+
+    .pi {
+      display: inline;
+    }
+  }
+
+  .results {
+    min-height: 0;
+  }
+
+  .row {
+    min-height: var(--touch-target);
+  }
+
+  .filters .chip {
+    min-height: var(--touch-target);
+  }
+
+  .foot {
+    display: none;
+  }
+}

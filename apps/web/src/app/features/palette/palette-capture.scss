@@ -1,0 +1,229 @@
+:host {
+  display: block;
+  flex: 1;
+  /* Misma altura mínima que la lista de resultados: al entrar en el modo no hay saltos. */
+  min-height: min(260px, 40dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) 20px;
+}
+
+p {
+  margin: 0;
+}
+
+.done,
+.error {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.message {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Vista previa: adónde irá y qué se guardará. */
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.plan.incomplete {
+  border-style: dashed;
+}
+
+.dest {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.to {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.destination {
+  font-weight: 600;
+
+  &.warn {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+}
+
+.title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.notice {
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+
+/* Sugerencias de prefijo: la primera se acepta con Tab; todas con un toque. */
+.suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+}
+
+/* Ayuda con ejemplos cuando aún no hay texto. */
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  code {
+    color: var(--text);
+    font-family: inherit;
+    font-weight: 500;
+  }
+}
+
+.prefixes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.prefix {
+  min-height: 28px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.send {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.send .btn {
+  gap: var(--space-2);
+}
+
+.send .kbd.enter {
+  border-color: currentcolor;
+  background: transparent;
+  color: inherit;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+@media (hover: none) {
+  .send .kbd,
+  .suggestion .kbd {
+    display: none;
+  }
+}
+
+@media (width <= 767px) {
+  :host {
+    min-height: 0;
+  }
+
+  .body {
+    padding: var(--space-3);
+  }
+
+  .send .btn,
+  .suggestion,
+  .prefix {
+    min-height: var(--touch-target);
+  }
+}

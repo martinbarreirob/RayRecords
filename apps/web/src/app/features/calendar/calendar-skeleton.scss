@@ -1,0 +1,60 @@
+@use '../../core/ui/skeleton';
+
+/* Esqueleto del calendario: mismas medidas que el contenido real para que no haya saltos. */
+.skel-in {
+  @include skeleton.reveal;
+}
+
+/* Mes ya cargado que se renueva: se atenúa en lugar de desaparecer. */
+.grid-card,
+.day-panel,
+.agenda {
+  @include skeleton.refreshing;
+}
+
+.skel-in .circle {
+  width: 18px;
+  height: 18px;
+}
+
+.ghost-chip {
+  height: 21px;
+  border-radius: 6px;
+}
+
+.ghost-check {
+  margin: 2px 0 0;
+}
+
+.ghost-line {
+  display: flex;
+  align-items: center;
+  height: calc(var(--text-base) * 1.5);
+
+  &.small {
+    height: calc(var(--text-sm) * 1.5);
+  }
+}
+
+.ghost-title {
+  width: 160px;
+  max-width: 100%;
+  height: 12px;
+}
+
+.ghost-list {
+  width: 84px;
+  height: 10px;
+}
+
+.ghost-wd {
+  width: 28px;
+  height: 10px;
+  margin: 4px 0;
+}
+
+.ghost-dn {
+  width: 24px;
+  height: 16px;
+  margin: 4px 0;
+}

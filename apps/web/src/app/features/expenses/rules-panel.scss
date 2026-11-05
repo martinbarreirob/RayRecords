@@ -1,0 +1,255 @@
+@use '../../core/ui/skeleton';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.alert {
+  margin: 0;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+
+  p {
+    max-width: 62ch;
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+  }
+}
+
+h2 + p {
+  margin: var(--space-1) 0 var(--space-4);
+  max-width: 62ch;
+  font-size: var(--text-sm);
+}
+
+.head h2 + p {
+  margin-bottom: 0;
+}
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--line);
+    font-size: var(--text-sm);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    &.inactive .pattern,
+    &.inactive .badge,
+    &.inactive .priority,
+    &.inactive .arrow {
+      opacity: 0.5;
+    }
+  }
+}
+
+.pattern {
+  font-weight: 500;
+}
+
+.arrow,
+.priority {
+  color: var(--muted);
+}
+
+.empty {
+  margin-bottom: var(--space-5);
+}
+
+.add {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+
+  h3 {
+    margin-bottom: var(--space-3);
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) 150px auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+/* El botón se alinea con los campos (no con el texto de ayuda que hay bajo algunos). */
+.submit {
+  margin-top: calc(var(--text-sm) * 1.5 + var(--space-1));
+}
+
+.help {
+  color: var(--muted);
+  font-size: var(--text-xs);
+
+  &.error {
+    color: var(--danger);
+  }
+}
+
+.field .input[aria-invalid='true'] {
+  border-color: var(--danger);
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px var(--danger-soft);
+  }
+}
+
+/* Campo numérico: botones − y + con los tokens propios, y el valor centrado. */
+:host ::ng-deep {
+  .p-inputnumber {
+    width: 100%;
+  }
+
+  .p-inputnumber-input {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--control-height);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .p-inputnumber-button {
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+
+    &:hover:not(:disabled) {
+      background: var(--line);
+      color: var(--text);
+    }
+  }
+}
+
+.cat-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+
+  .chip {
+    padding-right: var(--space-1);
+  }
+}
+
+/* Esqueleto de carga de reglas y categorías. */
+.skel-in {
+  @include skeleton.reveal;
+}
+
+.ghost-pattern {
+  height: 12px;
+}
+
+.ghost-badge {
+  width: 76px;
+}
+
+.ghost-toggle {
+  width: 36px;
+}
+
+.ghost-del {
+  width: 64px;
+  height: 28px;
+}
+
+.ghost-cat {
+  height: 30px;
+  border-radius: var(--radius-pill);
+}
+
+.icon-only {
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+}
+
+@media (width <= 767px) {
+  .grid,
+  .cat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .head .btn {
+    width: 100%;
+    min-height: var(--touch-target);
+  }
+
+  .grid .btn {
+    min-height: var(--touch-target);
+  }
+
+  .submit {
+    margin-top: 0;
+  }
+
+  :host ::ng-deep {
+    .p-select,
+    .p-inputnumber-input,
+    .p-inputnumber-button {
+      min-height: var(--touch-target);
+    }
+
+    .p-inputnumber-button {
+      width: var(--touch-target);
+    }
+  }
+
+  .rules .btn,
+  .icon-only {
+    min-height: var(--touch-target);
+  }
+
+  .icon-only {
+    width: var(--touch-target);
+  }
+
+  .rules li {
+    .spacer {
+      display: none;
+    }
+
+    .ghost-toggle {
+      margin-left: auto;
+    }
+
+    .ghost-del {
+      height: var(--touch-target);
+    }
+
+    p-toggleswitch {
+      margin-left: auto;
+    }
+  }
+}

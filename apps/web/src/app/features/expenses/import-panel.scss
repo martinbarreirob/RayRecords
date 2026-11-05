@@ -1,0 +1,337 @@
+@use '../../core/ui/skeleton';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+h2 {
+  margin-bottom: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.intro {
+  max-width: 62ch;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.account-field {
+  max-width: 320px;
+  margin-bottom: var(--space-4);
+}
+
+/* Zona de selección y arrastre del fichero */
+.drop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+
+  &.dragging {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  &.has-file {
+    border-style: solid;
+    border-color: var(--line);
+    background: var(--surface-2);
+  }
+}
+
+.drop-icon {
+  flex: none;
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.drop-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-sm);
+
+  strong {
+    font-size: var(--text-base);
+    font-weight: 500;
+  }
+}
+
+.drop-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drop-actions {
+  display: flex;
+  flex: none;
+  gap: var(--space-2);
+}
+
+/* Esqueleto de carga del formulario y del historial. */
+.skel-in {
+  @include skeleton.reveal;
+}
+
+.ghost-row {
+  display: flex;
+  align-items: center;
+  height: calc(var(--text-base) * 1.5);
+
+  &.small {
+    height: calc(var(--text-sm) * 1.5);
+  }
+}
+
+.ghost-select {
+  width: 100%;
+  height: var(--control-height);
+  border-radius: var(--radius-md);
+}
+
+.ghost-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.ghost-drop-title {
+  width: 190px;
+  max-width: 100%;
+  height: 12px;
+}
+
+.ghost-drop-sub {
+  width: 260px;
+  max-width: 100%;
+  height: 10px;
+}
+
+.ghost-btn {
+  width: 132px;
+  height: var(--control-height);
+
+  &.small {
+    width: 96px;
+  }
+}
+
+.ghost-step {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: 10px;
+}
+
+.ghost-batch-date {
+  width: 4.5rem;
+  height: 10px;
+}
+
+.ghost-batch-name {
+  height: 12px;
+}
+
+.ghost-batch-badge {
+  width: 96px;
+}
+
+.ghost-batch-btn {
+  width: 74px;
+  height: 28px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.step {
+  margin-right: auto;
+  font-size: var(--text-sm);
+}
+
+.alert {
+  margin: var(--space-3) 0 0;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.warnings {
+  margin-bottom: var(--space-3);
+  color: var(--warning);
+  font-size: var(--text-sm);
+
+  summary {
+    cursor: pointer;
+  }
+
+  ul {
+    margin: var(--space-2) 0 0;
+    padding-left: var(--space-5);
+    color: var(--text);
+  }
+}
+
+.scroll {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.table {
+  white-space: nowrap;
+
+  th {
+    position: sticky;
+    top: 0;
+  }
+
+  .desc {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  tr.is-duplicate td {
+    color: var(--muted);
+  }
+
+  /* Solo con puntero: en táctil el resaltado se quedaría pegado tras tocar. */
+  @media (hover: hover) {
+    tbody tr:hover td {
+      background: var(--surface-2);
+    }
+  }
+}
+
+.positive {
+  color: var(--success);
+}
+
+.note {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.done {
+  margin-top: var(--space-3);
+}
+
+.batches ul {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--line);
+    font-size: var(--text-sm);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+}
+
+.batch-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-date {
+  min-width: 4.5rem;
+}
+
+@media (width <= 767px) {
+  .account-field {
+    max-width: none;
+  }
+
+  .drop {
+    flex-wrap: wrap;
+    padding: var(--space-4);
+  }
+
+  .drop-actions {
+    flex: 1 1 100%;
+  }
+
+  .drop-actions .btn {
+    flex: 1;
+    min-height: var(--touch-target);
+  }
+
+  .actions {
+    justify-content: stretch;
+  }
+
+  .step {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
+
+  .actions .btn {
+    flex: 1;
+    min-height: var(--touch-target);
+  }
+
+  .ghost-btn {
+    flex: 1;
+    height: var(--touch-target);
+  }
+
+  .ghost-batch-btn {
+    height: var(--touch-target);
+  }
+
+  .batches .btn,
+  .done .btn {
+    min-height: var(--touch-target);
+  }
+
+  .batch-name {
+    flex-basis: 100%;
+    order: 3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+:host ::ng-deep .account-select {
+  width: 100%;
+}
+
+@media (width <= 767px) {
+  :host ::ng-deep .account-select {
+    min-height: var(--touch-target);
+  }
+}

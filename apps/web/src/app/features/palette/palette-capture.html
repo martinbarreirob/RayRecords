@@ -1,0 +1,106 @@
+<div class="body">
+  @if (feedback(); as done) {
+    <p class="done" role="status">
+      <i class="pi pi-check" aria-hidden="true"></i>
+      <span class="message">{{ done.message }}</span>
+      @if (done.link) {
+        <button type="button" class="link" (click)="opened.emit(done.link)">Ver</button>
+      }
+      @if (done.canUndo) {
+        <button type="button" class="link" (click)="undone.emit()">Deshacer</button>
+      }
+    </p>
+  }
+
+  @if (error()) {
+    <p class="error" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      <span class="message">{{ error() }}</span>
+    </p>
+  }
+
+  @if (preview(); as plan) {
+    <section class="plan" [class.incomplete]="plan.incomplete" aria-label="Vista previa">
+      <div class="dest">
+        <span class="to">Irá a</span>
+        <span
+          class="chip destination"
+          [class.accent]="plan.target === 'list'"
+          [class.warn]="plan.incomplete"
+        >
+          <i
+            class="pi"
+            [class.pi-list]="plan.target === 'list'"
+            [class.pi-clone]="plan.target === 'note'"
+            [class.pi-exclamation-circle]="plan.target === 'none'"
+            aria-hidden="true"
+          ></i>
+          {{ plan.destination }}
+        </span>
+      </div>
+      @if (plan.title) {
+        <p class="title">{{ plan.title }}</p>
+      }
+      @if (plan.extras.length) {
+        <div class="extras">
+          @for (extra of plan.extras; track extra.kind) {
+            <span class="chip">{{ extra.text }}</span>
+          }
+        </div>
+      }
+      @if (plan.notice) {
+        <p class="notice">{{ plan.notice }}</p>
+      }
+    </section>
+
+    @if (suggestions().length) {
+      <div class="suggest" role="group" aria-label="Completar el prefijo">
+        @for (option of suggestions(); track option.prefix; let first = $first) {
+          <button type="button" class="suggestion" (click)="picked.emit(option)">
+            @if (first) {
+              <span class="kbd" aria-hidden="true">Tab</span>
+            }
+            <b>{{ completion(option) }}</b>
+            <span class="muted">{{ option.label }}</span>
+          </button>
+        }
+      </div>
+    }
+  } @else if (!saving()) {
+    <div class="help">
+      <p class="lead">Escribe lo que quieras guardar. Con un prefijo va a una lista.</p>
+      <ul class="examples">
+        @for (example of examples; track example.text) {
+          <li>
+            <code>{{ example.text }}</code>
+            <span class="muted">{{ example.effect }}</span>
+          </li>
+        }
+      </ul>
+      <div class="prefixes" role="group" aria-label="Prefijos disponibles">
+        <span class="muted">Prefijos</span>
+        @for (option of prefixes(); track option.prefix) {
+          <button type="button" class="chip prefix" (click)="picked.emit(option)">
+            {{ completion(option) }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (preview() || saving()) {
+    <div class="send">
+      <button
+        type="button"
+        class="btn primary"
+        [disabled]="saving() || !preview() || preview()!.incomplete"
+        (click)="submitted.emit()"
+      >
+        {{ saving() ? 'Guardando…' : 'Añadir' }}
+        @if (!saving()) {
+          <span class="kbd enter" aria-hidden="true">Enter</span>
+        }
+      </button>
+    </div>
+  }
+</div>
