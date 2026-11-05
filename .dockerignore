@@ -4,7 +4,8 @@
 **/coverage
 .git
 .github
-.env
-.env.*
-deploy/.env
+**/.env
+**/.env.*
+*.pem
+*.key
 *.md

@@ -6,16 +6,16 @@ Server: Hetzner CX23 (4 GB). Three small containers of our own (`web`, `api`, `c
 Browser ──HTTPS──► Cloudflare ──tunnel──► cloudflared ──► web (nginx) ──► api:3000 ──► Mongo (database "rayrecords")
 ```
 
-The tunnel is an outbound connection from the server to Cloudflare, so no inbound port is opened. The public hostname is `rayrecords.nonchoperdas.com`.
+The tunnel is an outbound connection from the server to Cloudflare, so no inbound port is opened. The public hostname is configured in the Cloudflare dashboard.
 
 ## Memory budget
 
-| Service         | `mem_limit` | Notes                                                                           |
-| --------------- | ----------- | ------------------------------------------------------------------------------- |
-| `web` (nginx)   | 64 MB       | Static files and a proxy.                                                       |
-| `api` (Node)    | 256 MB      | `--max-old-space-size=192`: the GC runs before the kernel kills the container.  |
-| `cloudflared`   | 64 MB       | Tunnel connector.                                                               |
-| Existing Mongo  | -           | Shared with the other project; see below.                                       |
+| Service        | `mem_limit` | Notes                                                                          |
+| -------------- | ----------- | ------------------------------------------------------------------------------ |
+| `web` (nginx)  | 64 MB       | Static files and a proxy.                                                      |
+| `api` (Node)   | 256 MB      | `--max-old-space-size=192`: the GC runs before the kernel kills the container. |
+| `cloudflared`  | 64 MB       | Tunnel connector.                                                              |
+| Existing Mongo | -           | Shared with the other project; see below.                                      |
 
 `memswap_limit` equals `mem_limit` everywhere: without swap, a runaway container cannot drag the rest down.
 

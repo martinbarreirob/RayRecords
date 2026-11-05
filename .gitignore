@@ -1,16 +1,20 @@
-# Dependencias y artefactos de build
+# Dependencies and build output
 node_modules/
 dist/
 .angular/
 coverage/
 *.tsbuildinfo
 
-# Entorno local (los .env.example sí se versionan)
+# Local environment (the .env.example files are versioned)
 .env
 .env.*
 !.env.example
 
-# Editor / sistema
+# Keys and certificates
+*.pem
+*.key
+
+# Editor and OS
 .idea/
 .vscode/
 .DS_Store
