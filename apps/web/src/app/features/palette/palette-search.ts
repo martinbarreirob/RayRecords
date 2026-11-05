@@ -2,29 +2,29 @@ import type { Item, List, Transaction } from '@rayrecords/shared';
 import { catchError, forkJoin, map, of, type Observable } from 'rxjs';
 import type { ApiClient } from '../../core/api/api-client';
 
-/** Espera tras la última tecla antes de preguntar al servidor. */
+/** Wait after the last key before asking the server. */
 export const SEARCH_DEBOUNCE_MS = 200;
-/** Con menos letras no se busca en el servidor (solo en lo ya cargado). */
+/** With fewer letters the server is not searched (only what is already loaded). */
 export const MIN_REMOTE_CHARS = 2;
-/** Listas en las que se buscan tarjetas como máximo (una petición por lista). */
+/** Maximum lists searched for cards (one request per list). */
 const MAX_LISTS_SEARCHED = 12;
 const REMOTE_ITEMS_PER_LIST = 8;
 const REMOTE_TRANSACTIONS = 8;
 
 export interface RemoteState {
-  /** Consulta a la que corresponden estos datos. */
+  /** Query these data belong to. */
   query: string;
   items: Item[];
   transactions: Transaction[];
-  /** Alguna petición falló: el resultado puede estar incompleto. */
+  /** Some request failed: the result may be incomplete. */
   failed: boolean;
 }
 
 export const EMPTY_REMOTE: RemoteState = { query: '', items: [], transactions: [], failed: false };
 
 /**
- * Busca en el servidor lo que no está ya cargado: tarjetas (una petición por lista) y movimientos
- * de gastos. Un fallo suelto no tumba el resto: se marca `failed` y se sigue con lo que llegó.
+ * Searches the server for what is not already loaded: cards (one request per list) and expense
+ * movements. A single failure does not take down the rest: `failed` is set and what arrived is used.
  */
 export function searchRemote(
   api: ApiClient,

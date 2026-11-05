@@ -5,19 +5,19 @@ export interface GridDay {
   inMonth: boolean;
 }
 
-/** `YYYY-MM` desplazado `delta` meses. */
+/** `YYYY-MM` shifted by `delta` months. */
 export function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
   const date = new Date(Date.UTC(y, m - 1 + delta, 1));
   return date.toISOString().slice(0, 7);
 }
 
-/** Cuadrícula mensual por semanas, empezando en lunes; incluye los días de los meses vecinos. */
+/** Monthly grid by weeks, starting on Monday; includes the days of the neighboring months. */
 export function buildMonthGrid(month: string): GridDay[][] {
   const [y, m] = month.split('-').map(Number) as [number, number];
   const first = `${month}-01`;
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7; // lunes = 0
+  const offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7; // Monday = 0
   const start = addDays(first, -offset);
   const weeks = Math.ceil((offset + daysInMonth) / 7);
 
@@ -29,7 +29,7 @@ export function buildMonthGrid(month: string): GridDay[][] {
   );
 }
 
-/** Elementos agrupados por su `dueDate` (los que no la tienen se ignoran). */
+/** Items grouped by their `dueDate` (those without one are ignored). */
 export function groupByDate<T extends { dueDate?: string | undefined }>(
   entries: readonly T[],
 ): Map<string, T[]> {
@@ -43,7 +43,7 @@ export function groupByDate<T extends { dueDate?: string | undefined }>(
   return groups;
 }
 
-/** Orden dentro de un día: primero los que no tienen hora, luego por hora y por título. */
+/** Order within a day: items without a time first, then by time and title. */
 export function sortDayEntries<T extends { time?: string | undefined; title: string }>(
   entries: readonly T[],
 ): T[] {
@@ -54,14 +54,14 @@ export function sortDayEntries<T extends { time?: string | undefined; title: str
   });
 }
 
-/** Parte visible de un día de la cuadrícula: hasta `max` elementos y cuántos quedan ocultos. */
+/** Visible part of a grid day: up to `max` items and how many are hidden. */
 export function splitVisible<T>(entries: readonly T[], max: number): { shown: T[]; more: number } {
-  // Si solo sobra uno, se muestra: «+1 más» ocuparía el mismo sitio que el propio elemento.
+  // If only one is left it is shown: "+1 más" would take the same space as the item itself.
   if (entries.length <= max + 1) return { shown: [...entries], more: 0 };
   return { shown: entries.slice(0, max), more: entries.length - max };
 }
 
-/** Vencido: sin hacer y con fecha anterior a hoy. */
+/** Overdue: not done and with a date before today. */
 export function isOverdueEntry(
   entry: { doneAt?: string | undefined; dueDate?: string | undefined },
   today: string,
@@ -78,7 +78,7 @@ function utcDate(date: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-/** `2026-11` → `Noviembre de 2026`. */
+/** `2026-11` to `Noviembre de 2026`. */
 export function monthTitle(month: string): string {
   return capitalize(
     new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
@@ -87,7 +87,7 @@ export function monthTitle(month: string): string {
   );
 }
 
-/** `2026-11-04` → `Miércoles, 4 de noviembre`. */
+/** `2026-11-04` to `Miércoles, 4 de noviembre`. */
 export function dayTitle(date: string): string {
   return capitalize(
     new Intl.DateTimeFormat('es-ES', {
@@ -99,7 +99,7 @@ export function dayTitle(date: string): string {
   );
 }
 
-/** Piezas de una fecha para la agenda: día de la semana abreviado y número del día. */
+/** Pieces of a date for the agenda: abbreviated weekday and day number. */
 export function dayParts(date: string): { weekday: string; day: string } {
   const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'short', timeZone: 'UTC' })
     .format(utcDate(date))
@@ -107,15 +107,15 @@ export function dayParts(date: string): { weekday: string; day: string } {
   return { weekday: capitalize(weekday), day: String(Number(date.slice(8))) };
 }
 
-/** Día que se selecciona al cambiar de mes: hoy si es ese mes; si no, el día 1. */
+/** Day selected when changing month: today if it is that month; otherwise day 1. */
 export function defaultSelection(month: string, today: string): string {
   return today.startsWith(month) ? today : `${month}-01`;
 }
 
-/** Día al que lleva una tecla de navegación dentro de la rejilla (semanas de lunes a domingo). */
+/** Day a navigation key leads to inside the grid (weeks from Monday to Sunday). */
 export function arrowTarget(date: string, key: string): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
-  const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // lunes = 0
+  const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // Monday = 0
   switch (key) {
     case 'ArrowLeft':
       return addDays(date, -1);
@@ -134,12 +134,12 @@ export function arrowTarget(date: string, key: string): string {
   }
 }
 
-/** Clave del rango de fechas que pide el calendario para un mes (primer y último día de la rejilla). */
+/** Key of the date range the calendar requests for a month (first and last day of the grid). */
 export function rangeKey(weeks: readonly (readonly GridDay[])[]): string {
   return `${weeks[0]![0]!.date}..${weeks.at(-1)!.at(-1)!.date}`;
 }
 
-/** Anchos (en %) de las «píldoras» fantasma de la celda número `index`: 0, 1 o 2, sin azar para no saltar. */
+/** Widths (in %) of the ghost pills of cell number `index`: 0, 1 or 2, no randomness so nothing jumps. */
 const GHOST_PILLS: readonly (readonly number[])[] = [
   [],
   [82],

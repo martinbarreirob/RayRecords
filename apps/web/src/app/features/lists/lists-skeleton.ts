@@ -1,13 +1,13 @@
 import { Component, input } from '@angular/core';
 
-/** Forma del contenido que se está esperando: rejilla de listas, tabla de elementos o tablero Kanban. */
+/** Shape of the content being awaited: list grid, items table or Kanban board. */
 export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
 
 /**
- * Esqueleto de carga de las pantallas de listas. Reproduce las medidas del contenido real (tarjetas,
- * filas de tabla, columnas del tablero) para que al llegar los datos no haya saltos. Los bloques son
- * decorativos (`aria-hidden`) y un `role="status"` solo para lector de pantalla avisa de la carga.
- * Aparece con un retraso en CSS (sin temporizadores): si los datos llegan antes, nunca llega a verse.
+ * Loading skeleton of the lists screens. It mirrors the measures of the real content (cards, table
+ * rows, board columns) so there are no jumps when data arrives. The blocks are decorative
+ * (`aria-hidden`) and a screen-reader-only `role="status"` announces the load.
+ * It appears after a CSS delay (no timers): if data arrives first, it is never seen.
  */
 @Component({
   selector: 'app-lists-skeleton',
@@ -30,7 +30,7 @@ export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
       }
     }
 
-    /* Anchos de los bloques de texto y chips fantasma. */
+    /* Widths of the ghost text and chip blocks. */
     .w-xs {
       width: 38px;
     }
@@ -47,7 +47,7 @@ export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
       width: 76px;
     }
 
-    /* Rejilla de listas: mismas columnas, hueco y tarjeta que la pantalla de listas. */
+    /* Lists grid: same columns, gap and card as the lists screen. */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -92,7 +92,7 @@ export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
       border-radius: var(--radius-md);
     }
 
-    /* Tabla de elementos: caja con borde, cabecera gris y filas de la altura de las reales. */
+    /* Items table: bordered box, grey header and rows as tall as the real ones. */
     .wrap {
       overflow: hidden;
       border: 1px solid var(--line);
@@ -142,7 +142,7 @@ export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
       height: 20px;
     }
 
-    /* Tablero: columnas con su cabecera y tarjetas como las reales. */
+    /* Board: columns with their header and cards like the real ones. */
     .board {
       display: flex;
       align-items: flex-start;
@@ -314,12 +314,12 @@ export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
 })
 export class ListsSkeleton {
   readonly variant = input<ListsSkeletonVariant>('table');
-  /** Texto para el lector de pantalla. */
+  /** Screen-reader text. */
   readonly message = input('Cargando…');
 
   protected readonly cards = [0, 1, 2, 3, 4, 5];
   protected readonly titleWidths = [48, 62, 40, 55, 70, 45];
-  /** Tarjetas fantasma por columna (entre 2 y 4). */
+  /** Ghost cards per column (2 to 4). */
   protected readonly columnCards = [3, 2, 4];
 
   protected range(count: number): number[] {

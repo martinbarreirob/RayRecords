@@ -26,9 +26,9 @@ const MONTH_NAMES = [
 ];
 
 /**
- * Selector de periodo propio: atajos (este mes, 3 o 12 meses, un año, todo), un año entero con un
- * clic y rangos de meses de uno a otro, también entre años. Primer clic en un mes: ese mes; segundo
- * clic: el rango hasta él. Las flechas saltan al periodo anterior o siguiente del mismo tamaño.
+ * Custom period picker: shortcuts (this month, 3 or 12 months, a year, all), a whole year in one
+ * click, and month ranges that can cross years. First click on a month selects it; the second
+ * selects the range up to it. The arrows jump to the previous or next period of the same size.
  */
 @Component({
   selector: 'app-period-picker',
@@ -132,9 +132,9 @@ const MONTH_NAMES = [
 export class PeriodPicker {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Periodo actual; `{ from: null, to: null }` es «todo el histórico». */
+  /** Current period; `{ from: null, to: null }` means the whole history. */
   readonly period = input.required<Period>();
-  /** Si la pantalla admite no poner límite (Movimientos sí, Resumen no). */
+  /** Whether the screen allows no limit (Movements does, Summary does not). */
   readonly allowAll = input(false);
   readonly periodChange = output<Period>();
 
@@ -157,7 +157,7 @@ export class PeriodPicker {
       this.close();
       return;
     }
-    // Se abre en el año del periodo elegido.
+    // Opens on the year of the selected period.
     const from = this.period().from;
     if (from) this.year.set(Number(from.slice(0, 4)));
     this.anchor.set(null);

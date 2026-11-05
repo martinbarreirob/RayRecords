@@ -1,11 +1,11 @@
 @use '../../core/ui/skeleton';
 
-/* Esqueleto del calendario: mismas medidas que el contenido real para que no haya saltos. */
+/* Calendar skeleton: same measures as the real content so nothing jumps. */
 .skel-in {
   @include skeleton.reveal;
 }
 
-/* Mes ya cargado que se renueva: se atenúa en lugar de desaparecer. */
+/* Month already loaded that is being refreshed: dimmed instead of disappearing. */
 .grid-card,
 .day-panel,
 .agenda {

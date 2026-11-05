@@ -7,7 +7,7 @@ export interface PeriodPreset {
   period: Period;
 }
 
-/** Atajos de periodo a partir del mes actual (`YYYY-MM`). `all` solo si la pantalla admite «sin límite». */
+/** Period shortcuts from the current month (`YYYY-MM`). `all` only if the screen allows no limit. */
 export function periodPresets(currentMonth: string, allowAll: boolean): PeriodPreset[] {
   const year = currentMonth.slice(0, 4);
   const lastYear = String(Number(year) - 1);
@@ -35,12 +35,12 @@ export function periodPresets(currentMonth: string, allowAll: boolean): PeriodPr
   return presets;
 }
 
-/** Enero a diciembre del año. */
+/** January to December of the year. */
 export function yearPeriod(year: string): Period {
   return { from: `${year}-01`, to: `${year}-12` };
 }
 
-/** El año si el periodo es exactamente un año natural completo; si no, `null`. */
+/** The year if the period is exactly one full calendar year, otherwise `null`. */
 export function wholeYear(period: Period): string | null {
   const { from, to } = period;
   if (!from || !to) return null;
@@ -48,19 +48,19 @@ export function wholeYear(period: Period): string | null {
   return from === `${year}-01` && to === `${year}-12` ? year : null;
 }
 
-/** Periodo entre dos meses en cualquier orden. */
+/** Period between two months, in either order. */
 export function rangeBetween(a: string, b: string): Period {
   return a <= b ? { from: a, to: b } : { from: b, to: a };
 }
 
-/** ¿Está el mes dentro del periodo? Un periodo abierto (sin límites) los incluye todos. */
+/** Whether the month is inside the period. An open period includes every month. */
 export function monthInPeriod(month: string, period: Period): boolean {
   return (!period.from || month >= period.from) && (!period.to || month <= period.to);
 }
 
 /**
- * Periodo anterior (`-1`) o siguiente (`1`) del mismo tamaño: un año entero salta de año en año y el resto
- * de rangos avanza tantos meses como abarque. `null` si el periodo no tiene los dos extremos.
+ * Previous (`-1`) or next (`1`) period of the same size: a full year moves by years, any other
+ * range moves by as many months as it spans. `null` if the period lacks either end.
  */
 export function shiftPeriod(period: Period, direction: -1 | 1): Period | null {
   const { from, to } = period;

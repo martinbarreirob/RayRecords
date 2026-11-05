@@ -20,7 +20,7 @@ function type(input: HTMLInputElement, text: string): void {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-describe('app-time-field (escritorio)', () => {
+describe('app-time-field (desktop)', () => {
   let fixture: ComponentFixture<Host>;
   let host: Host;
   let input: HTMLInputElement;
@@ -38,7 +38,7 @@ describe('app-time-field (escritorio)', () => {
     input = fixture.nativeElement.querySelector('#t') as HTMLInputElement;
   });
 
-  it('una hora completa se guarda al escribirla y se normaliza al salir', async () => {
+  it('a full time is saved as typed and normalized on blur', async () => {
     type(input, '0930');
     expect(host.time()).toBe('09:30');
     expect(input.value).toBe('0930');
@@ -47,7 +47,7 @@ describe('app-time-field (escritorio)', () => {
     expect(input.value).toBe('09:30');
   });
 
-  it('tres cifras (930) se interpretan al salir del campo', async () => {
+  it('three digits (930) are interpreted on blur', async () => {
     type(input, '930');
     expect(host.time()).toBe('');
     input.dispatchEvent(new Event('blur'));
@@ -56,7 +56,7 @@ describe('app-time-field (escritorio)', () => {
     expect(input.value).toBe('09:30');
   });
 
-  it('una hora parcial se completa al salir del campo', async () => {
+  it('a partial time is completed on blur', async () => {
     type(input, '9');
     expect(host.time()).toBe('');
     input.dispatchEvent(new Event('blur'));
@@ -65,7 +65,7 @@ describe('app-time-field (escritorio)', () => {
     expect(input.value).toBe('09:00');
   });
 
-  it('una hora imposible se marca y, al salir, vuelve al último valor válido', async () => {
+  it('an impossible time is flagged and, on blur, goes back to the last valid value', async () => {
     type(input, '08:15');
     type(input, '25:70');
     await rerender();
@@ -77,12 +77,12 @@ describe('app-time-field (escritorio)', () => {
     expect(input.getAttribute('aria-invalid')).toBeNull();
   });
 
-  it('los caracteres no permitidos no entran', () => {
+  it('disallowed characters are rejected', () => {
     type(input, '1a2');
     expect(input.value).toBe('12');
   });
 
-  it('las flechas parten de las 09:00, suman y restan 15 minutos, y Mayús una hora', async () => {
+  it('arrows start at 09:00, add and subtract 15 minutes, and Shift one hour', async () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
     expect(host.time()).toBe('09:00');
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
@@ -96,7 +96,7 @@ describe('app-time-field (escritorio)', () => {
     expect(input.value).toBe('09:45');
   });
 
-  it('borrar el texto deja la hora vacía y un valor de fuera se muestra', async () => {
+  it('clearing the text leaves the time empty and an outside value is shown', async () => {
     type(input, '10:00');
     type(input, '');
     expect(host.time()).toBe('');
@@ -105,15 +105,15 @@ describe('app-time-field (escritorio)', () => {
     expect(input.value).toBe('17:30');
   });
 
-  it('Intro guarda lo escrito antes de que el formulario se envíe', () => {
+  it('Enter saves what was typed before the form submits', () => {
     type(input, '7');
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     expect(host.time()).toBe('07:00');
   });
 });
 
-describe('app-date-field (escritorio)', () => {
-  it('muestra la fecha como dd/mm/aaaa', async () => {
+describe('app-date-field (desktop)', () => {
+  it('shows the date as dd/mm/aaaa', async () => {
     const fixture = TestBed.createComponent(Host);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -123,7 +123,7 @@ describe('app-date-field (escritorio)', () => {
     expect(input.value).toBe('04/11/2026');
   });
 
-  it('una fecha escrita a mano llega como YYYY-MM-DD y borrarla deja el valor vacío', async () => {
+  it('a hand-typed date arrives as YYYY-MM-DD and clearing it leaves the value empty', async () => {
     const fixture = TestBed.createComponent(Host);
     fixture.detectChanges();
     await fixture.whenStable();

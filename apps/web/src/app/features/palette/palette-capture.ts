@@ -2,16 +2,16 @@ import { Component, input, output } from '@angular/core';
 import { completion, type PrefixOption } from '../capture/capture-prefix';
 import type { CapturePreview } from '../capture/capture-preview';
 
-/** Lo que se enseña tras guardar: qué se añadió, adónde ir a verlo y cómo deshacerlo. */
+/** What is shown after saving: what was added, where to see it and how to undo it. */
 export interface CaptureFeedback {
   message: string;
-  /** Pantalla donde está lo guardado; `null` si no se sabe (o tras deshacer). */
+  /** Screen where the saved item is; `null` if unknown (or after undo). */
   link: string | null;
-  /** Se puede borrar lo que se acaba de guardar. */
+  /** What was just saved can be deleted. */
   canUndo: boolean;
 }
 
-/** Ejemplos de la ayuda del modo captura (lo que se escribe y qué hace). */
+/** Examples for the capture mode help (what is typed and what it does). */
 const EXAMPLES: readonly { text: string; effect: string }[] = [
   { text: 'compra: leche semidesnatada', effect: 'se añade a la lista con ese prefijo' },
   { text: 'mañana: llamar al dentista', effect: 'tarea con fecha (también hoy:)' },
@@ -20,9 +20,9 @@ const EXAMPLES: readonly { text: string; effect: string }[] = [
 ];
 
 /**
- * Parte visible del modo «escribir una nota o tarea» de la paleta: la vista previa de lo que se va a
- * guardar y adónde, el aviso de errores, la confirmación de lo guardado, las sugerencias de prefijo y
- * la ayuda con ejemplos. No guarda nada: solo pinta lo que le da la paleta y le avisa de lo elegido.
+ * Visible part of the "write a note or task" palette mode: the preview of what will be saved and
+ * where, the error notice, the confirmation of what was saved, the prefix suggestions and the help
+ * with examples. It saves nothing: it only draws what the palette gives it and reports what was chosen.
  */
 @Component({
   selector: 'app-palette-capture',
@@ -44,7 +44,7 @@ export class PaletteCapture {
 
   protected readonly examples = EXAMPLES;
 
-  /** «compra:», como se escribe y se enseña. */
+  /** "compra:", as typed and shown. */
   protected completion(option: PrefixOption): string {
     return completion(option).trim();
   }

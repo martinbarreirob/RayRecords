@@ -20,7 +20,7 @@ describe('PaletteService', () => {
     document.body.replaceChildren();
   });
 
-  it('«show({ capture: true })» pide el modo captura, una sola vez, y «show()» no', () => {
+  it('show({ capture: true }) requests capture mode, once, and show() does not', () => {
     service.show({ capture: true });
     expect(service.takeCaptureRequest()).toBe(true);
     expect(service.takeCaptureRequest()).toBe(false);
@@ -30,7 +30,7 @@ describe('PaletteService', () => {
     expect(service.takeCaptureRequest()).toBe(false);
   });
 
-  it('abre, cierra y alterna', () => {
+  it('opens, closes and toggles', () => {
     service.show();
     expect(service.isOpen()).toBe(true);
     service.toggle();
@@ -39,7 +39,7 @@ describe('PaletteService', () => {
     expect(service.isOpen()).toBe(true);
   });
 
-  it('al cerrar devuelve el foco a quien lo tenía', () => {
+  it('on close gives focus back to whoever had it', () => {
     service.show();
     other.focus();
 
@@ -49,7 +49,7 @@ describe('PaletteService', () => {
     expect(document.activeElement).toBe(opener);
   });
 
-  it('sin devolver el foco (al navegar) no lo toca', () => {
+  it('without restoring focus (when navigating) it leaves focus alone', () => {
     service.show();
     other.focus();
 
@@ -59,13 +59,13 @@ describe('PaletteService', () => {
     expect(document.activeElement).toBe(other);
   });
 
-  it('reabrir enseguida cancela la devolución pendiente y la conserva para el cierre siguiente', () => {
+  it('reopening right away cancels the pending restore and keeps it for the next close', () => {
     service.show();
     service.hide();
     service.show();
     other.focus();
     vi.runAllTimers();
-    expect(document.activeElement).toBe(other); // no le roba el foco a la paleta nueva
+    expect(document.activeElement).toBe(other); // does not steal focus from the new palette
 
     service.hide();
     vi.runAllTimers();

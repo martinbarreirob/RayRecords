@@ -39,7 +39,7 @@ import {
 
 type CalendarView = 'month' | 'agenda';
 
-/** Elementos que caben en una celda de la rejilla antes de «+n más». */
+/** Items that fit in a grid cell before "+n más". */
 const CELL_LIMIT = 3;
 const NARROW_QUERY = '(max-width: 767px)';
 const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
@@ -375,18 +375,18 @@ export class CalendarPage {
   protected readonly selected = signal(this.today);
   protected readonly error = signal('');
 
-  /** Elementos ya cargados por rango pedido: volver a un mes visto no vacía la pantalla. */
+  /** Items already loaded per requested range: going back to a seen month does not empty the screen. */
   private readonly cache = signal<ReadonlyMap<string, CalendarEntry[]>>(new Map());
-  /** Rango cuya petición falló (no se queda en «cargando» para siempre). */
+  /** Range whose request failed (so it does not stay "loading" forever). */
   private readonly failedKey = signal('');
-  /** Rango con una petición en curso. */
+  /** Range with a request in flight. */
   private readonly pendingKey = signal('');
 
   protected readonly ghostRows = [0, 1];
   protected readonly ghostAgenda = [2, 1, 2];
   protected readonly pills = ghostPills;
 
-  /** En pantallas estrechas se parte de la agenda (más cómoda con el dedo); la rejilla sigue a un toque. */
+  /** On narrow screens it starts on the agenda (easier with a finger); the grid is one tap away. */
   protected readonly view = signal<CalendarView>(
     typeof matchMedia === 'function' && matchMedia(NARROW_QUERY)?.matches ? 'agenda' : 'month',
   );
@@ -406,12 +406,12 @@ export class CalendarPage {
 
   private readonly entries = computed(() => this.cache().get(this.key()) ?? []);
 
-  /** Aún no hay datos de este mes (primera carga o mes sin visitar): se pinta el esqueleto, no «vacío». */
+  /** No data for this month yet (first load or unvisited month): the skeleton is drawn, not "empty". */
   protected readonly loading = computed(
     () => !this.cache().has(this.key()) && this.failedKey() !== this.key(),
   );
 
-  /** Hay datos del mes y se están renovando: se muestran atenuados. */
+  /** There is data for the month and it is being refreshed: shown dimmed. */
   protected readonly refreshing = computed(
     () => this.pendingKey() === this.key() && this.cache().has(this.key()),
   );
@@ -424,7 +424,7 @@ export class CalendarPage {
     return groups;
   });
 
-  /** Semanas con lo que se pinta en cada celda. */
+  /** Weeks with what is drawn in each cell. */
   protected readonly weeks = computed(() =>
     this.grid().map((week) =>
       week.map((day) => {
@@ -436,7 +436,7 @@ export class CalendarPage {
 
   protected readonly selectedEntries = computed(() => this.byDate().get(this.selected()) ?? []);
 
-  /** Días con elementos del mes mostrado, en orden. */
+  /** Days with items in the shown month, in order. */
   protected readonly agenda = computed(() => {
     const month = this.month();
     return [...this.byDate()]
@@ -454,7 +454,7 @@ export class CalendarPage {
       untracked(() => this.load(from, to));
     });
 
-    // Al abrir el formulario, el foco va al título.
+    // When the form opens, focus goes to the title.
     effect(() => {
       const input = this.titleInput();
       if (input) untracked(() => input.nativeElement.focus());
@@ -483,7 +483,7 @@ export class CalendarPage {
     this.view.set(view);
   }
 
-  /** Teclado en la rejilla: flechas (día y semana), Inicio y Fin (lunes y domingo de la semana). */
+  /** Keyboard in the grid: arrows (day and week), Home and End (Monday and Sunday of the week). */
   protected onGridKeydown(event: KeyboardEvent): void {
     if (!GRID_KEYS.includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-date]');
@@ -548,7 +548,7 @@ export class CalendarPage {
           this.newTitle.set('');
           this.newTime.set('');
           this.error.set('');
-          // Se muestra el día donde ha quedado el elemento.
+          // Shows the day where the item ended up.
           this.month.set(monthOf(date));
           this.selected.set(date);
           this.titleInput()?.nativeElement.focus();

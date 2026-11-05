@@ -52,7 +52,7 @@
   }
 }
 
-/* Barras por mes: puro CSS, un solo color de acento. */
+/* Bars per month: pure CSS, a single accent colour. */
 .bars {
   display: flex;
   align-items: flex-end;
@@ -103,7 +103,7 @@
   white-space: nowrap;
 }
 
-/* Barras horizontales por categoría */
+/* Horizontal bars per category */
 .hbars {
   display: flex;
   flex-direction: column;
@@ -146,7 +146,7 @@
   text-align: right;
 }
 
-/* Tabla de detalle: scrollea dentro de su caja */
+/* Detail table: scrolls inside its box */
 .matrix h2 {
   margin-bottom: var(--space-3);
 }
@@ -180,7 +180,7 @@
     font-weight: 600;
   }
 
-  /* Resaltado de fila solo con puntero (en táctil se quedaría pegado). La primera columna es fija y lleva su propio fondo. */
+  /* Row highlight for pointer devices only (on touch it would stick). The first column is sticky and has its own background. */
   @media (hover: hover) {
     tbody tr:hover td,
     tbody tr:hover th {
@@ -196,7 +196,7 @@
 :host ::ng-deep {
 }
 
-/* Mientras llegan datos nuevos, lo anterior se atenúa en lugar de desaparecer. */
+/* While new data loads, the old content dims instead of disappearing. */
 .results {
   transition: opacity 0.15s;
 
@@ -206,7 +206,7 @@
   }
 }
 
-/* Esqueleto de carga: mismas cajas que el resumen real. */
+/* Loading skeleton: same boxes as the real summary. */
 .skel-in {
   @include skeleton.reveal;
 }
@@ -350,7 +350,7 @@
   }
 }
 
-/* «Ambos»: gastos e ingresos lado a lado en cada mes. */
+/* "Ambos": expenses and income side by side for each month. */
 .bar-track.pair {
   gap: 2px;
 }

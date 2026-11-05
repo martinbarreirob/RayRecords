@@ -2,8 +2,8 @@ import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 
 /**
- * Preset de PrimeNG: parte de Aura y solo fija la escala del acento (índigo). Los colores de superficie,
- * texto y bordes salen de nuestros tokens (styles/_primeng.scss), no de aquí, para que haya un único origen.
+ * PrimeNG preset: starts from Aura and only sets the accent scale (indigo). Surface, text and border
+ * colors come from our tokens (styles/_primeng.scss), not from here, so there is a single source.
  */
 export const RayRecordsPreset = definePreset(Aura, {
   semantic: {

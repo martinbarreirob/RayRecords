@@ -2,7 +2,7 @@ import type { Extra, FieldDef } from '@rayrecords/shared';
 
 const euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
 
-/** Valor de un campo de `extra` como texto para mostrar. */
+/** Value of an `extra` field as display text. */
 export function formatField(def: FieldDef, value: Extra[string] | undefined): string {
   if (value === undefined || value === null || value === '') return '';
   switch (def.type) {
@@ -17,7 +17,7 @@ export function formatField(def: FieldDef, value: Extra[string] | undefined): st
   }
 }
 
-/** Valor de un campo como texto editable (los importes, en euros). */
+/** Value of a field as editable text (amounts in euros). */
 export function toInputValue(def: FieldDef, value: Extra[string] | undefined): string {
   if (value === undefined || value === null) return '';
   if (def.type === 'money' && typeof value === 'number') return (value / 100).toFixed(2);
@@ -25,8 +25,8 @@ export function toInputValue(def: FieldDef, value: Extra[string] | undefined): s
 }
 
 /**
- * Texto del formulario → valor de `extra` (`null` si está vacío: borra el campo; `undefined` si no es
- * válido para el tipo). Los importes se escriben en euros y se guardan en céntimos.
+ * Form text → `extra` value (`null` if empty: clears the field; `undefined` if invalid for the
+ * type). Amounts are typed in euros and stored in cents.
  */
 export function fromInputValue(def: FieldDef, raw: string): Extra[string] | undefined {
   const text = raw.trim();
@@ -39,7 +39,7 @@ export function fromInputValue(def: FieldDef, raw: string): Extra[string] | unde
     }
     case 'money': {
       const n = Number(text.replace(',', '.'));
-      // toPrecision evita el error de coma flotante (1,005 · 100 = 100,4999…).
+      // toPrecision avoids floating-point error (1.005 * 100 = 100.4999…).
       return Number.isFinite(n) ? Math.round(Number((n * 100).toPrecision(15))) : undefined;
     }
     case 'boolean':
@@ -50,8 +50,8 @@ export function fromInputValue(def: FieldDef, raw: string): Extra[string] | unde
 }
 
 /**
- * Enlace escrito → dirección `http(s)` válida: `''` si está vacío, `null` si no vale. Sin protocolo se
- * asume `https://` (así `ejemplo.com` también sirve).
+ * Typed link → valid `http(s)` address: `''` if empty, `null` if invalid. Without a protocol
+ * `https://` is assumed (so `ejemplo.com` also works).
  */
 export function normalizeUrl(raw: string): string | null {
   const text = raw.trim();

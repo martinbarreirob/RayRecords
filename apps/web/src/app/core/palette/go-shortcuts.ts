@@ -1,7 +1,6 @@
 /**
- * Atajos globales «Ir a»: Mayús+N · Mayús+L · Mayús+C · Mayús+G · Mayús+U. Vive aparte de la paleta
- * porque lo usa el shell (siempre cargado), mientras que la paleta en sí se descarga al abrirla por
- * primera vez.
+ * Global "go to" shortcuts: Shift+N, L, C, G, U. Kept apart from the palette because the shell
+ * (always loaded) uses them, while the palette itself is downloaded the first time it opens.
  */
 
 export const GO_TARGETS = {
@@ -13,13 +12,13 @@ export const GO_TARGETS = {
 
 export type GoKey = keyof typeof GO_TARGETS;
 
-/** Orden de las secciones: el de la barra superior. Alt+→ avanza y Alt+← retrocede por esta lista. */
+/** Section order, same as the top bar. Alt+Right moves forward and Alt+Left back through this list. */
 export const SECTION_ORDER = ['/notas', '/listas', '/calendario', '/gastos'] as const;
 
 /**
- * Sección vecina de la que contiene `url` (`/listas/compras` cuenta como `/listas`), o `null` si la
- * dirección no es de una sección (login, raíz) o ya está en el extremo: no da la vuelta, así que el
- * mismo atajo siempre va en el mismo sentido.
+ * Neighbor section of the one containing `url` (`/listas/compras` counts as `/listas`), or `null`
+ * if the address is not a section (login, root) or is already at the end. It does not wrap around,
+ * so the same shortcut always goes the same way.
  */
 export function adjacentSection(url: string, direction: 1 | -1): string | null {
   const first = url.split(/[?#]/)[0]?.split('/')[1] ?? '';
@@ -28,12 +27,12 @@ export function adjacentSection(url: string, direction: 1 | -1): string | null {
   return SECTION_ORDER[index + direction] ?? null;
 }
 
-/** Cómo se enseña el atajo de una sección: «⇧N». */
+/** How a section shortcut is shown: "⇧N". */
 export function shortcutLabel(key: GoKey): string {
   return `⇧${key.toUpperCase()}`;
 }
 
-/** Lo mínimo de un `KeyboardEvent` que miran los atajos globales (así se prueban sin eventos reales). */
+/** The minimum of a `KeyboardEvent` the global shortcuts look at (so they can be tested without real events). */
 export interface ShortcutKeyEvent {
   key: string;
   shiftKey: boolean;
@@ -43,8 +42,8 @@ export interface ShortcutKeyEvent {
 }
 
 /**
- * Dirección a la que lleva el atajo «Mayús + letra», o `null` si la pulsación no es uno. Exige Mayús
- * y rechaza Ctrl, Alt y Meta (Ctrl+Mayús+N, por ejemplo, es del navegador).
+ * Destination of a "Shift + letter" shortcut, or `null` if the key press is not one. Requires Shift
+ * and rejects Ctrl, Alt and Meta (Ctrl+Shift+N, for example, belongs to the browser).
  */
 export function goShortcutTarget(event: ShortcutKeyEvent): string | null {
   if (!event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return null;
@@ -54,9 +53,9 @@ export function goShortcutTarget(event: ShortcutKeyEvent): string | null {
 }
 
 /**
- * Controles en los que se teclea o se elige con letras: campos, áreas de texto, contenido editable y
- * los selectores de PrimeNG (que buscan por la primera letra). Los atajos globales de una sola tecla
- * no deben activarse con el foco en alguno de ellos.
+ * Controls where the user types or picks with letters: inputs, textareas, editable content and the
+ * PrimeNG selects (which search by first letter). Single-key global shortcuts must not fire while
+ * one of them has focus.
  */
 const TYPING_SELECTOR = [
   'input',
@@ -74,7 +73,7 @@ const TYPING_SELECTOR = [
   '.p-inputnumber',
 ].join(',');
 
-/** Paneles desplegables de PrimeNG (selector, multiselector y calendario) abiertos en la página. */
+/** Open PrimeNG overlay panels (select, multiselect and calendar) on the page. */
 const OPEN_OVERLAY_SELECTOR = '.p-select-overlay, .p-multiselect-overlay, .p-datepicker-panel';
 
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -85,9 +84,9 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * ¿Se pueden usar ahora los atajos globales de una sola tecla (Mayús+letra, «/»)? No si el foco está
- * en un control de escritura, si hay un modal (`aria-modal`, como los diálogos de PrimeNG y la propia
- * paleta) o un desplegable abierto, ni si otro código ya atendió la tecla.
+ * Can the single-key global shortcuts (Shift+letter, "/") be used now? Not if focus is in a typing
+ * control, if a modal is open (`aria-modal`, like the PrimeNG dialogs and the palette itself) or an
+ * overlay is open, or if other code already handled the key.
  */
 export function canUseGlobalShortcut(event: Event): boolean {
   return (

@@ -4,7 +4,7 @@ import { splitNoteText } from './note-board.logic';
 import { NoteCheck } from './note-check';
 import { NoteEditor } from './note-editor';
 
-/** Tarjeta de nota sobre el lienzo. Posición, tamaño y estado llegan por entradas; el arrastre lo orquesta la pantalla. */
+/** Note card on the canvas. Position, size and state arrive as inputs; the page orchestrates dragging. */
 @Component({
   selector: 'app-note-card',
   imports: [NoteCheck, NoteEditor],
@@ -48,7 +48,7 @@ import { NoteEditor } from './note-editor';
       cursor: grab;
       user-select: none;
       touch-action: none;
-      /* Nunca se transiciona left/top: la tarjeta seguiría al puntero con retraso. */
+      /* left/top are never transitioned: the card would follow the pointer with a delay. */
       transition:
         border-color 0.12s,
         background-color 0.15s,
@@ -61,20 +61,20 @@ import { NoteEditor } from './note-editor';
       border-color: var(--line-strong);
     }
 
-    /* Dentro de un grupo no se coloca libremente: ocupa el ancho del grupo, en la pila. */
+    /* Inside a group it is not placed freely: it takes the group's width, in the stack. */
     :host(.stacked) {
       position: relative;
     }
 
-    /* Disposición bloqueada: no se puede coger, así que no se ofrece la mano. */
+    /* Locked layout: it cannot be picked up, so no grab hand is offered. */
     :host(.locked) {
       cursor: default;
     }
 
     /*
-     * Un único borde. El anillo global de :focus-visible se quita aquí (el selector con :host(...) pesa
-     * más que el global, sin !important) y el foco de teclado se dibuja DENTRO del propio borde.
-     * Seleccionada: borde de acento de 2 px (1 px de borde y 1 px interior).
+     * A single border. The global :focus-visible ring is removed here (the :host(...) selector outweighs
+     * the global one, no !important) and keyboard focus is drawn INSIDE the border itself.
+     * Selected: 2 px accent border (1 px border and 1 px inner).
      */
     :host(:focus-visible) {
       outline: none;
@@ -86,8 +86,8 @@ import { NoteEditor } from './note-editor';
     }
 
     /*
-     * Foco de teclado: doble línea interior (acento, hueco y acento), sin nada por fuera. Con el
-     * puntero (clic, Mayús+clic) no se dibuja: ahí manda solo el borde de selección.
+     * Keyboard focus: double inner line (accent, gap, accent), nothing outside. With the
+     * pointer (click, Shift+click) it is not drawn: only the selection border applies.
      */
     :host(:focus-visible:not(.by-pointer)) {
       border-color: var(--accent);
@@ -120,7 +120,7 @@ import { NoteEditor } from './note-editor';
       text-decoration: line-through;
     }
 
-    /* Marca que queda en el sitio de origen mientras la tarjeta «vuela»: contorno discontinuo y texto tenue. */
+    /* Mark left at the origin while the card «flies»: dashed outline and faint text. */
     :host(.dragging) {
       border-style: dashed;
       border-color: var(--line-strong);
@@ -133,12 +133,12 @@ import { NoteEditor } from './note-editor';
       opacity: 0.35;
     }
 
-    /* Mientras la tarjeta aterriza, la de verdad espera debajo sin dejarse ver. */
+    /* While the card lands, the real one waits underneath, hidden. */
     :host(.settling) {
       visibility: hidden;
     }
 
-    /* La tarjeta levantada: sin giro ni inclinación, apenas más grande y con más sombra. */
+    /* The lifted card: no rotation or tilt, slightly larger and with more shadow. */
     :host(.ghost) {
       border-color: var(--accent);
       box-shadow:
@@ -326,17 +326,17 @@ export class NoteCardComponent {
   readonly selected = input(false);
   readonly editing = input(false);
   readonly dragging = input(false);
-  /** La tarjeta acaba de soltarse: su copia «volando» aún está aterrizando encima. */
+  /** The card was just dropped: its «flying» copy is still landing on top. */
   readonly settling = input(false);
-  /** Solo para la copia que vuela: ha soltado y se asienta. */
+  /** Only for the flying copy: it has been dropped and is settling. */
   readonly landing = input(false);
-  /** Tarjeta que «vuela» bajo el puntero mientras se arrastra: sin interacción. */
+  /** Card that «flies» under the pointer while dragging: no interaction. */
   readonly ghost = input(false, { transform: booleanAttribute });
-  /** Texto de «Hecha · se oculta en X». */
+  /** «Hecha · se oculta en X» text. */
   readonly caption = input('');
-  /** Disposición bloqueada: solo cambia el cursor (la pantalla decide qué se puede mover). */
+  /** Locked layout: only the cursor changes (the page decides what can be moved). */
   readonly locked = input(false);
-  /** Tarjeta de un grupo: va en la pila del grupo, sin posición propia (ignora x, y y w). */
+  /** Card of a group: goes in the group's stack, with no position of its own (ignores x, y and w). */
   readonly stacked = input(false);
   readonly toolbar = input(false);
   readonly toolbarBelow = input(false);
@@ -359,7 +359,7 @@ export class NoteCardComponent {
     return this.selected() ? 9_000 : this.card().z + 1;
   });
 
-  /** El último foco vino del puntero: no se dibuja el anillo de foco de teclado (ver estilos). */
+  /** The last focus came from the pointer: the keyboard focus ring is not drawn (see styles). */
   protected readonly byPointer = signal(false);
 
   protected onPointerDown(event: PointerEvent): void {
@@ -367,7 +367,7 @@ export class NoteCardComponent {
     this.pressed.emit(event);
   }
 
-  /** Una tecla de verdad (no solo mantener Mayús o Ctrl, que se repite) devuelve el foco al teclado. */
+  /** A real key press (not just holding Shift or Ctrl, which repeats) returns focus to the keyboard. */
   protected onKeydown(event: KeyboardEvent): void {
     if (!['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) this.byPointer.set(false);
   }

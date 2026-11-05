@@ -90,21 +90,21 @@ function fake(kind: PaletteResult['kind'], label: string, score = 1): PaletteRes
 }
 
 describe('scoreMatch', () => {
-  it('ignora mayúsculas y tildes', () => {
+  it('ignores case and accents', () => {
     expect(scoreMatch('BANO', 'Reforma del baño')).toBeGreaterThan(0);
     expect(normalize('Baño Ñu')).toBe('bano nu');
   });
 
-  it('no coincide si falta alguna palabra', () => {
+  it('does not match if a word is missing', () => {
     expect(scoreMatch('baño cocina', 'Reforma del baño')).toBe(0);
     expect(scoreMatch('zzz', 'Reforma del baño')).toBe(0);
   });
 
-  it('acepta las palabras en cualquier orden', () => {
+  it('accepts words in any order', () => {
     expect(scoreMatch('baño reforma', 'Reforma del baño')).toBeGreaterThan(0);
   });
 
-  it('ordena: exacto > empieza por > palabra que empieza > dentro de una palabra', () => {
+  it('ranks: exact > starts with > word starts with > inside a word', () => {
     const exact = scoreMatch('baño', 'baño');
     const prefix = scoreMatch('baño', 'baño grande');
     const word = scoreMatch('baño', 'reforma baño');
@@ -115,11 +115,11 @@ describe('scoreMatch', () => {
     expect(inside).toBeGreaterThan(0);
   });
 
-  it('con la consulta vacía todo vale', () => {
+  it('with an empty query everything matches', () => {
     expect(scoreMatch('   ', 'cualquier cosa')).toBe(1);
   });
 
-  it('a igual coincidencia gana el texto más corto', () => {
+  it('on equal match the shorter text wins', () => {
     expect(scoreMatch('luz', 'luz')).toBeGreaterThan(
       scoreMatch('luz', 'luz de la cocina del piso'),
     );
@@ -127,7 +127,7 @@ describe('scoreMatch', () => {
 });
 
 describe('searchCommands', () => {
-  it('sin consulta devuelve todos, con «Escribir una nota o tarea» el primero y los «Ir a» con su atajo', () => {
+  it('without a query returns all, with "Escribir una nota o tarea" first and each "Ir a" with its shortcut', () => {
     const results = searchCommands('', context);
 
     expect(results[0]).toMatchObject({
@@ -141,37 +141,37 @@ describe('searchCommands', () => {
     expect(results.at(-1)?.label).toBe('Cerrar sesión');
   });
 
-  it('«ir a notas» y «notas» siguen encontrando Ir a Notas, y «gn» ya no es un atajo', () => {
+  it('"ir a notas" and "notas" still find Ir a Notas, and "gn" is no longer a shortcut', () => {
     expect(searchCommands('ir a notas', context)[0]?.label).toBe('Ir a Notas');
     expect(searchCommands('notas', context).map((r) => r.label)).toContain('Ir a Notas');
     expect(searchCommands('gn', context)).toEqual([]);
   });
 
-  it('«nota» encuentra la forma de escribir una nota y la tarjeta vacía', () => {
+  it('"nota" finds the write-a-note command and the empty card', () => {
     const labels = searchCommands('nota', context).map((r) => r.label);
     expect(labels).toContain('Escribir una nota o tarea');
     expect(labels).toContain('Nueva tarjeta vacía');
   });
 
-  it('filtra por etiqueta y por palabras clave', () => {
+  it('filters by label and by keywords', () => {
     expect(searchCommands('calend', context).map((r) => r.label)).toEqual(['Ir a Calendario']);
     expect(searchCommands('oscuro', context).map((r) => r.label)).toEqual(['Cambiar tema']);
     expect(searchCommands('salir', context)[0]?.label).toBe('Cerrar sesión');
   });
 
-  it('enseña el tema actual y el usuario como pistas', () => {
+  it('shows the current theme and the user as hints', () => {
     const all = searchCommands('', context);
     expect(all.find((r) => r.label === 'Cambiar tema')?.hint).toBe('ahora: Claro');
     expect(all.find((r) => r.label === 'Cerrar sesión')?.hint).toBe('martin');
   });
 
-  it('una consulta sin coincidencias no devuelve nada', () => {
+  it('a query with no matches returns nothing', () => {
     expect(searchCommands('xyzzy', context)).toEqual([]);
   });
 });
 
-describe('búsqueda en datos', () => {
-  it('listas: encuentra por nombre y por alias, y descarta archivadas', () => {
+describe('data search', () => {
+  it('lists: finds by name and by alias, and drops archived ones', () => {
     const lists = [
       list(),
       list({ id: 'e'.repeat(24), name: 'Películas', slug: 'peliculas', captureAlias: 'peli' }),
@@ -186,7 +186,7 @@ describe('búsqueda en datos', () => {
     });
   });
 
-  it('tarjetas: enseñan su lista y se descartan las de listas desconocidas', () => {
+  it('cards: show their list and cards of unknown lists are dropped', () => {
     const lists = [list()];
     const items = [item(), item({ id: 'z'.repeat(24), listId: '9'.repeat(24) })];
 
@@ -196,16 +196,16 @@ describe('búsqueda en datos', () => {
     expect(results[0]?.hint).toBe('Reforma del baño');
   });
 
-  it('tarjetas: si la respuesta es antigua, solo quedan las que aún encajan', () => {
+  it('cards: if the response is stale, only the ones that still match remain', () => {
     const lists = [list()];
     const items = [item(), item({ id: 'y'.repeat(24), title: 'Comprar plato de ducha' })];
 
     expect(itemResults('presupuesto', items, lists, false)).toHaveLength(1);
-    // Con la respuesta de la consulta actual, lo que el servidor devolvió se muestra (p. ej. por una etiqueta).
+    // With the response for the current query, what the server returned is shown (e.g. matched by a label).
     expect(itemResults('presupuesto', items, lists, true)).toHaveLength(2);
   });
 
-  it('notas: filtra por texto y enseña la línea que coincide', () => {
+  it('notes: filters by text and shows the matching line', () => {
     const cards = [
       card('Llamar al fontanero\nPedir presupuesto del baño'),
       card('Comprar pan', { id: '1'.repeat(24) }),
@@ -218,13 +218,13 @@ describe('búsqueda en datos', () => {
     expect(results[0]?.action).toEqual({ type: 'go', url: '/notas' });
   });
 
-  it('noteLine: primera línea, truncada y con aviso si está vacía', () => {
+  it('noteLine: first line, truncated and with a notice if empty', () => {
     expect(noteLine('\n  \n', '')).toBe('Nota vacía');
     expect(noteLine('uno\ndos', '')).toBe('uno');
     expect(noteLine('x'.repeat(200), '')).toHaveLength(90);
   });
 
-  it('gastos: enseñan fecha e importe', () => {
+  it('expenses: show date and amount', () => {
     const [result] = expenseResults('cortina', [transaction()], true);
 
     expect(result?.label).toBe('Cortina de ducha');
@@ -244,7 +244,7 @@ describe('groupResults', () => {
     fake('item', 'Alicatado'),
   ];
 
-  it('agrupa en el orden Listas · Tarjetas · Notas y gastos · Comandos y numera de corrido', () => {
+  it('groups in the order Lists, Cards, Notes and expenses, Commands and numbers continuously', () => {
     const groups = groupResults(results, 'all');
 
     expect(groups.map((g) => g.label)).toEqual([
@@ -263,12 +263,12 @@ describe('groupResults', () => {
     ]);
   });
 
-  it('el título del grupo de notas y gastos dice lo que contiene', () => {
+  it('the notes and expenses group title says what it contains', () => {
     expect(groupResults([fake('note', 'a')], 'all')[0]?.label).toBe('Notas');
     expect(groupResults([fake('expense', 'a')], 'all')[0]?.label).toBe('Gastos');
   });
 
-  it('un filtro deja solo su tipo; «Listas» incluye también las tarjetas', () => {
+  it('a filter keeps only its type; "Listas" also includes cards', () => {
     expect(groupResults(results, 'lists').map((g) => g.id)).toEqual(['lists', 'cards']);
     expect(groupResults(results, 'notes').flatMap((g) => g.rows.map((r) => r.kind))).toEqual([
       'note',
@@ -280,14 +280,14 @@ describe('groupResults', () => {
     expect(matchesFilter('capture', 'notes')).toBe(false);
   });
 
-  it('recorta cada tipo, con más margen cuando hay un filtro', () => {
+  it('trims each type, with more room when there is a filter', () => {
     const many = Array.from({ length: 20 }, (_, i) => fake('item', `t${i}`));
 
     expect(flattenGroups(groupResults(many, 'all'))).toHaveLength(6);
     expect(flattenGroups(groupResults(many, 'lists'))).toHaveLength(12);
   });
 
-  it('el tope es por tipo: muchas notas no esconden los gastos del mismo grupo', () => {
+  it('the cap is per type: many notes do not hide the expenses of the same group', () => {
     const mixed = [
       ...Array.from({ length: 10 }, (_, i) => fake('note', `n${i}`)),
       fake('expense', 'Cortina'),
@@ -299,31 +299,31 @@ describe('groupResults', () => {
     expect(rows.filter((r) => r.kind === 'expense')).toHaveLength(1);
   });
 
-  it('sin resultados no hay grupos', () => {
+  it('with no results there are no groups', () => {
     expect(groupResults([], 'all')).toEqual([]);
   });
 
-  it('«Capturar» va en el grupo de comandos', () => {
+  it('"Capturar" goes in the commands group', () => {
     const [group] = groupResults([captureResult('hola', 'Nota nueva')], 'all');
     expect(group?.label).toBe('Comandos');
     expect(group?.rows[0]?.label).toBe('Capturar: hola');
   });
 
-  it('sortByScore ordena de mayor a menor y respeta los empates', () => {
+  it('sortByScore sorts high to low and keeps ties in order', () => {
     const sorted = sortByScore([fake('list', 'a', 1), fake('list', 'b', 3), fake('list', 'c', 1)]);
     expect(sorted.map((r) => r.label)).toEqual(['b', 'a', 'c']);
   });
 });
 
-describe('navegación con teclado', () => {
-  it('moveSelection da la vuelta por los extremos', () => {
+describe('keyboard navigation', () => {
+  it('moveSelection wraps at the ends', () => {
     expect(moveSelection(0, 1, 3)).toBe(1);
     expect(moveSelection(2, 1, 3)).toBe(0);
     expect(moveSelection(0, -1, 3)).toBe(2);
     expect(moveSelection(0, 1, 0)).toBe(0);
   });
 
-  it('cycleFilter recorre Todo · Listas · Notas · Gastos · Comandos en los dos sentidos', () => {
+  it('cycleFilter walks Todo, Listas, Notas, Gastos, Comandos in both directions', () => {
     expect(cycleFilter('all', 1)).toBe('lists');
     expect(cycleFilter('lists', 1)).toBe('notes');
     expect(cycleFilter('expenses', 1)).toBe('commands');
@@ -335,7 +335,7 @@ describe('navegación con teclado', () => {
 describe('highlightSegments', () => {
   const joined = (parts: { text: string; match: boolean }[]) => parts.map((p) => p.text).join('');
 
-  it('marca la coincidencia sin tocar el texto', () => {
+  it('marks the match without altering the text', () => {
     const parts = highlightSegments('Reforma del baño', 'ban');
     expect(joined(parts)).toBe('Reforma del baño');
     expect(parts.filter((p) => p.match).map((p) => p.text)).toEqual(['bañ']);
@@ -349,7 +349,7 @@ describe('highlightSegments', () => {
     ]);
   });
 
-  it('marca cada palabra escrita y funde los solapes', () => {
+  it('marks each typed word and merges overlaps', () => {
     const parts = highlightSegments('Llamar al fontanero', 'fon llam');
     expect(parts.filter((p) => p.match).map((p) => p.text)).toEqual(['Llam', 'fon']);
     expect(highlightSegments('abcdef', 'abc cde')).toEqual([
@@ -358,7 +358,7 @@ describe('highlightSegments', () => {
     ]);
   });
 
-  it('sin consulta o sin coincidencia devuelve el texto entero', () => {
+  it('with no query or no match returns the whole text', () => {
     expect(highlightSegments('Dune', '')).toEqual([{ text: 'Dune', match: false }]);
     expect(highlightSegments('Dune', 'zzz')).toEqual([{ text: 'Dune', match: false }]);
   });

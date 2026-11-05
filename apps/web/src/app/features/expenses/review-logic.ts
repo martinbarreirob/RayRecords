@@ -7,19 +7,19 @@ import {
 import { normalizeText } from './movements-logic';
 import { keyFromName } from './rules-logic';
 
-/** Tecla numérica → posición de la categoría: `1`–`9` son las nueve primeras y `0` la décima; `null` si no es un dígito. */
+/** Number key to category position: `1`-`9` are the first nine and `0` the tenth; `null` if not a digit. */
 export function suggestionIndex(key: string): number | null {
   if (!/^[0-9]$/.test(key)) return null;
   return key === '0' ? 9 : Number(key) - 1;
 }
 
-/** Número de tecla que corresponde a una posición (`0` para la décima), o `null` si no tiene atajo. */
+/** Key number for a position (`0` for the tenth), or `null` if it has no shortcut. */
 export function shortcutLabel(index: number): string | null {
   if (index < 0 || index > 9) return null;
   return index === 9 ? '0' : String(index + 1);
 }
 
-/** Categorías que encajan con lo escrito (sin acentos ni mayúsculas); las que empiezan por el texto, primero. */
+/** Categories matching the typed text (ignoring accents and case); prefix matches first. */
 export function matchCategories(
   categories: readonly Category[],
   query: string,
@@ -37,14 +37,14 @@ export function matchCategories(
   return [...starts, ...contains].slice(0, limit);
 }
 
-/** Título legible del grupo: el comercio limpio, o el concepto original si no hay. */
+/** Readable group title: the clean merchant, or the original concept if there is none. */
 export function groupTitle(group: Pick<ReviewGroup, 'merchantKey' | 'sampleDescription'>): string {
   const base = group.merchantKey ?? group.sampleDescription.split('\\')[0] ?? '';
   const text = base.replace(/\s+/g, ' ').trim() || group.sampleDescription;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/** Por qué se sugiere una categoría, en una frase corta. */
+/** Why a category is suggested, in one short phrase. */
 export function sourceLabel(suggestion: Suggestion): string {
   switch (suggestion.source) {
     case 'history':
@@ -60,20 +60,20 @@ export function sourceLabel(suggestion: Suggestion): string {
   }
 }
 
-/** Progreso de la revisión: `done` de `total` movimientos, 0–100. */
+/** Review progress: `done` of `total` movements, 0-100. */
 export function progressPercent(done: number, total: number): number {
   return total <= 0 ? 100 : Math.min(100, Math.round((done / total) * 100));
 }
 
-/** Añade al final los grupos nuevos que aún no están en la lista (por ids), sin duplicar. */
+/** Appends groups not yet in the list (by id), without duplicates. */
 export function mergeGroups(current: readonly ReviewGroup[], incoming: readonly ReviewGroup[]) {
   const seen = new Set(current.flatMap((g) => g.ids));
   return [...current, ...incoming.filter((g) => !g.ids.some((id) => seen.has(id)))];
 }
 
 /**
- * Categoría nueva que se puede crear con lo escrito en el buscador, o `null` si no hay texto utilizable
- * o ya existe una con ese nombre o esa clave.
+ * New category that can be created from the search text, or `null` if there is no usable text
+ * or one with that name or key already exists.
  */
 export function newCategoryFromQuery(
   query: string,
@@ -88,9 +88,9 @@ export function newCategoryFromQuery(
 }
 
 /**
- * Orden de las tarjetas de categoría: de más a menos usada, con Otros siempre la última (es la tecla 0).
- * A igual uso gana el orden de serie y después el nombre. Se calcula una vez por sesión de revisión
- * para que el número de cada tarjeta no cambie mientras se decide.
+ * Order of the category cards: most to least used, with Otros always last (it is key 0).
+ * Ties go to series order, then name. Computed once per review session so each card's
+ * number does not change while deciding.
  */
 export function orderByUsage(
   categories: readonly Category[],

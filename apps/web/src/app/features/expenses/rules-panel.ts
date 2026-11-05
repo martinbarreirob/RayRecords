@@ -279,13 +279,13 @@ export class RulesPanel {
     label,
   }));
   protected readonly rules = signal<CategorizationRule[]>([]);
-  /** Ya llegaron las reglas (o falló): antes de eso no se puede decir que no hay ninguna. */
+  /** Rules have loaded (or failed); before that we cannot say there are none. */
   protected readonly rulesLoaded = signal(false);
   protected readonly ghostRules = [150, 112, 132];
   protected readonly ghostCats = [128, 104, 140, 116, 124, 98];
   protected readonly error = signal('');
   protected readonly notice = signal('');
-  /** Hay una petición en curso: se bloquean los botones para no repetirla. */
+  /** A request is running: buttons are locked to avoid repeating it. */
   protected readonly busy = signal(false);
   protected readonly applying = signal(false);
 
@@ -295,7 +295,7 @@ export class RulesPanel {
   protected readonly priority = signal(0);
   protected readonly catKey = signal('');
   protected readonly catName = signal('');
-  /** Mientras no se edite a mano, la clave se propone a partir del nombre. */
+  /** Until edited by hand, the key is derived from the name. */
   private keyEdited = false;
 
   protected readonly patternProblem = computed(() =>
@@ -334,7 +334,7 @@ export class RulesPanel {
     });
   }
 
-  /** Un error puede quedar fuera de pantalla si se actuó abajo: se trae a la vista. Los avisos de éxito no mueven la página. */
+  /** Scrolls errors into view; success notices do not move the page. */
   private show(kind: 'error' | 'notice', message: string): void {
     this.error.set(kind === 'error' ? message : '');
     this.notice.set(kind === 'notice' ? message : '');
@@ -345,7 +345,7 @@ export class RulesPanel {
     );
   }
 
-  /** Lanza una petición bloqueando los botones; al terminar avisa de lo hecho y refresca las pantallas. */
+  /** Runs a request with the buttons locked; when done it reports the result and refreshes the screens. */
   private run(request: Observable<unknown>, success: string, onSuccess?: () => void): void {
     this.error.set('');
     this.notice.set('');
@@ -384,7 +384,7 @@ export class RulesPanel {
   protected toggle(rule: CategorizationRule, active: boolean): void {
     this.run(
       this.api.updateRule(rule.id, { active }),
-      '', // el propio interruptor ya muestra el cambio
+      '', // the toggle itself already shows the change
     );
   }
 
@@ -426,7 +426,7 @@ export class RulesPanel {
 
   protected onCatKey(value: string): void {
     this.catKey.set(value);
-    // Vaciar la clave devuelve el control al nombre.
+    // Clearing the key gives control back to the name.
     this.keyEdited = value.trim() !== '';
   }
 

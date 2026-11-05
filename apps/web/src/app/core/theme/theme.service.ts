@@ -10,21 +10,21 @@ function readPreference(): ThemePreference {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored === 'light' || stored === 'dark' ? stored : 'system';
   } catch {
-    return 'system'; // sin almacenamiento (modo privado, datos bloqueados): se sigue al sistema
+    return 'system'; // no storage (private mode, blocked data): follow the system
   }
 }
 
 /**
- * Tema claro/oscuro. La preferencia se guarda en el navegador; «system» sigue al sistema operativo.
- * Se aplica como `data-theme` en <html>, que es lo que leen los tokens (styles/_tokens.scss) y PrimeNG.
- * El script de index.html aplica lo mismo antes de arrancar Angular para que no haya parpadeo.
+ * Light/dark theme. The preference is stored in the browser; "system" follows the operating system.
+ * It is applied as `data-theme` on <html>, which the tokens (styles/_tokens.scss) and PrimeNG read.
+ * The script in index.html applies the same before Angular boots to avoid a flash.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   readonly preference = signal<ThemePreference>(readPreference());
   private readonly systemDark = signal(false);
 
-  /** Tema que se está mostrando de verdad. */
+  /** Theme actually being shown. */
   readonly resolved = computed<'light' | 'dark'>(() => {
     const preference = this.preference();
     if (preference === 'system') return this.systemDark() ? 'dark' : 'light';
@@ -43,7 +43,7 @@ export class ThemeService {
   });
 
   constructor() {
-    // `matchMedia` no existe en jsdom (tests); allí se queda en claro.
+    // `matchMedia` does not exist in jsdom (tests); it stays light there.
     const query = window.matchMedia?.('(prefers-color-scheme: dark)');
     if (query) {
       this.systemDark.set(query.matches);
@@ -59,11 +59,11 @@ export class ThemeService {
       if (preference === 'system') localStorage.removeItem(STORAGE_KEY);
       else localStorage.setItem(STORAGE_KEY, preference);
     } catch {
-      // Sin almacenamiento: el cambio vale solo para esta sesión.
+      // No storage: the change only lasts for this session.
     }
   }
 
-  /** Sistema → claro → oscuro → sistema. */
+  /** System, light, dark, back to system. */
   cycle(): void {
     const next = ORDER[(ORDER.indexOf(this.preference()) + 1) % ORDER.length]!;
     this.set(next);

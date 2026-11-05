@@ -1,30 +1,30 @@
 import { DEFAULT_LIST_ALIASES, type List } from '@rayrecords/shared';
 import { normalize } from '../../core/palette/palette-logic';
 
-/** Un prefijo con el que empezar una captura: `compra:` lleva a la lista Compras. */
+/** A prefix to start a capture with: `compra:` leads to the Compras list. */
 export interface PrefixOption {
-  /** Lo que se escribe antes de los dos puntos, tal cual (`compra`, `mañana`). */
+  /** What is typed before the colon, as is (`compra`, `mañana`). */
   prefix: string;
-  /** Qué hace: el nombre de la lista o «Tarea para hoy». */
+  /** What it does: the list name or "Tarea para hoy". */
   label: string;
 }
 
-/** Máximo de sugerencias a la vez. */
+/** Maximum suggestions at once. */
 const MAX_SUGGESTIONS = 3;
-/** Letras que hay que escribir antes de sugerir: con una sola, casi toda nota empezaría con una sugerencia. */
+/** Letters to type before suggesting: with just one, almost every note would start with a suggestion. */
 const MIN_LETTERS = 2;
-/** Un prefijo de lista es una sola palabra corta; con espacios o largo no «parece una lista». */
+/** A list prefix is one short word; with spaces or long it does not "look like a list". */
 const LISTLIKE_RE = /^\p{L}[\p{L}\p{N}_-]{0,19}$/u;
 
-/** Prefijos que el parser reconoce siempre, existan o no listas con ese alias. */
+/** Prefixes the parser always recognizes, whether or not lists with that alias exist. */
 const DATE_PREFIXES: readonly PrefixOption[] = [
   { prefix: 'hoy', label: 'Tarea para hoy' },
   { prefix: 'mañana', label: 'Tarea para mañana' },
 ];
 
 /**
- * Prefijos disponibles: el alias de cada lista (el de los presets mientras no han cargado) y los de
- * fecha. El orden es el de las listas.
+ * Available prefixes: the alias of each list (the presets' while they have not loaded) and the date
+ * ones. The order is the lists' order.
  */
 export function prefixOptions(lists: readonly List[] | null): PrefixOption[] {
   const fromLists: PrefixOption[] = lists
@@ -38,10 +38,10 @@ export function prefixOptions(lists: readonly List[] | null): PrefixOption[] {
 }
 
 /**
- * Prefijos que empiezan como lo escrito, para completarlos con Tab. Solo se sugiere mientras el
- * texto es una única palabra sin los dos puntos («com…»): en cuanto hay un espacio o «:» ya no hay
- * nada que completar. Encaja por el prefijo o por el comienzo del nombre de la lista («pel» →
- * `peli:` por «Películas»).
+ * Prefixes that start like what was typed, to complete them with Tab. Only suggested while the text
+ * is a single word without the colon ("com..."): once there is a space or ":" there is nothing to
+ * complete. Matches by the prefix or by the start of the list name ("pel" gives `peli:` for
+ * "Películas").
  */
 export function suggestPrefixes(text: string, options: readonly PrefixOption[]): PrefixOption[] {
   const word = text.trimStart();
@@ -58,14 +58,14 @@ export function suggestPrefixes(text: string, options: readonly PrefixOption[]):
   return [...byPrefix, ...byName].slice(0, MAX_SUGGESTIONS);
 }
 
-/** Lo que se escribe al aceptar una sugerencia: el prefijo, los dos puntos y un espacio. */
+/** What is written when a suggestion is accepted: the prefix, the colon and a space. */
 export function completion(option: PrefixOption): string {
   return `${option.prefix}: `;
 }
 
 /**
- * Prefijo (lo escrito antes de los dos puntos) si parece el de una lista, sea o no un alias real:
- * una palabra corta. Con espacios, números sueltos, enlaces o frases largas es `null`.
+ * Prefix (what is typed before the colon) if it looks like a list one, real alias or not: a short
+ * word. With spaces, bare numbers, links or long phrases it is `null`.
  */
 export function listLikePrefix(text: string): string | null {
   const trimmed = text.normalize('NFC').trim();
@@ -75,7 +75,7 @@ export function listLikePrefix(text: string): string | null {
   return LISTLIKE_RE.test(raw) ? raw : null;
 }
 
-/** Distancia de edición, solo para saber si dos prefijos se parecen (≤ 1: «compras» ~ «compra»). */
+/** Edit distance, only to tell whether two prefixes look alike (<= 1: "compras" ~ "compra"). */
 function withinOneEdit(a: string, b: string): boolean {
   if (Math.abs(a.length - b.length) > 1) return false;
   let i = 0;
@@ -85,7 +85,7 @@ function withinOneEdit(a: string, b: string): boolean {
   return short.slice(i) === long.slice(i + 1);
 }
 
-/** El prefijo conocido que más se parece a uno desconocido (`compras` → `compra`), o `null`. */
+/** The known prefix most similar to an unknown one (`compras` gives `compra`), or `null`. */
 export function closestPrefix(raw: string, options: readonly PrefixOption[]): PrefixOption | null {
   const typed = normalize(raw);
   if (typed.length < 3) return null;

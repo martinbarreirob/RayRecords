@@ -28,12 +28,12 @@ describe('authGuard', () => {
       authGuard({} as ActivatedRouteSnapshot, { url: '/gastos' } as RouterStateSnapshot),
     );
 
-  it('deja pasar con sesión válida', async () => {
+  it('lets a valid session through', async () => {
     setup({ me: () => of(USER) });
     expect(await firstValueFrom(run() as never)).toBe(true);
   });
 
-  it('sin sesión redirige al login recordando la ruta', async () => {
+  it('without a session redirects to login and remembers the route', async () => {
     const { router } = setup({
       me: () => throwError(() => new HttpErrorResponse({ status: 401 })),
     });
@@ -43,7 +43,7 @@ describe('authGuard', () => {
     expect(router.serializeUrl(result)).toBe('/login?volver=%2Fgastos');
   });
 
-  it('con el usuario ya conocido no vuelve a preguntar al servidor', async () => {
+  it('with a known user it does not ask the server again', async () => {
     let calls = 0;
     const { auth } = setup({
       me: () => {
@@ -73,19 +73,19 @@ describe('authInterceptor', () => {
     return { auth, navigate };
   }
 
-  it('un 401 en la API olvida al usuario y lleva al login', () => {
+  it('a 401 from the API forgets the user and goes to login', () => {
     const { auth, navigate } = intercept('/api/lists', 401);
     expect(auth.user()).toBeNull();
     expect(navigate).toHaveBeenCalledWith(['/login'], expect.anything());
   });
 
-  it('un 401 de /api/auth/ no redirige (es una respuesta normal)', () => {
+  it('a 401 from /api/auth/ does not redirect (it is a normal answer)', () => {
     const { auth, navigate } = intercept('/api/auth/login', 401);
     expect(auth.user()).not.toBeNull();
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('otros errores no tocan la sesión', () => {
+  it('other errors leave the session alone', () => {
     const { auth, navigate } = intercept('/api/lists', 500);
     expect(auth.user()).not.toBeNull();
     expect(navigate).not.toHaveBeenCalled();
@@ -93,10 +93,10 @@ describe('authInterceptor', () => {
 });
 
 describe('safeReturnUrl', () => {
-  it('acepta solo rutas internas', () => {
+  it('accepts internal paths only', () => {
     expect(safeReturnUrl('/gastos?mes=2026-11')).toBe('/gastos?mes=2026-11');
-    expect(safeReturnUrl('//malo.example')).toBe('/');
-    expect(safeReturnUrl('https://malo.example')).toBe('/');
+    expect(safeReturnUrl('//evil.example')).toBe('/');
+    expect(safeReturnUrl('https://evil.example')).toBe('/');
     expect(safeReturnUrl(undefined)).toBe('/');
   });
 });

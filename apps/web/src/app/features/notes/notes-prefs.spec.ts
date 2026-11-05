@@ -18,19 +18,19 @@ function memory(): Pick<Storage, 'getItem' | 'setItem'> & { data: Map<string, st
 
 const broken = {
   getItem: () => {
-    throw new Error('bloqueado');
+    throw new Error('blocked');
   },
   setItem: () => {
-    throw new Error('bloqueado');
+    throw new Error('blocked');
   },
 };
 
-describe('preferencia de la barra de atajos', () => {
-  it('por defecto está visible', () => {
+describe('shortcut bar preference', () => {
+  it('it is visible by default', () => {
     expect(readHintsOpen(memory())).toBe(true);
   });
 
-  it('recuerda que se ocultó y que se volvió a mostrar', () => {
+  it('remembers it was hidden and shown again', () => {
     const store = memory();
 
     writeHintsOpen(false, store);
@@ -41,7 +41,7 @@ describe('preferencia de la barra de atajos', () => {
     expect(readHintsOpen(store)).toBe(true);
   });
 
-  it('sin almacenamiento (o si lanza) no falla y se queda visible', () => {
+  it('without storage (or if it throws) it does not fail and stays visible', () => {
     expect(readHintsOpen(null)).toBe(true);
     expect(readHintsOpen(broken)).toBe(true);
     expect(() => writeHintsOpen(false, broken)).not.toThrow();
@@ -49,12 +49,12 @@ describe('preferencia de la barra de atajos', () => {
   });
 });
 
-describe('preferencia de bloqueo de la disposición', () => {
-  it('por defecto está bloqueada', () => {
+describe('layout lock preference', () => {
+  it('it is locked by default', () => {
     expect(readLayoutLocked(memory())).toBe(true);
   });
 
-  it('recuerda que se desbloqueó y que se volvió a bloquear', () => {
+  it('remembers it was unlocked and locked again', () => {
     const store = memory();
 
     writeLayoutLocked(false, store);
@@ -65,7 +65,7 @@ describe('preferencia de bloqueo de la disposición', () => {
     expect(readLayoutLocked(store)).toBe(true);
   });
 
-  it('sin almacenamiento (o si lanza) no falla y se queda bloqueada', () => {
+  it('without storage (or if it throws) it does not fail and stays locked', () => {
     expect(readLayoutLocked(null)).toBe(true);
     expect(readLayoutLocked(broken)).toBe(true);
     expect(() => writeLayoutLocked(false, broken)).not.toThrow();

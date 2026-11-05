@@ -87,7 +87,7 @@
 }
 
 .rv-chips {
-  /* Dos columnas: el nombre cabe entero y el número de cada tecla va a la derecha. */
+  /* Two columns: the full name fits and each key number sits on the right. */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
@@ -102,7 +102,7 @@
   min-height: var(--touch-target);
   padding: 0 var(--space-3);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm); /* el mismo redondeado que los campos de formulario */
+  border-radius: var(--radius-sm); /* same rounding as the form fields */
   background: var(--surface);
   color: var(--text);
   font: inherit;

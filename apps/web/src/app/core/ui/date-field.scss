@@ -1,5 +1,5 @@
-// Estilos de `app-date-field` (sin encapsulado: el panel de PrimeNG se anexa al `body`). Todo cuelga de
-// `.rr-date-field` (el campo) o `.rr-date-panel` (el calendario desplegable), y solo usa tokens.
+// Styles for `app-date-field` (no encapsulation: the PrimeNG panel is appended to `body`). Everything hangs from
+// `.rr-date-field` (the field) or `.rr-date-panel` (the dropdown calendar), and only uses tokens.
 
 .rr-date-field {
   display: block;
@@ -30,7 +30,7 @@
     }
   }
 
-  // Con el dedo: objetivo táctil de 44 px y tipografía de 16 px (iOS amplía la página con menos).
+  // On touch: 44 px touch target and 16 px type (iOS zooms the page with less).
   @media (width <= 767px), (pointer: coarse) {
     .p-datepicker-input,
     input[type='date'] {
@@ -39,7 +39,7 @@
     }
   }
 
-  // El campo nativo (táctil) iguala la altura del resto de controles.
+  // The native (touch) field matches the height of the other controls.
   input[type='date'] {
     min-height: var(--control-height);
     font-family: inherit;
@@ -88,7 +88,7 @@
   --p-focus-ring-offset: 1px;
   --p-focus-ring-shadow: none;
 
-  // «Hoy» y «Borrar»: botones de texto discretos; «Hoy» con el acento.
+  // "Hoy" and "Borrar": quiet text buttons; "Hoy" in the accent color.
   .p-datepicker-buttonbar {
     --p-button-text-secondary-color: var(--muted);
     --p-button-text-secondary-hover-background: var(--surface-2);
@@ -104,7 +104,7 @@
     --p-button-text-secondary-active-background: var(--accent-soft);
   }
 
-  // El día de hoy sin seleccionar se distingue por el fondo suave; el seleccionado manda sobre él.
+  // Today, when not selected, is marked by a soft background; the selected day wins over it.
   .p-datepicker-day-selected {
     font-weight: 600;
   }

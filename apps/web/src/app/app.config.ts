@@ -8,7 +8,7 @@ import { routes } from './app.routes';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    // Los parámetros de ruta (`:slug`, `:date`) llegan a los componentes como `input()`.
+    // Route params (`:slug`, `:date`) reach components as `input()`.
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideApi(),

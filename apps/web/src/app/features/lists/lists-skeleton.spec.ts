@@ -33,7 +33,7 @@ describe('ListsSkeleton', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('la rejilla dibuja tarjetas fantasma con título, chips y pie', () => {
+  it('the grid draws ghost cards with title, chips and footer', () => {
     const el = render('grid');
 
     expect(el.querySelectorAll('.grid-card').length).toBeGreaterThanOrEqual(4);
@@ -42,7 +42,7 @@ describe('ListsSkeleton', () => {
     expect(el.querySelector('.grid-card .foot .btn-ghost')).not.toBeNull();
   });
 
-  it('la tabla dibuja una cabecera y filas con casilla, título, chips y fecha', () => {
+  it('the table draws a header and rows with checkbox, title, chips and date', () => {
     const el = render('table');
 
     expect(el.querySelectorAll('.trow:not(.head)').length).toBeGreaterThanOrEqual(5);
@@ -50,7 +50,7 @@ describe('ListsSkeleton', () => {
     expect(el.querySelector('.trow .chips .pill')).not.toBeNull();
   });
 
-  it('el tablero dibuja tres columnas con entre 2 y 4 tarjetas cada una', () => {
+  it('the board draws three columns with 2 to 4 cards each', () => {
     const el = render('board');
 
     const columns = [...el.querySelectorAll('.column')];
@@ -70,7 +70,7 @@ describe('ListsSkeleton', () => {
       expect(el.querySelector('[role="status"]')?.textContent).toBe('Cargando algo…');
       expect(el.querySelector('[role="status"]')?.classList).toContain('sr-only');
       expect(el.querySelector('[aria-hidden="true"] .skeleton')).not.toBeNull();
-      // Nada del esqueleto queda expuesto fuera de un contenedor oculto.
+      // Nothing in the skeleton is exposed outside a hidden container.
       for (const block of el.querySelectorAll('.skeleton')) {
         expect(block.closest('[aria-hidden="true"]')).not.toBeNull();
       }
@@ -78,7 +78,7 @@ describe('ListsSkeleton', () => {
   );
 });
 
-describe('ListsPage: carga', () => {
+describe('ListsPage: loading', () => {
   let lists$: Subject<List[]>;
 
   function render() {
@@ -95,14 +95,14 @@ describe('ListsPage: carga', () => {
     lists$ = new Subject<List[]>();
   });
 
-  it('muestra el esqueleto de la rejilla mientras llegan las listas, sin el vacío', () => {
+  it('shows the grid skeleton while lists arrive, without the empty state', () => {
     const { el } = render();
 
     expect(el.querySelector('app-lists-skeleton .grid-card')).not.toBeNull();
     expect(el.textContent).not.toContain('Todavía no hay listas');
   });
 
-  it('con datos reemplaza el esqueleto por las tarjetas reales', () => {
+  it('with data it replaces the skeleton with the real cards', () => {
     const { fixture, el } = render();
 
     lists$.next([list('Peliculas'), list('Series')]);
@@ -112,7 +112,7 @@ describe('ListsPage: carga', () => {
     expect(el.querySelectorAll('li.list-card').length).toBe(2);
   });
 
-  it('vacío no es cargando: sin listas se ve el aviso y no el esqueleto', () => {
+  it('empty is not loading: with no lists the notice shows and not the skeleton', () => {
     const { fixture, el } = render();
 
     lists$.next([]);
@@ -123,7 +123,7 @@ describe('ListsPage: carga', () => {
   });
 });
 
-describe('ListDetailPage: carga', () => {
+describe('ListDetailPage: loading', () => {
   let lists$: Subject<List[]>;
   let items$: Subject<Item[]>;
 
@@ -143,14 +143,14 @@ describe('ListDetailPage: carga', () => {
     items$ = new Subject<Item[]>();
   });
 
-  it('sin saber aún la lista muestra el esqueleto de tabla por defecto', () => {
+  it('without knowing the list yet it shows the default table skeleton', () => {
     const { el } = render();
 
     expect(el.querySelector('app-lists-skeleton .trow')).not.toBeNull();
     expect(el.querySelector('app-lists-skeleton .board')).toBeNull();
   });
 
-  it('una lista sin tablero espera sus elementos con filas fantasma bajo la cabecera real', () => {
+  it('a list without a board waits for its items with ghost rows under the real header', () => {
     const { fixture, el } = render();
 
     lists$.next([list('Peliculas')]);
@@ -168,7 +168,7 @@ describe('ListDetailPage: carga', () => {
     expect(el.textContent).toContain('Esta lista está vacía');
   });
 
-  it('una lista de tablero espera sus elementos con columnas fantasma', () => {
+  it('a board list waits for its items with ghost columns', () => {
     const { fixture, el } = render();
 
     lists$.next([

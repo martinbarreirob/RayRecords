@@ -1,14 +1,14 @@
 import { Component, booleanAttribute, input } from '@angular/core';
 import { NOTE_CARD_WIDTH } from '@rayrecords/shared';
 
-/** Tarjeta fantasma del lienzo: posición y ancho de las líneas de texto (en % del cuerpo). */
+/** Ghost card of the canvas: position and width of the text lines (in % of the body). */
 interface GhostCard {
   x: number;
   y: number;
   lines: number[];
 }
 
-/** Grupo fantasma con sus tarjetas (coordenadas relativas a la caja, como las reales). */
+/** Ghost group with its cards (coordinates relative to the box, like the real ones). */
 interface GhostGroup {
   x: number;
   y: number;
@@ -18,10 +18,10 @@ interface GhostGroup {
 }
 
 /**
- * Esqueleto de carga de Notas. En escritorio dibuja tarjetas y un grupo en posiciones plausibles del
- * lienzo (se coloca dentro de la caja del lienzo, que lo recorta); en móvil, filas como las de la
- * lista. Los bloques son decorativos (`aria-hidden`) y un `role="status"` solo para lector de pantalla
- * avisa de la carga. Aparece con un retraso en CSS (sin temporizadores): una carga rápida no lo enseña.
+ * Loading skeleton for Notes. On desktop it draws cards and a group at plausible canvas positions
+ * (placed inside the canvas box, which clips it); on mobile, rows like the list ones.
+ * The blocks are decorative (`aria-hidden`) and a screen-reader-only `role="status"` announces
+ * the load. It appears after a CSS delay (no timers): a fast load does not show it.
  */
 @Component({
   selector: 'app-notes-skeleton',
@@ -33,7 +33,7 @@ interface GhostGroup {
       animation: skeleton-in 0.2s ease-out 0.15s forwards;
     }
 
-    /* Escritorio: llena la caja del lienzo, sin recibir clics. */
+    /* Desktop: fills the canvas box, without receiving clicks. */
     :host(:not(.compact)) {
       position: absolute;
       inset: 0;
@@ -53,7 +53,7 @@ interface GhostGroup {
       }
     }
 
-    /* Mismas medidas que app-note-card: borde, relleno de 12 px y casilla redonda de 18 px. */
+    /* Same measures as app-note-card: border, 12 px padding and 18 px round checkbox. */
     .ghost-card {
       position: absolute;
       display: flex;
@@ -79,7 +79,7 @@ interface GhostGroup {
       padding-top: 6px;
     }
 
-    /* Mismas medidas que app-note-group: caja con cabecera y las tarjetas dentro. */
+    /* Same measures as app-note-group: box with header and the cards inside. */
     .ghost-group {
       position: absolute;
       border-radius: var(--radius-xl);
@@ -103,7 +103,7 @@ interface GhostGroup {
       height: 16px;
     }
 
-    /* Móvil: filas como las de la lista de notas (casilla de 22 px y una o dos líneas). */
+    /* Mobile: rows like those of the notes list (22 px checkbox and one or two lines). */
     .ghost-row {
       display: flex;
       align-items: flex-start;
@@ -191,7 +191,7 @@ interface GhostGroup {
   `,
 })
 export class NotesSkeleton {
-  /** Lista de filas (móvil) en lugar de lienzo (escritorio). */
+  /** List of rows (mobile) instead of canvas (desktop). */
   readonly compact = input(false, { transform: booleanAttribute });
 
   protected readonly width = NOTE_CARD_WIDTH;
@@ -210,6 +210,6 @@ export class NotesSkeleton {
       { x: 312, y: 52, lines: [50, 90] },
     ],
   };
-  /** Líneas de cada fila fantasma del móvil (una o dos). */
+  /** Lines of each ghost row on mobile (one or two). */
   protected readonly rows = [[70], [85, 55], [60], [90, 40], [75], [50, 80]];
 }

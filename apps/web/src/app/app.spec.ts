@@ -19,7 +19,7 @@ describe('App', () => {
     return fixture.whenStable().then(() => fixture.nativeElement as HTMLElement);
   }
 
-  it('con sesión muestra la marca y la navegación principal', async () => {
+  it('with a session shows the brand and the main navigation', async () => {
     const el = await render(true);
 
     expect(el.querySelector('.brand')?.textContent).toContain('RayRecords');
@@ -27,21 +27,21 @@ describe('App', () => {
     expect(links).toEqual(['Notas', 'Listas', 'Calendario', 'Gastos']);
   });
 
-  it('con sesión incluye el botón de salir y no hay barra de captura', async () => {
+  it('with a session includes the logout button and no capture bar', async () => {
     const el = await render(true);
 
     expect(el.querySelector('app-capture-bar')).toBeNull();
     expect(el.querySelector('header .logout')?.getAttribute('aria-label')).toContain('martin');
   });
 
-  it('con sesión ofrece la paleta de comandos y el cambio de tema', async () => {
+  it('with a session offers the command palette and the theme toggle', async () => {
     const el = await render(true);
 
     expect(el.querySelector('header .palette-trigger')?.textContent).toContain('Ctrl K');
     expect(el.querySelector('header .theme-toggle')).not.toBeNull();
   });
 
-  it('sin sesión no muestra navegación', async () => {
+  it('without a session shows no navigation', async () => {
     const el = await render(false);
 
     expect(el.querySelector('header')).toBeNull();

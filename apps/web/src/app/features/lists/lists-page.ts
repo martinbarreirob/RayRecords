@@ -258,9 +258,9 @@ export class ListsPage {
   protected readonly name = signal(LIST_PRESETS.media.name);
   protected readonly alias = signal(LIST_PRESETS.media.captureAlias ?? '');
   protected readonly error = signal('');
-  /** Texto para el lector de pantalla tras mover una lista (región `aria-live`). */
+  /** Screen-reader text after moving a list (`aria-live` region). */
   protected readonly announcement = signal('');
-  /** En móvil y pantallas táctiles el arrastre se desactiva (compite con el scroll): quedan los botones. */
+  /** On mobile and touch screens dragging is disabled (it competes with scrolling): buttons remain. */
   protected readonly dragOff = signal(false);
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
   protected readonly aliasProblem = computed(() => aliasError(cleanAlias(this.alias())));
@@ -272,18 +272,18 @@ export class ListsPage {
       query.addEventListener('change', (event) => this.dragOff.set(event.matches));
     }
 
-    // Al abrir el formulario, el foco va al nombre (y se selecciona el sugerido para sobrescribirlo).
+    // When the form opens, focus goes to the name (and the suggested one is selected so it can be overwritten).
     effect(() => {
       const input = this.nameInput();
       if (input) untracked(() => input.nativeElement.select());
     });
 
-    // Número de elementos de cada tarjeta: se recalcula cuando cambian las listas.
+    // Item count of each card: recalculated when the lists change.
     effect(() => {
       this.store.lists();
       untracked(() => this.store.loadCounts());
     });
-    // Sin listas, el formulario se ofrece abierto.
+    // With no lists, the form is offered open.
     effect(() => {
       if (this.store.lists()?.length === 0) untracked(() => this.creating.set(true));
     });
@@ -300,13 +300,13 @@ export class ListsPage {
     return `${count} ${count === 1 ? 'elemento' : 'elementos'}`;
   }
 
-  /** Suelta tras arrastrar con el ratón: `currentIndex` ya es la posición final. */
+  /** Drop after a mouse drag: `currentIndex` is already the final position. */
   protected drop(event: CdkDragDrop<List[], List[], List>): void {
     if (event.previousIndex === event.currentIndex) return;
     this.moveTo(event.item.data, event.currentIndex);
   }
 
-  /** Botones «Mover antes/después»: un puesto; en el extremo no se mueve y se avisa. */
+  /** «Mover antes/después» buttons: one place; at the end it does not move and a message is announced. */
   protected moveBy(list: List, step: -1 | 1, control: 'before' | 'after'): void {
     const target = stepIndex(this.store.lists() ?? [], list.id, step);
     if (target === null) {
@@ -316,7 +316,7 @@ export class ListsPage {
     this.moveTo(list, target, control);
   }
 
-  /** Flechas simples con el asa enfocada (sin Alt: Alt+flechas es la navegación entre secciones). */
+  /** Plain arrows with the handle focused (no Alt: Alt+arrows is navigation between sections). */
   protected handleKey(event: KeyboardEvent, list: List): void {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const lists = this.store.lists() ?? [];
@@ -340,8 +340,8 @@ export class ListsPage {
   }
 
   /**
-   * Mueve la lista a `to`. El orden cambia al momento (optimista); si la API falla, el store lo
-   * devuelve a su sitio y aquí se muestra el error. El foco sigue a la tarjeta (el DOM se recoloca).
+   * Moves the list to `to`. The order changes at once (optimistic); if the API fails, the store
+   * puts it back and the error is shown here. Focus follows the card (the DOM is rearranged).
    */
   private moveTo(list: List, to: number, control?: 'handle' | 'before' | 'after'): void {
     this.error.set('');
@@ -397,7 +397,7 @@ export class ListsPage {
       });
   }
 
-  /** Archivar quita la lista de la pantalla (y su alias de la captura rápida): se pide confirmación. */
+  /** Archiving removes the list from the screen (and its alias from quick capture): confirmation is asked. */
   protected archive(list: List): void {
     this.confirmation.confirm({
       header: 'Archivar lista',

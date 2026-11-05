@@ -5,8 +5,8 @@ import { tap } from 'rxjs';
 import { AuthStore } from './auth.store';
 
 /**
- * Si la API responde 401 (sesión caducada o revocada), se olvida al usuario y se lleva al login.
- * Las propias llamadas de `/api/auth/` quedan fuera: ahí un 401 es una respuesta normal.
+ * If the API answers 401 (expired or revoked session), the user is forgotten and sent to login.
+ * Calls to `/api/auth/` are excluded: a 401 there is a normal answer.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthStore);

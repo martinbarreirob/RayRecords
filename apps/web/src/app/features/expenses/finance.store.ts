@@ -5,7 +5,7 @@ import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { RefreshBus } from '../../core/refresh';
 
-/** Cuentas y categorías, compartidas por las pantallas de gastos y de cuentas. */
+/** Accounts and categories, shared by the expenses and accounts screens. */
 @Injectable({ providedIn: 'root' })
 export class FinanceStore {
   private readonly api = inject(ApiClient);
@@ -15,7 +15,7 @@ export class FinanceStore {
   readonly categories = signal<Category[]>([]);
   readonly error = signal('');
 
-  /** Ya llegaron cuentas y categorías (o falló): antes de eso «no hay cuentas» sería mentira. */
+  /** Accounts and categories have loaded (or failed); before that, "no accounts" would be wrong. */
   readonly ready = computed(() => this.accounts() !== null || this.error() !== '');
 
   constructor() {
@@ -41,7 +41,7 @@ export class FinanceStore {
     return this.categories().find((c) => c.key === key)?.name ?? key;
   }
 
-  /** Avisa a todas las pantallas de que los datos de gastos cambiaron. */
+  /** Tells every screen that the expenses data changed. */
   changed(): void {
     this.bus.changed();
   }

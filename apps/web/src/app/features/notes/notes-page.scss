@@ -1,8 +1,8 @@
 /*
- * A escritorio la pantalla usa la columna .page tal cual (mismo ancho máximo y márgenes que la
- * cabecera global y la barra de captura) y solo conserva el alto: una altura mínima igual a lo que
- * queda de ventana bajo la cabecera y la captura. --notes-top es lo que ocupa todo lo de encima (se
- * mide en la pantalla); si las notas bajan más, la página crece.
+ * On desktop the screen uses the .page column as is (same max width and margins as the global
+ * header and the capture bar) and only keeps the height: a minimum height equal to what is left of
+ * the window under the header and the capture. --notes-top is what everything above takes up (it is
+ * measured in the page); if the notes go lower, the page grows.
  */
 @media (width >= 768px) {
   :host(.page) {
@@ -33,7 +33,7 @@
   cursor: pointer;
 }
 
-/* Cabecera de una sola fila: título y fecha a la izquierda, acciones a la derecha. */
+/* Single-row header: title and date on the left, actions on the right. */
 .page-header {
   flex: none;
   flex-wrap: wrap;
@@ -69,26 +69,26 @@
   background: var(--surface-2);
 }
 
-/* Iconos de los botones de la cabecera (Ordenar lleva icono y texto; el candado, solo icono). */
+/* Icons of the header buttons (Ordenar has icon and text; the lock, icon only). */
 .actions .btn .pi {
   font-size: var(--text-sm);
 }
 
-/* Botón de solo icono (candado): cuadrado, del alto de los botones pequeños. */
+/* Icon-only button (lock): square, as tall as the small buttons. */
 .actions .btn.icon {
   width: 28px;
   min-width: 28px;
 }
 
-/* Candado cerrado = estado por defecto y seguro; abierto se resalta para que no pase desapercibido. */
+/* Locked is the safe default state; unlocked is highlighted so it does not go unnoticed. */
 .actions .btn.icon[aria-pressed='false'] .pi {
   color: var(--accent);
 }
 
 /*
- * La zona donde se pueden colocar las notas. Se desplaza con el dedo por el fondo (las tarjetas y las
- * cabeceras de grupo capturan el gesto) y tiene scroll horizontal propio si hay tarjetas más allá del
- * borde derecho. Crece con el contenido (min-height) y, si sobra ventana, la llena (flex).
+ * The area where notes can be placed. It scrolls with a finger on the background (cards and
+ * group headers capture the gesture) and has its own horizontal scroll if there are cards past the
+ * right edge. It grows with its content (min-height) and, if there is spare window, fills it (flex).
  */
 .board {
   position: relative;
@@ -100,26 +100,26 @@
   touch-action: pan-x pan-y;
   user-select: none;
   border-radius: var(--radius-lg);
-  /* Caja acotada y sutil. El borde es una sombra interior, no border: así el origen de las tarjetas (left/top) coincide con x/y. */
+  /* Bounded, subtle box. The border is an inner shadow, not border: so the cards' origin (left/top) matches x/y. */
   box-shadow: inset 0 0 0 1px var(--line);
-  /* El contorno existe siempre, transparente: solo se anima su color (el estilo no se anima). */
+  /* The outline always exists, transparent: only its colour is animated (the style is not). */
   outline: 1.5px dashed transparent;
   outline-offset: -1px;
   transition: outline-color 0.12s ease-out;
 }
 
-/* Primera carga: la caja del lienzo con el esqueleto dentro; ni se coloca ni se desplaza nada. */
+/* First load: the canvas box with the skeleton inside; nothing is placed or scrolled. */
 .board.loading {
   overflow: hidden;
   cursor: progress;
 }
 
-/* Mientras se arrastra o se redimensiona algo se ve hasta dónde se puede colocar. */
+/* While something is dragged or resized, the limit of where it can be placed is visible. */
 .board.active {
   outline-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
-/* Un poco de lienzo más allá de lo más lejano (--board-right): se puede desplazar hasta ahí. */
+/* A bit of canvas beyond the farthest item (--board-right): it can be scrolled up to there. */
 .board::after {
   content: '';
   position: absolute;
@@ -142,14 +142,14 @@
 .marquee {
   position: absolute;
   z-index: 9500;
-  /* Translúcido, con borde fino: deja ver las tarjetas que se están seleccionando. */
+  /* Translucent with a thin border: lets the cards being selected show through. */
   border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
   border-radius: 4px;
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   pointer-events: none;
 }
 
-/* Capa invisible mientras se arrastra: fija el cursor en toda la ventana y evita hovers y selecciones. */
+/* Invisible layer while dragging: fixes the cursor across the window and avoids hovers and selections. */
 .drag-shield {
   position: fixed;
   inset: 0;
@@ -161,7 +161,7 @@
   cursor: nwse-resize;
 }
 
-/* Avisos flotantes («Deshacer», «Disposición bloqueada»): apilados y centrados sobre la barra de atajos. */
+/* Floating notices («Deshacer», «Disposición bloqueada»): stacked and centred above the shortcut bar. */
 .toasts {
   position: fixed;
   bottom: 64px;
@@ -226,7 +226,7 @@
     padding-bottom: 96px;
   }
 
-  /* Título y fecha arriba; debajo, los botones en una fila que cabe o se desplaza. */
+  /* Title and date on top; below, the buttons in a row that fits or scrolls. */
   .title-block h1 {
     font-size: var(--text-2xl);
     letter-spacing: -0.02em;
@@ -241,7 +241,7 @@
     overflow-x: auto;
   }
 
-  /* Objetivos táctiles de 44 px. */
+  /* 44 px touch targets. */
   .actions .btn {
     flex: none;
     min-height: var(--touch-target);
@@ -252,7 +252,7 @@
     padding: 0 var(--space-2);
   }
 
-  /* A la izquierda del botón flotante de «Nueva nota», a su misma altura. */
+  /* To the left of the floating «Nueva nota» button, at the same height. */
   .toasts {
     right: 96px;
     bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));

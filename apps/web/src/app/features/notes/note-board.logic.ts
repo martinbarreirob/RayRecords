@@ -7,9 +7,9 @@ import {
   type Rect,
 } from '@rayrecords/shared';
 
-/** Lógica pura de la pantalla de notas (sin DOM ni Angular), para poder probarla aparte. */
+/** Pure logic of the notes screen (no DOM or Angular), so it can be tested on its own. */
 
-/** Primera línea como título de la tarjeta y el resto como cuerpo secundario. */
+/** First line as the card title and the rest as a secondary body. */
 export function splitNoteText(text: string): { title: string; body: string } {
   const trimmed = text.replace(/^\s*\n/, '');
   const newline = trimmed.indexOf('\n');
@@ -17,12 +17,12 @@ export function splitNoteText(text: string): { title: string; body: string } {
   return { title: trimmed.slice(0, newline).trim(), body: trimmed.slice(newline + 1).trim() };
 }
 
-/** ¿Se solapan dos rectángulos? Si solo se tocan por el borde no cuenta. */
+/** Do two rectangles overlap? Touching only at the edge does not count. */
 export function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
-/** Rectángulo entre dos puntos, vengan en el orden que vengan (para el marco de selección). */
+/** Rectangle between two points, whichever order they come in (for the selection marquee). */
 export function rectBetween(a: { x: number; y: number }, b: { x: number; y: number }): Rect {
   return {
     x: Math.min(a.x, b.x),
@@ -32,7 +32,7 @@ export function rectBetween(a: { x: number; y: number }, b: { x: number; y: numb
   };
 }
 
-/** Ids de los rectángulos que toca el marco, sumados a los que ya estaban seleccionados. */
+/** Ids of the rectangles the marquee touches, added to those already selected. */
 export function idsTouchedBy(
   frame: Rect,
   items: readonly { id: string; rect: Rect }[],
@@ -44,8 +44,8 @@ export function idsTouchedBy(
 }
 
 /**
- * Tarjetas «terminadas»: las que ya no se ven en el lienzo (hechas hace más de 24 h). Une las que
- * pidió el servidor con las que acaban de caducar en memoria, sin repetir, las más recientes primero.
+ * "Finished" cards: those no longer shown on the canvas (done more than 24 h ago). Merges those
+ * requested from the server with those that just expired in memory, without repeats, most recent first.
  */
 export function mergeFinished(
   cards: readonly NoteCard[],
@@ -88,13 +88,13 @@ export function formatStamp(iso: string): string {
   return stampFormat.format(new Date(iso));
 }
 
-/** Paso del movimiento con el teclado, en px. */
+/** Keyboard move step, in px. */
 export const KEY_STEP = 16;
 
 /**
- * Desplazamiento de una pulsación de flecha que mueve las tarjetas seleccionadas: solo Mayús+flecha.
- * Alt+flecha es la navegación global entre secciones y Ctrl/Meta+Mayús+flecha selecciona texto, así
- * que con cualquiera de ellos no se mueve nada (y la pantalla no debe cancelar la pulsación).
+ * Offset for an arrow key press that moves the selected cards: only Shift+arrow. Alt+arrow is global
+ * navigation between sections and Ctrl/Meta+Shift+arrow selects text, so with either nothing moves
+ * (and the screen must not cancel the key press).
  */
 export function arrowMove(event: {
   key: string;
@@ -118,10 +118,10 @@ export function arrowMove(event: {
   }
 }
 
-/** Altura de una tarjeta suelta a efectos de buscar huecos y de medir el lienzo. */
+/** Height of a loose card, for finding gaps and measuring the canvas. */
 const CARD_HEIGHT = CARD_ESTIMATED_HEIGHT;
 
-/** Rectángulos ocupados del lienzo (tarjetas sueltas y grupos), en coordenadas del lienzo. */
+/** Occupied rectangles of the canvas (loose cards and groups), in canvas coordinates. */
 export function occupiedRects(
   loose: readonly Pick<NoteCard, 'x' | 'y' | 'w'>[],
   groups: readonly Rect[],
@@ -132,7 +132,7 @@ export function occupiedRects(
   ];
 }
 
-/** Primer hueco libre para una tarjeta nueva en un lienzo del ancho real de la ventana. */
+/** First free slot for a new card on a canvas as wide as the real window. */
 export function freeSlot(
   loose: readonly Pick<NoteCard, 'x' | 'y' | 'w'>[],
   groups: readonly Rect[],
@@ -141,7 +141,7 @@ export function freeSlot(
   return nextFreePosition(occupiedRects(loose, groups), undefined, canvasWidth);
 }
 
-/** Borde derecho de lo más alejado que hay en el lienzo (0 si está vacío). */
+/** Right edge of the farthest thing on the canvas (0 if empty). */
 export function rightEdge(
   loose: readonly Pick<NoteCard, 'x' | 'w'>[],
   groups: readonly Pick<Rect, 'x' | 'w'>[],
@@ -150,8 +150,8 @@ export function rightEdge(
 }
 
 /**
- * Elementos que entran en «Ordenar»: tarjetas sueltas (con su alto real si se conoce; si no, la
- * estimación) y grupos. Las tarjetas de dentro de un grupo viajan con él y no cuentan.
+ * Items that go into «Ordenar»: loose cards (with their real height if known; otherwise the
+ * estimate) and groups. Cards inside a group travel with it and do not count.
  */
 export function arrangeItems(
   loose: readonly Pick<NoteCard, 'id' | 'x' | 'y' | 'w'>[],

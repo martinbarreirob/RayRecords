@@ -10,20 +10,20 @@ import {
   stepIndex,
 } from './lists-logic';
 
-describe('lists-logic: alias de captura', () => {
-  it('cleanAlias pasa a minúsculas y quita espacios', () => {
+describe('lists-logic: capture alias', () => {
+  it('cleanAlias lowercases and removes spaces', () => {
     expect(cleanAlias('  Peli ')).toBe('peli');
     expect(cleanAlias('mi lista')).toBe('milista');
   });
 
-  it('un alias vacío o correcto no tiene error', () => {
+  it('an empty or valid alias has no error', () => {
     expect(aliasError('')).toBeNull();
     expect(aliasError('peli')).toBeNull();
     expect(aliasError('compra2')).toBeNull();
     expect(aliasError('a'.repeat(20))).toBeNull();
   });
 
-  it('explica por qué no vale', () => {
+  it('explains why it is not valid', () => {
     expect(aliasError('1peli')).toBe('Debe empezar por una letra');
     expect(aliasError('a')).toBe('Necesita al menos 2 caracteres');
     expect(aliasError('a'.repeat(21))).toBe('Máximo 20 caracteres');
@@ -35,15 +35,15 @@ describe('lists-logic: alias de captura', () => {
 const ls = (...orders: number[]) => orders.map((order, i) => ({ id: `l${i}`, order }));
 const ids = (lists: { id: string }[]) => lists.map((l) => l.id);
 
-describe('lists-logic: orden', () => {
-  it('orderBetween: vacío, extremos y punto medio', () => {
+describe('lists-logic: order', () => {
+  it('orderBetween: empty, ends and midpoint', () => {
     expect(orderBetween(undefined, undefined)).toBe(ORDER_STEP);
     expect(orderBetween(undefined, 1000)).toBe(0);
     expect(orderBetween(3000, undefined)).toBe(4000);
     expect(orderBetween(1000, 2000)).toBe(1500);
   });
 
-  it('orderBetween pide renumerar cuando el hueco se agota o hay empate', () => {
+  it('orderBetween asks to renumber when the gap runs out or there is a tie', () => {
     expect(orderBetween(1000, 1000)).toBeNull();
     expect(orderBetween(2000, 1000)).toBeNull();
     let prev = 1000;
@@ -53,19 +53,19 @@ describe('lists-logic: orden', () => {
     expect(orderBetween(prev, 2000)).toBeNull();
   });
 
-  it('renumber da órdenes equiespaciados', () => {
+  it('renumber gives evenly spaced orders', () => {
     expect(renumber(3)).toEqual([1000, 2000, 3000]);
     expect(renumber(0)).toEqual([]);
   });
 
-  it('planReorder: en medio toma el punto medio y solo cambia una lista', () => {
+  it('planReorder: in the middle takes the midpoint and changes only one list', () => {
     const plan = planReorder(ls(1000, 2000, 3000, 4000), 'l0', 2)!;
     expect(ids(plan.lists)).toEqual(['l1', 'l2', 'l0', 'l3']);
     expect(plan.patches).toEqual([{ id: 'l0', order: 3500 }]);
     expect(plan.lists[2]!.order).toBe(3500);
   });
 
-  it('planReorder: al principio y al final usa un paso desde el extremo', () => {
+  it('planReorder: at the start and end uses a step from the end', () => {
     const first = planReorder(ls(1000, 2000, 3000), 'l2', 0)!;
     expect(ids(first.lists)).toEqual(['l2', 'l0', 'l1']);
     expect(first.patches).toEqual([{ id: 'l2', order: 0 }]);
@@ -75,7 +75,7 @@ describe('lists-logic: orden', () => {
     expect(last.patches).toEqual([{ id: 'l0', order: 4000 }]);
   });
 
-  it('planReorder: sube o baja un puesto entre vecinas', () => {
+  it('planReorder: moves up or down one place between neighbours', () => {
     const down = planReorder(ls(1000, 2000, 3000), 'l0', 1)!;
     expect(ids(down.lists)).toEqual(['l1', 'l0', 'l2']);
     expect(down.patches).toEqual([{ id: 'l0', order: 2500 }]);
@@ -85,7 +85,7 @@ describe('lists-logic: orden', () => {
     expect(up.patches).toEqual([{ id: 'l2', order: 1500 }]);
   });
 
-  it('planReorder: acota la posición y no hace nada si no cambia', () => {
+  it('planReorder: clamps the position and does nothing if it does not change', () => {
     expect(ids(planReorder(ls(1000, 2000, 3000), 'l0', 99)!.lists)).toEqual(['l1', 'l2', 'l0']);
     expect(ids(planReorder(ls(1000, 2000, 3000), 'l2', -5)!.lists)).toEqual(['l2', 'l0', 'l1']);
     expect(planReorder(ls(1000, 2000, 3000), 'l1', 1)).toBeNull();
@@ -93,12 +93,12 @@ describe('lists-logic: orden', () => {
     expect(planReorder([], 'l0', 0)).toBeNull();
   });
 
-  it('planReorder: renumera cuando no queda hueco y solo envía lo que cambia', () => {
-    // l0 pasa a la posición 1, entre l1 y l2, que ya están pegadas (mismo orden): hay que renumerar.
+  it('planReorder: renumbers when there is no gap and sends only what changes', () => {
+    // l0 moves to position 1, between l1 and l2, which are already adjacent (same order): renumber.
     const plan = planReorder(ls(500, 1000, 1000, 5000), 'l0', 1)!;
     expect(ids(plan.lists)).toEqual(['l1', 'l0', 'l2', 'l3']);
     expect(plan.lists.map((l) => l.order)).toEqual([1000, 2000, 3000, 4000]);
-    // l1 ya valía 1000: no se reenvía.
+    // l1 was already 1000: it is not resent.
     expect(plan.patches).toEqual([
       { id: 'l0', order: 2000 },
       { id: 'l2', order: 3000 },
@@ -106,11 +106,11 @@ describe('lists-logic: orden', () => {
     ]);
   });
 
-  it('planReorder: colocar siempre justo tras la misma vecina agota el hueco, renumera y no rompe el orden', () => {
+  it('planReorder: always placing right after the same neighbour exhausts the gap, renumbers and keeps the order', () => {
     let lists = ls(1000, 2000, 3000);
     let renumbers = 0;
     for (let i = 0; i < 60; i++) {
-      // Cada vez una de las dos últimas pasa a la posición 1 (entre l0 y la otra): el hueco se divide por dos.
+      // Each time one of the last two goes to position 1 (between l0 and the other): the gap halves.
       const plan = planReorder(lists, i % 2 === 0 ? 'l2' : 'l1', 1)!;
       if (plan.patches.length > 1) renumbers++;
       lists = plan.lists;
@@ -122,7 +122,7 @@ describe('lists-logic: orden', () => {
     expect(renumbers).toBeGreaterThan(0);
   });
 
-  it('stepIndex: un puesto arriba o abajo, o null en el extremo', () => {
+  it('stepIndex: one place up or down, or null at the end', () => {
     const lists = ls(1000, 2000, 3000);
     expect(stepIndex(lists, 'l1', -1)).toBe(0);
     expect(stepIndex(lists, 'l1', 1)).toBe(2);
@@ -131,7 +131,7 @@ describe('lists-logic: orden', () => {
     expect(stepIndex(lists, 'nope', 1)).toBeNull();
   });
 
-  it('sortByOrder ordena sin mutar y es estable', () => {
+  it('sortByOrder sorts without mutating and is stable', () => {
     const input = [
       { id: 'a', order: 2 },
       { id: 'b', order: 1 },
@@ -141,7 +141,7 @@ describe('lists-logic: orden', () => {
     expect(ids(input)).toEqual(['a', 'b', 'c']);
   });
 
-  it('movedMessage cuenta la posición desde 1', () => {
+  it('movedMessage counts the position from 1', () => {
     expect(movedMessage('Películas', 1, 6)).toBe('Películas movida a la posición 2 de 6');
   });
 });

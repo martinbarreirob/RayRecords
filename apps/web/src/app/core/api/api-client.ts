@@ -39,7 +39,7 @@ import type {
 } from '@rayrecords/shared';
 import type { Observable } from 'rxjs';
 
-/** Filtros de la lista de elementos. */
+/** Filters for the item list. */
 export interface ItemFilters {
   tag?: string;
   q?: string;
@@ -47,14 +47,14 @@ export interface ItemFilters {
 }
 
 /**
- * Contrato entre la UI y los datos. Las pantallas dependen de esta clase abstracta, nunca de
- * HttpClient: así se puede sustituir la implementación (p. ej. un adaptador en memoria para una
- * demo pública sin backend) sin tocar ninguna pantalla.
+ * Contract between the UI and the data. Screens depend on this abstract class, never on
+ * HttpClient, so the implementation can be swapped (for example an in-memory adapter for a
+ * public demo without a backend) without touching any screen.
  */
 export abstract class ApiClient {
   abstract login(input: LoginInput): Observable<User>;
   abstract logout(): Observable<void>;
-  /** Usuario de la sesión actual; falla con 401 si no hay sesión. */
+  /** Current session user; fails with 401 when there is no session. */
   abstract me(): Observable<User>;
 
   abstract lists(): Observable<List[]>;
@@ -67,18 +67,18 @@ export abstract class ApiClient {
   abstract moveItem(id: string, input: MoveItem): Observable<Item>;
   abstract deleteItem(id: string): Observable<void>;
 
-  /** Lienzo de notas: tarjetas y grupos (sin las hechas hace más de 24 h). */
+  /** Notes canvas: cards and groups (without the ones done more than 24 h ago). */
   abstract noteBoard(): Observable<NoteBoard>;
-  /** Hechas hace más de 24 h, ocultas del lienzo. */
+  /** Done more than 24 h ago, hidden from the canvas. */
   abstract doneNoteCards(): Observable<NoteCard[]>;
-  /** Sin `x`/`y` el servidor elige el primer hueco libre. */
+  /** Without `x`/`y` the server picks the first free spot. */
   abstract createNoteCard(input: CreateNoteCard): Observable<NoteCard>;
   abstract updateNoteCard(id: string, input: UpdateNoteCard): Observable<NoteCard>;
   abstract moveNoteCards(input: MoveNoteCards): Observable<NoteCard[]>;
   abstract deleteNoteCard(id: string): Observable<void>;
   abstract createNoteGroup(input: CreateNoteGroup): Observable<NoteGroup>;
   abstract updateNoteGroup(id: string, input: UpdateNoteGroup): Observable<NoteGroup>;
-  /** Disuelve el grupo: devuelve sus tarjetas ya sueltas. */
+  /** Dissolves the group and returns its cards, now loose. */
   abstract deleteNoteGroup(id: string): Observable<NoteCard[]>;
 
   abstract capture(text: string): Observable<CaptureResponse>;
@@ -97,13 +97,13 @@ export abstract class ApiClient {
   abstract createRule(input: CreateRule): Observable<CategorizationRule>;
   abstract updateRule(id: string, input: UpdateRule): Observable<CategorizationRule>;
   abstract deleteRule(id: string): Observable<void>;
-  /** Reaplica las reglas a los movimientos sin categoría; devuelve cuántos cambiaron. */
+  /** Reapplies the rules to uncategorized movements; returns how many changed. */
   abstract applyRules(): Observable<{ updated: number }>;
 
   abstract transactions(query: Partial<TransactionQuery>): Observable<TransactionPage>;
   abstract setCategory(id: string, input: SetTransactionCategory): Observable<Transaction>;
 
-  /** Sube un extracto CSV; con `dryRun` solo devuelve la vista previa. */
+  /** Uploads a CSV statement; with `dryRun` it only returns the preview. */
   abstract importStatement(
     accountId: string,
     file: File,
@@ -112,9 +112,9 @@ export abstract class ApiClient {
   abstract imports(): Observable<ImportBatch[]>;
   abstract undoImport(id: string): Observable<{ deleted: number }>;
 
-  /** Cola de revisión: movimientos sin categoría agrupados por comercio, de más a menos importe. */
+  /** Review queue: uncategorized movements grouped by merchant, largest amount first. */
   abstract reviewQueue(limit?: number): Observable<ReviewQueue>;
-  /** Solo cuántos movimientos hay sin categoría (para el contador de la pestaña). */
+  /** Only the number of uncategorized movements (for the tab counter). */
   abstract reviewPending(): Observable<{ pendingTransactions: number }>;
   abstract reviewApply(input: ReviewApply): Observable<ReviewApplyResult>;
   abstract reviewUndo(input: ReviewUndo): Observable<{ reverted: number }>;

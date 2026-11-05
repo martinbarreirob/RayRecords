@@ -8,8 +8,8 @@ import { MovementsPanel } from './movements-panel';
 import { RulesPanel } from './rules-panel';
 import { SummaryPanel } from './summary-panel';
 
-/** Cargando no es lo mismo que vacío: el esqueleto sale mientras llegan los datos y «vacío» solo después. */
-describe('Gastos: estados de carga', () => {
+/** Loading is not the same as empty: the skeleton shows while data arrives and the empty state only after. */
+describe('Expenses: loading states', () => {
   const baseApi = { accounts: () => of([]), categories: () => of([]) };
 
   function mount<T>(component: new () => T, api: object): ComponentFixture<T> {
@@ -32,8 +32,8 @@ describe('Gastos: estados de carga', () => {
   const q = (fixture: ComponentFixture<unknown>, selector: string) =>
     (fixture.nativeElement as HTMLElement).querySelectorAll(selector);
 
-  describe('Movimientos', () => {
-    it('pinta filas, balance y fichas fantasma, sin «Sin movimientos» ni «0,00 €»', async () => {
+  describe('Movements', () => {
+    it('shows ghost rows, balance and chips, without the empty text or a zero total', async () => {
       const page = new Subject<TransactionPage>();
       const fixture = mount(MovementsPanel, { transactions: () => page });
       await settle(fixture);
@@ -47,7 +47,7 @@ describe('Gastos: estados de carga', () => {
       expect(q(fixture, '.table-card[aria-busy="true"]').length).toBe(1);
     });
 
-    it('sin movimientos tras cargar: desaparece el esqueleto y sale el estado vacío', async () => {
+    it('with no movements after loading, the skeleton goes away and the empty state shows', async () => {
       const page = new Subject<TransactionPage>();
       const fixture = mount(MovementsPanel, { transactions: () => page });
       await settle(fixture);
@@ -63,8 +63,8 @@ describe('Gastos: estados de carga', () => {
     });
   });
 
-  describe('Resumen', () => {
-    it('muestra el esqueleto hasta que llegan los datos y luego el estado vacío', async () => {
+  describe('Summary', () => {
+    it('shows the skeleton until data arrives, then the empty state', async () => {
       const rows = new Subject<never[]>();
       const fixture = mount(SummaryPanel, { summary: () => rows });
       await settle(fixture);
@@ -82,8 +82,8 @@ describe('Gastos: estados de carga', () => {
     });
   });
 
-  describe('Reglas', () => {
-    it('no dice «Todavía no hay reglas» hasta que llegan', async () => {
+  describe('Rules', () => {
+    it('does not say there are no rules until they have loaded', async () => {
       const rules = new Subject<CategorizationRule[]>();
       const fixture = mount(RulesPanel, { rules: () => rules });
       await settle(fixture);
@@ -100,8 +100,8 @@ describe('Gastos: estados de carga', () => {
     });
   });
 
-  describe('Importar', () => {
-    it('esqueleto del formulario y del historial hasta que cargan', async () => {
+  describe('Import', () => {
+    it('shows the form and history skeletons until they load', async () => {
       const batches = new Subject<ImportBatch[]>();
       const accounts = new Subject<never[]>();
       const fixture = mount(ImportPanel, { imports: () => batches, accounts: () => accounts });

@@ -1,6 +1,6 @@
 @use '../../core/ui/skeleton';
 
-/* Tabla */
+/* Table */
 .table-card {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -9,12 +9,12 @@
   overflow-y: hidden;
 }
 
-/* A 768 px las seis columnas no caben holgadas: la tabla scrollea dentro de su caja, no la página. */
+/* At 768 px the six columns are tight: the table scrolls inside its box, not the page. */
 :host ::ng-deep .p-datatable-table {
   min-width: 680px;
 }
 
-/* Título de columna e icono de orden en una sola línea, alineados al centro. */
+/* Column title and sort icon on one line, centred. */
 .th-sort {
   display: inline-flex;
   align-items: center;
@@ -56,7 +56,7 @@
   }
 }
 
-/* Etiqueta de categoría: el borde fino la mantiene visible sobre la fila resaltada (que usa --surface-2). */
+/* Category tag: the thin border keeps it visible on the highlighted row (which uses --surface-2). */
 .cat {
   display: inline-flex;
   align-items: center;
@@ -87,7 +87,7 @@
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-/* Resaltado al pasar el ratón. Solo con puntero: en táctil el :hover se quedaría pegado tras tocar. */
+/* Hover highlight. Pointer devices only: on touch :hover would stick after a tap. */
 @media (hover: hover) {
   .mv-row:hover .cat:not(.cat-none) {
     background: var(--surface);
@@ -150,7 +150,7 @@
   }
 }
 
-/* Móvil: la tabla pasa a filas apiladas como en el diseño (fecha y categoría bajo la descripción). */
+/* Mobile: the table becomes stacked rows (date and category under the description). */
 @media (width <= 767px) {
   .table-card {
     border-left: 0;
@@ -172,7 +172,7 @@
       min-width: 0;
     }
 
-    /* Casilla algo mayor para acertar con el dedo. */
+    /* Slightly larger checkbox for finger taps. */
     .c-check .p-checkbox {
       --p-checkbox-width: 22px;
       --p-checkbox-height: 22px;
@@ -254,7 +254,7 @@
   }
 }
 
-/* Esqueleto de carga de la tabla: las filas fantasma usan las mismas celdas, así que miden lo mismo. */
+/* Table loading skeleton: ghost rows use the same cells, so they have the same size. */
 .skel-in {
   @include skeleton.reveal;
 }

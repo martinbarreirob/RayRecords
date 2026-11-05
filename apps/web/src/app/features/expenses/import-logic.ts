@@ -1,4 +1,4 @@
-/** Tamaño legible de un fichero: «842 B», «12,4 kB», «1,3 MB». */
+/** Human-readable file size: "842 B", "12,4 kB", "1,3 MB". */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1000) return `${bytes} B`;
   const units = ['kB', 'MB', 'GB'];
@@ -12,12 +12,12 @@ export function formatFileSize(bytes: number): string {
   return `${text} ${units[unit]}`;
 }
 
-/** Los extractos del banco son CSV: se acepta por extensión o por tipo (algunos navegadores no informan del tipo). */
+/** Bank statements are CSV: accept by extension or by type (some browsers do not report the type). */
 export function isCsvFile(file: { name: string; type: string }): boolean {
   return /\.csv$/i.test(file.name) || file.type === 'text/csv';
 }
 
-/** Mensaje de por qué un fichero no sirve, o `null` si se puede usar. */
+/** Why a file cannot be used, or `null` if it is fine. */
 export function fileProblem(file: { name: string; type: string; size: number }): string | null {
   if (!isCsvFile(file))
     return `«${file.name}» no es un CSV. Descarga el extracto del banco en formato CSV.`;

@@ -7,9 +7,9 @@ import { formatField } from './field-format';
 import { shortDate, tagHue, todayLocal } from './board-logic';
 
 /**
- * Vista de lista: una fila por elemento, con una columna por campo de la lista. Se usa `p-table` por el
- * orden por columna (con `aria-sort` y teclado ya resueltos) y por el desplazamiento horizontal en
- * pantallas estrechas; la edición se hace en el diálogo común (`app-item-dialog`).
+ * List view: one row per item, one column per field of the list. `p-table` is used for column
+ * sorting (`aria-sort` and keyboard already handled) and horizontal scrolling on narrow screens;
+ * editing happens in the shared dialog (`app-item-dialog`).
  */
 @Component({
   selector: 'app-list-table',
@@ -22,7 +22,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
       background: var(--surface);
     }
 
-    /* Hecho: texto tachado y todo lo que lleva color (etiquetas, enlace) pasa a gris neutro. */
+    /* Done: struck-through text; everything coloured (labels, link) turns neutral grey. */
     .done .title,
     .done td:not(.actions) {
       color: var(--muted);
@@ -42,7 +42,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
       color: var(--muted);
     }
 
-    /* Tabla ancha: scrollea dentro de su caja. En móvil se reducen las columnas y no hace falta. */
+    /* Wide table: scrolls inside its box. On mobile columns are reduced and it is not needed. */
     :host ::ng-deep .p-datatable-table {
       min-width: 42rem;
     }
@@ -89,7 +89,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
       color: var(--danger);
     }
 
-    /* Datos de la fila bajo el título: solo en móvil, donde las columnas sobrantes se ocultan. */
+    /* Row data under the title: mobile only, where the extra columns are hidden. */
     .mmeta {
       display: none;
     }
@@ -263,7 +263,7 @@ export class ListTable {
   readonly toggle = output<{ item: Item; done: boolean }>();
 
   protected readonly today = todayLocal();
-  /** El resaltado de fila solo en dispositivos con cursor: en táctil el `:hover` se quedaría pegado. */
+  /** Row highlight only on devices with a cursor: on touch, `:hover` would stick. */
   protected readonly canHover =
     typeof matchMedia !== 'function' || !!matchMedia('(hover: hover)')?.matches;
 

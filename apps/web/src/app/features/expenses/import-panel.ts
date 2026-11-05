@@ -254,18 +254,18 @@ export class ImportPanel {
   protected readonly file = signal<File | null>(null);
   protected readonly result = signal<ImportResult | null>(null);
   protected readonly batches = signal<ImportBatch[]>([]);
-  /** Ya llegó el historial (o falló): antes de eso no se puede decir que no hay importaciones. */
+  /** History has loaded (or failed); before that we cannot say there are no imports. */
   protected readonly batchesLoaded = signal(false);
   protected readonly ghostBatches = [64, 48, 72];
   protected readonly error = signal('');
-  /** Qué petición está en curso: la vista previa o la importación de verdad. */
+  /** Which request is running: the preview or the real import. */
   protected readonly busy = signal<'preview' | 'import' | null>(null);
   protected readonly dragging = signal(false);
-  /** Solo se puede importar tras ver la vista previa del fichero seleccionado. */
+  /** Importing is only allowed after previewing the selected file. */
   protected readonly previewed = signal(false);
   private readonly currentYear = Number(todayIn(DEFAULT_TIME_ZONE).slice(0, 4));
 
-  /** Qué toca hacer ahora, para que el orden «vista previa → importar» no sea un misterio. */
+  /** The next step, so the preview-then-import order is clear. */
   protected readonly stepHint = computed(() => {
     if (!this.file()) return 'Elige un fichero para empezar.';
     if (!this.previewed()) return 'Mira la vista previa primero: no guarda nada.';
@@ -311,7 +311,7 @@ export class ImportPanel {
   }
 
   protected onDragOver(event: DragEvent): void {
-    // Sin esto el navegador abriría el fichero en la pestaña en lugar de dejarlo caer aquí.
+    // Without this the browser would open the file in the tab instead of dropping it here.
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
     this.dragging.set(true);
@@ -333,14 +333,14 @@ export class ImportPanel {
     this.file.set(problem ? null : file);
   }
 
-  /** Vaciar el campo permite volver a elegir el mismo fichero y que `change` se dispare. */
+  /** Clearing the input lets the same file be picked again and fires `change`. */
   private resetInput(): void {
     const input = this.fileInput()?.nativeElement;
     if (input) input.value = '';
   }
 
   /**
-   * Hay una sola cuenta: se usa la primera y, si todavía no existe, se crea al importar por primera vez.
+   * There is a single account: use the first one and, if none exists yet, create it on the first import.
    */
   private accountId(): Observable<string> {
     const existing = this.store.accounts()?.find((a) => !a.archived) ?? this.store.accounts()?.[0];
@@ -373,7 +373,7 @@ export class ImportPanel {
           if (dryRun) {
             this.previewed.set(true);
           } else {
-            // Importado: el fichero ya está dentro; se suelta para no repetirlo por error.
+            // Imported: the file is in; drop it so it is not imported twice by mistake.
             this.previewed.set(false);
             this.file.set(null);
             this.resetInput();

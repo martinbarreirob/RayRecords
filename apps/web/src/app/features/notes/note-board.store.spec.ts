@@ -42,7 +42,7 @@ describe('NoteBoardStore', () => {
   function setup(): NoteBoardStore {
     api = {
       noteBoard: () => of(board),
-      // Como el servidor: `done` se traduce a `doneAt`.
+      // Like the server: `done` becomes `doneAt`.
       updateNoteCard: (cardId: string, patch: Partial<NoteCard> & { done?: boolean }) => {
         const { done, ...fields } = patch;
         return of({
@@ -71,7 +71,7 @@ describe('NoteBoardStore', () => {
     board = { cards: [card(1), card(2, { groupId: group.id }), card(3)], groups: [group] };
   });
 
-  it('separa las tarjetas sueltas de las de un grupo', () => {
+  it('separates loose cards from those in a group', () => {
     const store = setup();
 
     expect(store.looseCards().map((c) => c.id)).toEqual([id(1), id(3)]);
@@ -83,9 +83,9 @@ describe('NoteBoardStore', () => {
     ).toEqual([id(2)]);
   });
 
-  it('mover una tarjeta se refleja al instante, antes de la respuesta del servidor', () => {
+  it('moving a card shows at once, before the server responds', () => {
     const store = setup();
-    api['moveNoteCards'] = () => new Observable<NoteCard[]>(); // no responde nunca
+    api['moveNoteCards'] = () => new Observable<NoteCard[]>(); // never responds
 
     store.moveCards({ moves: [{ id: id(1), x: 300, y: 400, groupId: group.id }] });
 
@@ -93,7 +93,7 @@ describe('NoteBoardStore', () => {
     expect(moved).toMatchObject({ x: 300, y: 400, groupId: group.id });
   });
 
-  it('marcar como hecha fija doneAt y desmarcar lo borra', () => {
+  it('marking as done sets doneAt and unmarking clears it', () => {
     const store = setup();
 
     store.patchCard(id(1), { done: true });
@@ -103,7 +103,7 @@ describe('NoteBoardStore', () => {
     expect(store.cards().find((c) => c.id === id(1))?.doneAt).toBeNull();
   });
 
-  it('una tarjeta hecha hace más de 24 h deja de verse al avanzar el reloj', () => {
+  it('a card done more than 24 h ago stops showing when the clock advances', () => {
     const doneAt = new Date(Date.now() - DONE_VISIBLE_MS + 60_000).toISOString();
     board = { cards: [card(1, { doneAt })], groups: [] };
     const store = setup();
@@ -112,21 +112,21 @@ describe('NoteBoardStore', () => {
     store.now.set(Date.now() + 2 * 60_000);
 
     expect(store.visibleCards()).toHaveLength(0);
-    expect(store.cards()).toHaveLength(1); // sigue en memoria: solo se oculta
+    expect(store.cards()).toHaveLength(1); // still in memory: it is only hidden
   });
 
-  it('si el servidor rechaza un cambio, recarga el lienzo y avisa', () => {
+  it('if the server rejects a change, it reloads the canvas and warns', () => {
     const store = setup();
-    api['updateNoteCard'] = () => throwError(() => new Error('falla'));
+    api['updateNoteCard'] = () => throwError(() => new Error('fails'));
     board = { cards: [card(1), card(2, { groupId: group.id }), card(3)], groups: [group] };
 
     store.patchCard(id(1), { text: 'cambiado' });
 
     expect(store.error()).not.toBe('');
-    expect(store.cards().find((c) => c.id === id(1))?.text).toBe('nota 1'); // vuelve al valor del servidor
+    expect(store.cards().find((c) => c.id === id(1))?.text).toBe('nota 1'); // back to the server value
   });
 
-  it('borrar quita la tarjeta al momento', () => {
+  it('deleting removes the card at once', () => {
     const store = setup();
 
     store.removeCard(id(3));
@@ -134,17 +134,17 @@ describe('NoteBoardStore', () => {
     expect(store.cards().map((c) => c.id)).toEqual([id(1), id(2)]);
   });
 
-  it('ordena por posición para la lista del móvil', () => {
+  it('sorts by position for the mobile list', () => {
     const store = setup();
     const sorted = store.byPosition([card(3), card(1), card(2, { y: 10, x: 0 })]);
 
     expect(sorted.map((c) => c.id)).toEqual([id(2), id(1), id(3)]);
   });
 
-  describe('terminadas', () => {
+  describe('finished', () => {
     const longAgo = () => new Date(Date.now() - DONE_VISIBLE_MS - 3_600_000).toISOString();
 
-    it('une las del servidor con las que caducan en pantalla', () => {
+    it('merges the server ones with those expiring on screen', () => {
       const expiring = new Date(Date.now() - DONE_VISIBLE_MS + 60_000).toISOString();
       doneOld = [card(8, { doneAt: longAgo() })];
       board = { cards: [card(1, { doneAt: expiring }), card(3)], groups: [] };
@@ -162,7 +162,7 @@ describe('NoteBoardStore', () => {
       ).toEqual([id(1), id(8)]);
     });
 
-    it('recuperar una del servidor la devuelve al lienzo sin hacer', () => {
+    it('recovering one from the server returns it to the canvas, not done', () => {
       doneOld = [card(8, { doneAt: longAgo() })];
       const store = setup();
       store.loadDoneOld();
@@ -173,7 +173,7 @@ describe('NoteBoardStore', () => {
       expect(store.visibleCards().find((c) => c.id === id(8))?.doneAt).toBeNull();
     });
 
-    it('recuperar una que caducó en pantalla no la duplica', () => {
+    it('recovering one that expired on screen does not duplicate it', () => {
       board = { cards: [card(1, { doneAt: longAgo() })], groups: [] };
       const store = setup();
       expect(store.visibleCards()).toHaveLength(0);
@@ -185,8 +185,8 @@ describe('NoteBoardStore', () => {
     });
   });
 
-  describe('grupos', () => {
-    it('disolver quita el grupo al momento', () => {
+  describe('groups', () => {
+    it('dissolving removes the group at once', () => {
       const store = setup();
 
       store.dissolveGroup(group.id);
@@ -194,7 +194,7 @@ describe('NoteBoardStore', () => {
       expect(store.groups()).toHaveLength(0);
     });
 
-    it('renombrar un grupo se refleja al instante', () => {
+    it('renaming a group shows at once', () => {
       const store = setup();
 
       store.patchGroup(group.id, { title: 'Cocina' });
@@ -202,8 +202,8 @@ describe('NoteBoardStore', () => {
       expect(store.groups()[0]?.title).toBe('Cocina');
     });
   });
-  describe('deshacer', () => {
-    it('borrar ofrece el aviso y deshacer vuelve a crear la tarjeta con su ancho', () => {
+  describe('undo', () => {
+    it('deleting offers the notice and undo recreates the card with its width', () => {
       const store = setup();
       const created: unknown[] = [];
       api['createNoteCard'] = (input: Partial<NoteCard>) => {
@@ -225,7 +225,7 @@ describe('NoteBoardStore', () => {
       expect(store.undoNotice()).toBeNull();
     });
 
-    it('borrar varias a la vez es un solo paso de deshacer', () => {
+    it('deleting several at once is a single undo step', () => {
       const store = setup();
 
       store.removeCards([id(1), id(3)]);
@@ -236,7 +236,7 @@ describe('NoteBoardStore', () => {
       expect(store.cards()).toHaveLength(3);
     });
 
-    it('mover con undo guarda la posición anterior, sin avisar', () => {
+    it('moving with undo stores the previous position, without a notice', () => {
       const store = setup();
 
       store.moveCards(
@@ -255,7 +255,7 @@ describe('NoteBoardStore', () => {
       });
     });
 
-    it('mover sin undo no deja nada que deshacer', () => {
+    it('moving without undo leaves nothing to undo', () => {
       const store = setup();
 
       store.moveCards({ moves: [{ id: id(1), x: 300, y: 400 }] });
@@ -263,7 +263,7 @@ describe('NoteBoardStore', () => {
       expect(store.undo()).toBe(false);
     });
 
-    it('disolver un grupo deja las tarjetas sueltas al momento y se puede deshacer', () => {
+    it('dissolving a group leaves the cards loose at once and can be undone', () => {
       const store = setup();
       api['createNoteGroup'] = (input: Partial<NoteGroup>) =>
         of({ ...group, ...input, id: id(901) });
@@ -283,7 +283,7 @@ describe('NoteBoardStore', () => {
       });
     });
 
-    it('deshacer un agrupado devuelve las tarjetas y borra el grupo', () => {
+    it('undoing a grouping returns the cards and deletes the group', () => {
       const store = setup();
       const deleted: string[] = [];
       api['deleteNoteGroup'] = (groupId: string) => {
@@ -304,7 +304,7 @@ describe('NoteBoardStore', () => {
       expect(deleted).toEqual([group.id]);
     });
 
-    it('borrar sin undoable no deja aviso ni nada que deshacer', () => {
+    it('deleting without undoable leaves no notice and nothing to undo', () => {
       const store = setup();
 
       store.removeCards([id(1)], { undoable: false });
@@ -314,7 +314,7 @@ describe('NoteBoardStore', () => {
       expect(store.undo()).toBe(false);
     });
 
-    it('un aviso nuevo sustituye al anterior', () => {
+    it('a new notice replaces the previous one', () => {
       const store = setup();
 
       store.removeCard(id(1));
@@ -327,8 +327,8 @@ describe('NoteBoardStore', () => {
     });
   });
 
-  describe('arrange (ordenar)', () => {
-    it('aplica todas las posiciones a la vez y ofrece un solo «Deshacer»', () => {
+  describe('arrange', () => {
+    it('applies all positions at once and offers a single «Deshacer»', () => {
       const store = setup();
       const batches: unknown[] = [];
       api['moveNoteCards'] = (input: unknown) => {
@@ -351,7 +351,7 @@ describe('NoteBoardStore', () => {
       expect(store.undoNotice()).toBe('Notas ordenadas');
       expect(store.cards().find((c) => c.id === id(1))).toMatchObject({ x: 24, y: 24 });
       expect(store.groups()[0]).toMatchObject({ x: 320, y: 24 });
-      expect(batches).toHaveLength(1); // una sola petición por lotes para las tarjetas
+      expect(batches).toHaveLength(1); // a single batch request for the cards
       expect(patches).toEqual([[group.id, { x: 320, y: 24 }]]);
 
       store.undo();
@@ -359,10 +359,10 @@ describe('NoteBoardStore', () => {
       expect(store.cards().find((c) => c.id === id(1))).toMatchObject({ x: 10, y: 10 });
       expect(store.cards().find((c) => c.id === id(3))).toMatchObject({ x: 30, y: 30 });
       expect(store.groups()[0]).toMatchObject({ x: 50, y: 50 });
-      expect(store.undo()).toBe(false); // todo se deshizo de una vez
+      expect(store.undo()).toBe(false); // everything was undone at once
     });
 
-    it('no toca las tarjetas que están dentro de un grupo', () => {
+    it('does not touch cards inside a group', () => {
       const store = setup();
 
       store.arrange([
@@ -373,7 +373,7 @@ describe('NoteBoardStore', () => {
       expect(store.cards().find((c) => c.id === id(2))).toMatchObject({ x: 20, y: 20 });
     });
 
-    it('si ya está todo en su sitio no hace nada y no registra deshacer', () => {
+    it('if everything is already in place it does nothing and records no undo', () => {
       const store = setup();
 
       const done = store.arrange([
@@ -387,7 +387,7 @@ describe('NoteBoardStore', () => {
       expect(store.undo()).toBe(false);
     });
 
-    it('trocea las peticiones de más de 200 tarjetas', () => {
+    it('splits requests of more than 200 cards', () => {
       board = {
         cards: Array.from({ length: 450 }, (_, i) => card(i + 1, { x: 0, y: 0 })),
         groups: [],

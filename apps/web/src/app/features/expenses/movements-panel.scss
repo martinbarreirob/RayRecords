@@ -10,7 +10,7 @@
   color: var(--success);
 }
 
-/* Periodo, cuenta y total general */
+/* Period, account and overall total */
 .topline {
   display: flex;
   flex-wrap: wrap;
@@ -43,7 +43,7 @@
   line-height: 1.2;
 }
 
-/* Fichas por categoría (las «secciones» del diseño) */
+/* Category chips (the sections of the design) */
 .sections {
   display: flex;
   flex-wrap: wrap;
@@ -102,7 +102,7 @@
   font-weight: 500;
 }
 
-/* Esqueleto del balance y de las fichas (la animación de aparición está en movements-table.scss). */
+/* Skeleton for the balance and chips (the fade-in animation is in movements-table.scss). */
 .ghost-value {
   display: flex;
   align-items: center;
@@ -134,7 +134,7 @@
   border-radius: var(--radius-md);
 }
 
-/* Barra de herramientas de la tabla */
+/* Table toolbar */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -178,7 +178,7 @@
   margin-bottom: var(--space-3);
 }
 
-/* Móvil */
+/* Mobile */
 @media (width <= 767px) {
   .topline {
     align-items: stretch;
@@ -205,7 +205,7 @@
     }
   }
 
-  /* Controles de PrimeNG a la altura táctil. */
+  /* PrimeNG controls at touch height. */
   :host ::ng-deep {
     .sort-select {
       width: 100%;

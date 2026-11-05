@@ -1,8 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 
 /**
- * Aviso de "los datos han cambiado" (p. ej. tras una captura rápida). Las pantallas abiertas leen
- * `version()` dentro de un `effect` y recargan lo suyo; así no se acoplan entre sí.
+ * "Data changed" notice (e.g. after a quick capture). Open screens read `version()` inside an
+ * `effect` and reload their own data, so they are not coupled to each other.
  */
 @Injectable({ providedIn: 'root' })
 export class RefreshBus {

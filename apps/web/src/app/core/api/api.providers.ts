@@ -2,7 +2,7 @@ import { type EnvironmentProviders, makeEnvironmentProviders } from '@angular/co
 import { ApiClient } from './api-client';
 import { HttpApiClient } from './http-api-client';
 
-/** `provideHttpClient` (con el interceptor de sesión) se declara en `app.config.ts`. */
+/** `provideHttpClient` (with the session interceptor) is declared in `app.config.ts`. */
 export function provideApi(): EnvironmentProviders {
   return makeEnvironmentProviders([{ provide: ApiClient, useClass: HttpApiClient }]);
 }

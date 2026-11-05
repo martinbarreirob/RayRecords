@@ -2,9 +2,9 @@ import { Component, input, output } from '@angular/core';
 import type { NoteGroup } from '@rayrecords/shared';
 
 /**
- * Grupo del lienzo: caja con cabecera arrastrable, título editable, «Disolver» y tirador de tamaño.
- * Las tarjetas del grupo se proyectan en una pila, una debajo de otra y a todo el ancho; con tarjetas
- * el alto lo da el contenido (sin ellas, el alto guardado).
+ * Canvas group: box with a draggable header, editable title, «Disolver» and a resize handle.
+ * The group's cards are projected into a stack, one under another at full width; with cards the
+ * height comes from the content (without them, the saved height).
  */
 @Component({
   selector: 'app-note-group',
@@ -20,9 +20,9 @@ import type { NoteGroup } from '@rayrecords/shared';
   },
   styles: `
     /*
-     * El borde se pinta con una sombra interior y no con border: así el origen de las tarjetas hijas
-     * (position: absolute) coincide exactamente con x/y del grupo y no hay saltos de 1,5 px al soltarlas.
-     * El resaltado del grupo destino es un contorno discontinuo cuyo color se anima (el estilo no se anima).
+     * The border is drawn with an inner shadow, not a border: that way the origin of child cards
+     * (position: absolute) matches the group's x/y exactly, with no 1.5 px jumps when dropped.
+     * The target group highlight is a dashed outline whose colour is animated (the style is not).
      */
     :host {
       position: absolute;
@@ -40,8 +40,8 @@ import type { NoteGroup } from '@rayrecords/shared';
     }
 
     /*
-     * Al arrastrarlo se levanta con un contorno de acento y una sombra contenida (no la grande de las
-     * tarjetas: en una caja tan ancha dibujaría el borde del lienzo, que recorta lo que se sale).
+     * When dragged it lifts with an accent outline and a contained shadow (not the large one of
+     * cards: on such a wide box it would draw the canvas edge, which clips what overflows).
      */
     :host(.moving) {
       box-shadow:
@@ -63,7 +63,7 @@ import type { NoteGroup } from '@rayrecords/shared';
       }
     }
 
-    /* Las tarjetas se apilan a todo el ancho; el grupo crece en alto para contenerlas. */
+    /* Cards stack at full width; the group grows in height to contain them. */
     .stack {
       display: flex;
       flex-direction: column;
@@ -86,7 +86,7 @@ import type { NoteGroup } from '@rayrecords/shared';
       touch-action: none;
     }
 
-    /* Disposición bloqueada: ni mano ni tirador de tamaño activos. */
+    /* Locked layout: neither hand nor resize handle active. */
     :host(.locked) header {
       cursor: default;
     }
@@ -142,7 +142,7 @@ import type { NoteGroup } from '@rayrecords/shared';
       opacity: 1;
     }
 
-    /* Sin ratón no hay hover: el botón se ve siempre y el tirador es más grande. */
+    /* Without a mouse there is no hover: the button is always visible and the handle is larger. */
     @media (hover: none) {
       .dissolve {
         opacity: 1;
@@ -233,12 +233,12 @@ import type { NoteGroup } from '@rayrecords/shared';
 })
 export class NoteGroupComponent {
   readonly group = input.required<NoteGroup>();
-  /** Posición y tamaño que se muestran (incluyen el arrastre o el redimensionado en curso). */
+  /** Position and size shown (they include the drag or resize in progress). */
   readonly box = input.required<{ x: number; y: number; w: number; h: number }>();
   readonly count = input(0);
   readonly dropTarget = input(false);
   readonly moving = input(false);
-  /** Disposición bloqueada: solo cambia el cursor (la pantalla decide qué se puede mover). */
+  /** Locked layout: only the cursor changes (the page decides what can be moved). */
   readonly locked = input(false);
 
   readonly headerPressed = output<PointerEvent>();

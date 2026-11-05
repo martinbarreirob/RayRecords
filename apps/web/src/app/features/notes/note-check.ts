@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
 
-/** Casilla redonda de «hecha». En móvil se ve de 22 px pero el área tocable es de 44 px. */
+/** Round «done» checkbox. On mobile it looks 22 px but the touch area is 44 px. */
 @Component({
   selector: 'app-note-check',
   styles: `

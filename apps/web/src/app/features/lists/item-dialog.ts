@@ -20,7 +20,7 @@ import { DateField } from '../../core/ui/date-field';
 import { prefersNativePickers } from '../../core/ui/native-pickers';
 import { fromInputValue, normalizeUrl, toInputValue } from './field-format';
 
-/** Borrador de edición: todo como texto, tal y como lo escribe el usuario. */
+/** Editing draft: everything as text, as the user types it. */
 interface Draft {
   title: string;
   text: string;
@@ -32,10 +32,10 @@ interface Draft {
 }
 
 /**
- * Edición completa de un elemento (título, notas, fecha, enlace, etiquetas, columna y los campos de
- * la lista). La usan la tabla y el tablero; guarda por su cuenta y avisa con `saved`.
+ * Full editing of an item (title, notes, date, link, labels, column and the list's fields). Used by
+ * the table and the board; it saves on its own and notifies with `saved`.
  *
- * En móvil ocupa toda la pantalla. Con cambios sin guardar, un clic fuera no lo cierra.
+ * On mobile it fills the screen. With unsaved changes, a click outside does not close it.
  */
 @Component({
   selector: 'app-item-dialog',
@@ -84,7 +84,7 @@ interface Draft {
       margin: 0;
     }
 
-    /* Móvil: el diálogo ocupa toda la pantalla y el contenido scrollea dentro. */
+    /* Mobile: the dialog fills the screen and the content scrolls inside. */
     @media (width <= 767px) {
       :host ::ng-deep .item-dialog {
         height: 100dvh;
@@ -283,7 +283,7 @@ interface Draft {
 export class ItemDialog {
   private readonly api = inject(ApiClient);
 
-  /** Elemento a editar; `null` mantiene el diálogo cerrado. */
+  /** Item to edit; `null` keeps the dialog closed. */
   readonly item = input<Item | null>(null);
   readonly list = input.required<List>();
 
@@ -296,12 +296,12 @@ export class ItemDialog {
   protected readonly saving = signal(false);
   protected readonly titleField = viewChild<ElementRef<HTMLInputElement>>('titleInput');
   protected readonly titleInvalid = signal(false);
-  /** Borrador tal y como se abrió: con cambios sin guardar, un clic fuera no cierra el diálogo. */
+  /** Draft as it was when opened: with unsaved changes, a click outside does not close the dialog. */
   private readonly initial = signal('');
   protected readonly dirty = computed(() => JSON.stringify(this.draft()) !== this.initial());
 
   constructor() {
-    // Cada vez que se abre con un elemento, el borrador parte de sus valores actuales.
+    // Each time it opens with an item, the draft starts from its current values.
     effect(() => {
       const item = this.item();
       const list = this.list();
@@ -323,7 +323,7 @@ export class ItemDialog {
     });
   }
 
-  /** Al abrir, el foco va al título, salvo en táctil: allí abriría el teclado y taparía el formulario. */
+  /** On open, focus goes to the title, except on touch: there it would open the keyboard and cover the form. */
   protected focusTitle(): void {
     if (!prefersNativePickers()) this.titleField()?.nativeElement.focus();
   }
@@ -363,7 +363,7 @@ export class ItemDialog {
         this.error.set(`Valor no válido en «${def.label}»`);
         return;
       }
-      // Solo se envía lo que ha cambiado o ya existía (un campo vacío que no existía no hace falta).
+      // Only send what changed or already existed (an empty field that did not exist is not needed).
       if (value !== null || item.extra[def.key] !== undefined) extra[def.key] = value;
     }
 

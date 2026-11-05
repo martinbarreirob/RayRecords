@@ -1,6 +1,6 @@
-// Clases reutilizables para lo que no necesita PrimeNG. Contrato documentado en docs/DESIGN.md.
+// Reusable classes for what does not need PrimeNG. Contract documented in docs/DESIGN.md.
 
-/* Botones */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -72,7 +72,7 @@
   }
 }
 
-/* Campos de formulario */
+/* Form fields */
 .input,
 .select,
 .textarea {
@@ -111,7 +111,7 @@
   }
 }
 
-/* Superficies */
+/* Surfaces */
 .card {
   padding: var(--space-4);
   border: 1px solid var(--line);
@@ -177,7 +177,7 @@
   line-height: 1.5;
 }
 
-/* Interruptor de vista (Lista | Kanban | …) */
+/* View switch (List | Kanban | ...) */
 .segmented {
   display: inline-flex;
   gap: 2px;
@@ -207,7 +207,7 @@
   }
 }
 
-/* Avisos y estados vacíos */
+/* Notices and empty states */
 .alert {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
@@ -235,7 +235,7 @@
   font-size: var(--text-sm);
 }
 
-/* Tablas simples (para las complejas se usa p-table, ver _primeng.scss) */
+/* Simple tables (for complex ones use p-table, see _primeng.scss) */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -259,7 +259,7 @@
     border-bottom: 0;
   }
 
-  // Resaltado de fila al pasar el ratón (solo con puntero real, para que no se quede pegado en táctil).
+  // Row highlight on hover (only with a real pointer, so it does not stick on touch).
   @media (hover: hover) {
     tbody tr:hover td {
       background: var(--surface-2);
@@ -276,7 +276,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Colores categóricos: `class="hue-blue"` define --hue, --hue-soft y --hue-text para el elemento y sus hijos. */
+/* Categorical colors: `class="hue-blue"` sets --hue, --hue-soft and --hue-text for the element and its children. */
 @each $name in 'blue', 'green', 'amber', 'rose', 'violet', 'teal' {
   .hue-#{$name} {
     --hue: var(--hue-#{$name});
@@ -285,7 +285,7 @@
   }
 }
 
-/* Etiqueta con color: usar junto a `.hue-*`. */
+/* Colored label: use together with `.hue-*`. */
 .tag-chip {
   display: inline-flex;
   align-items: center;
@@ -308,7 +308,7 @@
   }
 }
 
-/* Enlace externo como icono junto a un título (sin botón ni texto). */
+/* External link as an icon next to a title (no button or text). */
 .link-icon {
   display: inline-flex;
   align-items: center;
@@ -326,9 +326,9 @@
   }
 }
 
-/* Esqueletos de carga: bloques grises con un brillo suave que se mueve. Se componen con las variantes
-   de forma (`.line`, `.title`, `.pill`, `.circle`, `.block`) y se ajustan en ancho y alto con estilos
-   propios del componente, para que ocupen lo mismo que el contenido real y la página no salte. */
+/* Loading skeletons: gray blocks with a soft moving shimmer. Built with the shape variants
+   (`.line`, `.title`, `.pill`, `.circle`, `.block`) and sized in width and height by the component's
+   own styles, so they take the same space as the real content and the page does not jump. */
 .skeleton {
   display: block;
   border-radius: var(--radius-sm);

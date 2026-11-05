@@ -4,9 +4,9 @@ import { NoteBoardStore } from './note-board.store';
 import { NoteRow } from './note-row';
 
 /**
- * Lista de notas para pantallas estrechas (< 768 px): los grupos son plegables y las sueltas van
- * debajo, todo ordenado por la posición que tienen en el lienzo. La edición y las acciones las
- * decide la pantalla; aquí solo se pinta y se avisa.
+ * Notes list for narrow screens (< 768 px): groups are collapsible and loose ones go below, all
+ * sorted by their canvas position. Editing and actions are decided by the page; here it only
+ * renders and notifies.
  */
 @Component({
   selector: 'app-notes-mobile-list',

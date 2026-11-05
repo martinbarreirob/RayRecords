@@ -56,11 +56,11 @@ import { readLayoutLocked, writeLayoutLocked } from './notes-prefs';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 const MARQUEE_THRESHOLD = 4;
-/** Lienzo que se deja más allá de lo más lejano, para poder seguir colocando hacia la derecha. */
+/** Canvas left beyond the farthest item, so cards can keep being placed to the right. */
 const RIGHT_SPARE = 24;
-/** Lo que tarda la tarjeta soltada en asentarse (debe coincidir con la transición de note-card). */
+/** Time the dropped card takes to settle (must match the note-card transition). */
 const LAND_MS = 180;
-/** Cuánto se queda el aviso «Disposición bloqueada» si no se cierra. */
+/** How long the «Disposición bloqueada» notice stays if not closed. */
 const LOCK_NOTICE_MS = 4_000;
 
 interface Ghost {
@@ -68,7 +68,7 @@ interface Ghost {
   landing: boolean;
 }
 
-/** El evento nace en el hueco del grupo (él mismo o el contenedor de su pila), no en una nota ni en la cabecera. */
+/** The event starts in the group's gap (the group itself or its stack container), not on a note or the header. */
 function isGroupBackground(event: Event): boolean {
   const { target, currentTarget } = event;
   return (
@@ -99,7 +99,7 @@ function isEditable(target: EventTarget | null): boolean {
   );
 }
 
-/** Controles con su propio Enter (botones, enlaces, resúmenes, casillas): el atajo de editar no debe robárselo. */
+/** Controls with their own Enter (buttons, links, summaries, checkboxes): the edit shortcut must not steal it. */
 function isControl(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
@@ -108,9 +108,9 @@ function isControl(target: EventTarget | null): boolean {
 }
 
 /**
- * Notas como tarjetas en un lienzo: se crean con doble clic o N, se mueven libremente (la posición se
- * guarda), se agrupan y se marcan como hechas (desaparecen 24 h después). En pantallas estrechas el
- * lienzo se muestra como una lista ordenada por posición.
+ * Notes as cards on a canvas: created with a double click or N, moved freely (the position is
+ * saved), grouped and marked as done (they disappear 24 h later). On narrow screens the canvas is
+ * shown as a list ordered by position.
  */
 @Component({
   selector: 'app-notes-page',
@@ -356,24 +356,24 @@ export class NotesPage {
   protected readonly editingId = signal<string | null>(null);
   protected readonly drag = signal<Drag | null>(null);
   protected readonly showDone = signal(false);
-  /** Disposición bloqueada: no se mueven ni redimensionan tarjetas y grupos. Se arranca como la dejó el usuario (por defecto, bloqueada). */
+  /** Locked layout: cards and groups cannot be moved or resized. Locked by default. */
   protected readonly locked = signal(readLayoutLocked());
   protected readonly lockNotice = signal(false);
-  /** Lo que ocupa todo lo que hay encima de la pantalla (cabecera y captura), para llenar el resto de la ventana. */
+  /** Space taken by everything above the screen (header and capture), to fill the rest of the window. */
   protected readonly top = signal(0);
-  /** Marco de selección con el ratón, en coordenadas del lienzo. */
+  /** Mouse selection marquee, in canvas coordinates. */
   protected readonly marquee = signal<Rect | null>(null);
-  /** Tarjetas recién soltadas que aún se están asentando (la copia que volaba baja a su sitio). */
+  /** Just-dropped cards still settling (the copy that was flying drops into place). */
   private readonly landing = signal<NoteCard[] | null>(null);
-  /** Parte baja de las tarjetas tal como se pintan (el texto largo las hace más altas que la estimación). */
+  /** Bottom of the cards as painted (long text makes them taller than the estimate). */
   private readonly measuredBottom = signal(0);
-  /** Alto real de cada grupo y sitio real de cada tarjeta en el lienzo (las de un grupo van apiladas, sin x/y propias). */
+  /** Measured height of each group and position of each card (grouped cards are stacked and have no x/y). */
   private readonly groupHeights = signal<ReadonlyMap<string, number>>(new Map());
   private readonly slots = signal<ReadonlyMap<string, Rect>>(new Map());
 
   private landingTimer: ReturnType<typeof setTimeout> | undefined;
   private lockNoticeTimer: ReturnType<typeof setTimeout> | undefined;
-  /** Último puntero visto durante el arrastre, para recolocar la tarjeta si la pantalla se desplaza. */
+  /** Last pointer seen during the drag, to reposition the card if the page scrolls. */
   private lastPointer: { clientX: number; clientY: number } | null = null;
   private stopDragListeners: (() => void) | null = null;
   private stopMarqueeListeners: (() => void) | null = null;
@@ -385,13 +385,13 @@ export class NotesPage {
       this.store.groups().length === 0,
   );
 
-  /** Seleccionadas que se ven de verdad (una hecha que caduca deja de contar aunque siga en el conjunto). */
+  /** Selected cards that are still visible (expired done cards are excluded). */
   protected readonly selectionCount = computed(() => {
     const ids = this.selected();
     return this.store.visibleCards().reduce((n, card) => n + (ids.has(card.id) ? 1 : 0), 0);
   });
 
-  /** Grupos con el alto con el que se pintan: los que tienen tarjetas crecen para contenerlas. */
+  /** Groups with the height they are painted at: those with cards grow to contain them. */
   protected readonly layoutGroups = computed<NoteGroup[]>(() => {
     const heights = this.groupHeights();
     const byGroup = this.store.cardsByGroup();
@@ -411,17 +411,17 @@ export class NotesPage {
     return Math.max(240, ...bottoms) + 160;
   });
 
-  /** Hasta dónde llega el lienzo por la derecha: lo más lejano más un margen (el resto lo da el ancho de la ventana). */
+  /** Canvas width: the farthest item plus a margin. */
   protected readonly boardRight = computed(
     () => rightEdge(this.store.looseCards(), this.layoutGroups()) + RIGHT_SPARE,
   );
 
-  /** El contorno de la zona solo se ve mientras se arrastra o redimensiona algo, o se dibuja el marco. */
+  /** The zone outline only shows while something is dragged or resized, or the marquee is drawn. */
   protected readonly zoneVisible = computed(
     () => this.drag()?.moved === true || this.marquee() !== null,
   );
 
-  /** Tarjetas que «vuelan» bajo el puntero mientras se arrastran, o que acaban de soltarse. */
+  /** Cards that «fly» under the pointer while dragged, or that were just dropped. */
   protected readonly ghosts = computed<Ghost[]>(() => {
     const landing = this.landing();
     if (landing) return landing.map((card) => ({ card, landing: true }));
@@ -453,7 +453,7 @@ export class NotesPage {
     this.store.load();
     this.store.loadDoneOld();
 
-    // Un cambio externo (captura rápida) recarga el lienzo.
+    // An external change (quick capture) reloads the canvas.
     effect(() => {
       if (this.bus.version() === 0) return;
       untracked(() => {
@@ -462,7 +462,7 @@ export class NotesPage {
       });
     });
 
-    // «Nueva nota» de la paleta (Ctrl+K) crea una tarjeta vacía y llega aquí con su id: se enfoca para escribir.
+    // "New note" from the palette (Ctrl+K) creates an empty card and navigates here with its id: focus it.
     effect(() => {
       const id = this.palette.newNoteId();
       if (id === null || !this.store.cards().some((card) => card.id === id)) return;
@@ -473,7 +473,7 @@ export class NotesPage {
       });
     });
 
-    // El lienzo crece con las tarjetas más altas de lo estimado; se mide tras pintar, nunca durante un arrastre.
+    // The canvas grows with cards taller than estimated; measured after painting, never during a drag.
     afterRenderEffect(() => {
       this.store.cards();
       this.store.groups();
@@ -488,7 +488,7 @@ export class NotesPage {
       });
     });
 
-    // La ventana se llena por debajo de la cabecera y la captura: se mide lo que hay encima, tras pintar y al cambiar el tamaño.
+    // The window fills below the header and capture: what is above is measured, after painting and on resize.
     afterRenderEffect(() => {
       this.compact();
       this.store.loading();
@@ -496,14 +496,14 @@ export class NotesPage {
     });
     const onResize = () => this.measureTop();
     window.addEventListener('resize', onResize);
-    // La franja de captura puede crecer (vista previa): el cuerpo cambia de alto y la altura mínima se recalcula.
+    // The capture strip can grow (preview): the body changes height and the minimum height is recalculated.
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize);
     observer?.observe(document.body);
 
-    // Las tarjetas hechas hace más de 24 h se ocultan solas aunque la pantalla siga abierta.
+    // Cards done more than 24 h ago hide on their own even if the screen stays open.
     const interval = setInterval(() => this.store.tick(), 30_000);
 
-    // En pantallas estrechas no hay lienzo: se muestra una lista.
+    // On narrow screens there is no canvas: a list is shown.
     const query = window.matchMedia(MOBILE_QUERY);
     this.compact.set(query.matches);
     const onChange = (event: MediaQueryListEvent) => this.compact.set(event.matches);
@@ -521,7 +521,7 @@ export class NotesPage {
     });
   }
 
-  // ---------- Consultas de la plantilla ----------
+  // ---------- Template queries ----------
 
   protected cardsIn(groupId: string): NoteCard[] {
     return this.store.cardsByGroup().get(groupId) ?? [];
@@ -540,7 +540,7 @@ export class NotesPage {
     return drag?.kind === 'group' && drag.moved && drag.id === groupId;
   }
 
-  /** Posición y tamaño de un grupo, con el efecto del arrastre o del redimensionado en curso. */
+  /** Position and size of a group, with the effect of the drag or resize in progress. */
   protected groupBox(group: NoteGroup): { x: number; y: number; w: number; h: number } {
     const drag = this.drag();
     if (drag && drag.id === group.id && (drag.kind === 'group' || drag.kind === 'resize')) {
@@ -560,7 +560,7 @@ export class NotesPage {
     return `Hecha · se oculta en ${formatDuration(remainingMs(card.doneAt, this.store.now()))}`;
   }
 
-  /** La barra de acciones solo sale con una tarjeta seleccionada y sin arrastrar ni editar. */
+  /** The action bar only shows with a selected card and no dragging or editing. */
   protected showToolbar(card: NoteCard): boolean {
     return (
       this.selectionCount() === 1 &&
@@ -605,7 +605,7 @@ export class NotesPage {
     if (!sameNumbers(heights, this.groupHeights())) this.groupHeights.set(heights);
   }
 
-  // ---------- Bloqueo y orden ----------
+  // ---------- Locking and ordering ----------
 
   protected toggleLock(): void {
     this.setLocked(!this.locked());
@@ -622,7 +622,7 @@ export class NotesPage {
     this.lockNotice.set(false);
   }
 
-  /** Aviso discreto y breve cuando alguien intenta mover algo con la disposición bloqueada. */
+  /** Brief, discreet notice when someone tries to move something with the layout locked. */
   private showLockNotice(): void {
     clearTimeout(this.lockNoticeTimer);
     this.lockNotice.set(true);
@@ -630,9 +630,9 @@ export class NotesPage {
   }
 
   /**
-   * «Ordenar»: rejilla limpia con las tarjetas sueltas y los grupos, en su orden de lectura y al ancho
-   * real del lienzo. Se usan las alturas reales de las tarjetas (el texto largo las hace más altas que
-   * la estimación) para que no se solape nada. Funciona también con la disposición bloqueada.
+   * «Ordenar»: clean grid with loose cards and groups, in reading order and at the real width of the
+   * canvas. Real card heights are used (long text makes them taller than the estimate) so nothing
+   * overlaps. It also works with the layout locked.
    */
   protected arrange(): void {
     const board = this.boardRef()?.nativeElement;
@@ -645,9 +645,9 @@ export class NotesPage {
     if (this.store.arrange(arrangeInGrid(items, board.clientWidth))) board.scrollLeft = 0;
   }
 
-  // ---------- Crear, editar, terminar, borrar ----------
+  // ---------- Create, edit, finish, delete ----------
 
-  /** Primer hueco libre según el ancho real del lienzo (el servidor, sin posición, supone 1240 px). */
+  /** First free slot by the canvas's real width (the server, with no position, assumes 1240 px). */
   private freeSpot(): { x: number; y: number } | null {
     const board = this.boardRef()?.nativeElement;
     if (!board || this.compact()) return null;
@@ -673,7 +673,7 @@ export class NotesPage {
     });
   }
 
-  /** Doble clic en el hueco del grupo: la nota nueva entra al final de su pila. */
+  /** Double click in the group's gap: the new note goes at the end of its stack. */
   protected onGroupDblClick(event: MouseEvent, group: NoteGroup): void {
     if (!isGroupBackground(event)) return;
     this.newCard({ x: 0, y: stackEndY(this.cardsIn(group.id)), groupId: group.id });
@@ -692,9 +692,9 @@ export class NotesPage {
 
   protected finishEdit(card: NoteCard, value: string): void {
     if (this.editingId() === card.id) this.editingId.set(null);
-    // La tarjeta pudo borrarse mientras se editaba (el campo avisa al perder el foco al desaparecer).
+    // The card may have been deleted while editing (the field reports when it loses focus as it disappears).
     if (!this.store.cards().some((c) => c.id === card.id)) return;
-    // Una nota nueva que se deja en blanco no se guarda (y no ofrece «Deshacer»).
+    // A new note left blank is not saved (and does not offer «Deshacer»).
     if (value.trim() === '' && card.text === '') {
       this.store.removeCards([card.id], { undoable: false });
       this.selected.update((set) => new Set([...set].filter((id) => id !== card.id)));
@@ -725,7 +725,7 @@ export class NotesPage {
     if (next) this.store.loadDoneOld();
   }
 
-  // ---------- Selección ----------
+  // ---------- Selection ----------
 
   private selectedCards(): NoteCard[] {
     const ids = this.selected();
@@ -736,7 +736,7 @@ export class NotesPage {
     if (!this.selected().has(card.id)) this.selected.set(new Set([card.id]));
   }
 
-  /** Pulsar en el hueco de un grupo (no en sus notas ni en su cabecera) deselecciona, como en el fondo. */
+  /** Clicking in a group's gap (not on its notes or header) deselects, as on the background. */
   protected onGroupPointerDown(event: PointerEvent): void {
     if (!isGroupBackground(event) || event.button !== 0) return;
     if (event.shiftKey || event.ctrlKey || event.metaKey) return;
@@ -744,7 +744,7 @@ export class NotesPage {
     this.editingId.set(null);
   }
 
-  /** Pulsar en el fondo deselecciona; arrastrar dibuja un marco que selecciona lo que toca. */
+  /** Clicking the background deselects; dragging draws a marquee that selects what it touches. */
   protected onBoardPointerDown(event: PointerEvent, board: HTMLElement): void {
     if (event.target !== event.currentTarget || event.button !== 0 || !event.isPrimary) return;
     const additive = event.shiftKey || event.ctrlKey || event.metaKey;
@@ -772,7 +772,7 @@ export class NotesPage {
         w: frame.w,
         h: frame.h,
       });
-      // Las tarjetas de un grupo no se seleccionan con el marco: el grupo se trata como un todo.
+      // Cards in a group are not selected with the marquee: the group is treated as a whole.
       const items = Array.from(
         board.querySelectorAll<HTMLElement>('[data-card-id]:not([data-stacked])'),
       ).map((el) => {
@@ -809,11 +809,11 @@ export class NotesPage {
     });
   }
 
-  // ---------- Arrastre ----------
+  // ---------- Dragging ----------
 
   protected absolute(card: NoteCard): Point {
     if (!card.groupId) return { x: card.x, y: card.y };
-    // En un grupo la posición no es la guardada: manda el sitio que ocupa en la pila.
+    // In a group the position is not the saved one: the place it takes in the stack rules.
     const slot = this.slots().get(card.id);
     if (slot) return { x: slot.x, y: slot.y };
     const group = this.store.groups().find((g) => g.id === card.groupId);
@@ -821,8 +821,8 @@ export class NotesPage {
   }
 
   /**
-   * Puntero en coordenadas del lienzo: si el lienzo o la página se desplazan durante el arrastre, la
-   * tarjeta sigue pegada al puntero y no se queda atrás.
+   * Pointer in canvas coordinates: if the canvas or page scrolls during the drag, the card stays
+   * glued to the pointer and does not lag behind.
    */
   private pointerOf(event: { clientX: number; clientY: number }): Point {
     const board = this.boardRef()?.nativeElement;
@@ -856,7 +856,7 @@ export class NotesPage {
     };
     const up = finish(true);
     const cancel = finish(false);
-    // Escape cancela el arrastre y la tarjeta vuelve a su sitio.
+    // Escape cancels the drag and the card goes back to its place.
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.preventDefault();
@@ -872,8 +872,8 @@ export class NotesPage {
   }
 
   /**
-   * Con la disposición bloqueada no hay arrastre: se vigila el puntero solo para avisar si el gesto era
-   * un intento de mover (supera el mismo umbral que el arrastre). Si no, es un clic y se llama a `onClick`.
+   * With the layout locked there is no drag: the pointer is watched only to warn if the gesture was
+   * an attempt to move (it exceeds the same threshold as dragging). Otherwise it is a click and `onClick` is called.
    */
   private watchLockedPress(event: PointerEvent, onClick?: () => void): void {
     this.stopDragListeners?.();
@@ -907,9 +907,9 @@ export class NotesPage {
     event.stopPropagation();
     const additive = event.shiftKey || event.ctrlKey || event.metaKey;
     this.select(card.id, additive);
-    if (additive) return; // Mayús+clic solo cambia la selección.
+    if (additive) return; // Shift+click only changes the selection.
     if (this.locked()) {
-      // Un clic sin movimiento deja solo esta tarjeta seleccionada; si se intenta arrastrar, se avisa.
+      // A click without movement leaves only this card selected; if a drag is attempted, a notice is shown.
       this.watchLockedPress(event, () => this.selected.set(new Set([card.id])));
       return;
     }
@@ -951,7 +951,7 @@ export class NotesPage {
     this.landing.set(null);
   }
 
-  /** Mantiene un instante las tarjetas soltadas encima de las reales para que la sombra y la escala se asienten. */
+  /** Briefly keeps the dropped cards above the real ones so the shadow and scale settle. */
   private land(cards: NoteCard[]): void {
     clearTimeout(this.landingTimer);
     this.landing.set(cards);
@@ -965,7 +965,7 @@ export class NotesPage {
     if (!drag) return;
 
     if (!drag.moved) {
-      // Un clic sobre una tarjeta de una selección múltiple deja solo esa tarjeta.
+      // A click on a card of a multiple selection leaves only that card.
       if (drag.kind === 'card' && !drag.additive) this.selected.set(new Set([drag.id]));
       return;
     }
@@ -999,7 +999,7 @@ export class NotesPage {
     }
   }
 
-  // ---------- Grupos ----------
+  // ---------- Groups ----------
 
   protected groupSelection(): void {
     const cards = this.selectedCards();
@@ -1016,7 +1016,7 @@ export class NotesPage {
     });
   }
 
-  // ---------- Teclado ----------
+  // ---------- Keyboard ----------
 
   protected onKeydown(event: KeyboardEvent): void {
     if (
@@ -1035,7 +1035,7 @@ export class NotesPage {
       if (this.store.undo()) event.preventDefault();
       return;
     }
-    // Mayús+N es el atajo global a Notas (ver go-shortcuts.ts): aquí «N» a secas crea la tarjeta.
+    // Shift+N is the global shortcut to Notes (see go-shortcuts.ts): here a bare «N» creates the card.
     if (key === 'n' && !mod && !event.altKey && !event.shiftKey) {
       event.preventDefault();
       if (!event.repeat) this.newCard();
@@ -1063,14 +1063,14 @@ export class NotesPage {
       const card = this.selectedCards()[0];
       if (card) this.edit(card);
     } else if (step) {
-      // Mayús+flechas mueve la selección. Alt+flechas es la navegación global entre secciones: aquí no se toca.
+      // Shift+arrows moves the selection. Alt+arrows is global navigation between sections: not touched here.
       event.preventDefault();
       if (this.locked()) {
         this.showLockNotice();
         return;
       }
       const { dx, dy } = step;
-      // Las de un grupo no se colocan libremente.
+      // Those in a group are not placed freely.
       const movable = this.selectedCards().filter((card) => card.groupId === null);
       if (movable.length === 0) return;
       this.store.moveCards(

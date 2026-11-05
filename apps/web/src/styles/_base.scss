@@ -1,4 +1,4 @@
-// Base: reset ligero, tipografía y estructura de página.
+// Base: light reset, typography and page structure.
 
 *,
 *::before,
@@ -76,7 +76,7 @@ textarea {
   white-space: nowrap;
 }
 
-/* Contenedor de página: mucho espacio en blanco, ancho contenido. */
+/* Page container: lots of white space, narrow width. */
 .page {
   max-width: var(--page-max);
   margin: 0 auto;

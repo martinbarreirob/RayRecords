@@ -1,18 +1,18 @@
 import { TRANSFER_CATEGORY, type Transaction } from '@rayrecords/shared';
 
-/** Una «sección» del diseño: una categoría (o `null` para los movimientos sin categoría). */
+/** A section of the design: a category, or `null` for uncategorised movements. */
 export type SectionKey = string | null;
 
-/** Qué sección está activa en la tabla: todas, solo las sin categoría o una categoría concreta. */
+/** Active section in the table: all, only uncategorised, or one category. */
 export type SectionFilter = 'all' | 'none' | (string & {});
 
-/** Periodo en meses `YYYY-MM`; `null` en un extremo = sin límite por ese lado. */
+/** Period in `YYYY-MM` months; `null` at one end means no limit on that side. */
 export interface Period {
   from: string | null;
   to: string | null;
 }
 
-/** Movimiento con los nombres ya resueltos, para ordenar y filtrar sin volver a buscarlos. */
+/** Movement with names already resolved, so sorting and filtering need no lookups. */
 export interface MovementRow extends Transaction {
   categoryName: string;
 }
@@ -29,7 +29,7 @@ export interface PeriodTotals {
   balanceCents: number;
 }
 
-/** Minúsculas y sin acentos, para que «cafe» encuentre «Café». */
+/** Lowercase and accent-free, so "cafe" finds "Café". */
 export function normalizeText(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
@@ -38,14 +38,14 @@ export function sumCents(rows: readonly { amountCents: number }[]): number {
   return rows.reduce((sum, row) => sum + row.amountCents, 0);
 }
 
-/** `true` si el mes está dentro del periodo (extremos incluidos). */
+/** `true` if the month is inside the period (ends included). */
 export function inPeriod(month: string, period: Period): boolean {
   if (period.from && month < period.from) return false;
   if (period.to && month > period.to) return false;
   return true;
 }
 
-/** Total y número de movimientos por categoría, más una entrada `null` si hay alguno sin categoría. */
+/** Total and movement count per category, plus a `null` entry if any are uncategorised. */
 export function sectionTotals(rows: readonly Transaction[]): Map<SectionKey, SectionTotal> {
   const result = new Map<SectionKey, SectionTotal>();
   for (const row of rows) {
@@ -58,8 +58,8 @@ export function sectionTotals(rows: readonly Transaction[]): Map<SectionKey, Sec
 }
 
 /**
- * Gastos, ingresos y balance del periodo. Los traspasos entre cuentas propias no cuentan
- * (igual que en el resumen mensual de la API).
+ * Expenses, income and balance for the period. Transfers between own accounts are ignored,
+ * as in the API monthly summary.
  */
 export function periodTotals(rows: readonly Transaction[]): PeriodTotals {
   let expensesCents = 0;
@@ -72,7 +72,7 @@ export function periodTotals(rows: readonly Transaction[]): PeriodTotals {
   return { expensesCents, incomeCents, balanceCents: expensesCents + incomeCents };
 }
 
-/** Filtra por sección activa y por texto (descripción, sin acentos ni mayúsculas). */
+/** Filters by active section and by text (description, ignoring accents and case). */
 export function filterMovements<T extends MovementRow>(
   rows: readonly T[],
   section: SectionFilter,
@@ -86,18 +86,18 @@ export function filterMovements<T extends MovementRow>(
   });
 }
 
-/** Meses `YYYY-MM` de un `Date` local. */
+/** `YYYY-MM` month of a local `Date`. */
 export function monthOfDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Primer día del mes `YYYY-MM` como `Date` local. */
+/** First day of the `YYYY-MM` month as a local `Date`. */
 export function dateOfMonth(month: string): Date {
   const [year, monthNumber] = month.split('-').map(Number);
   return new Date(year!, monthNumber! - 1, 1);
 }
 
-/** Cuántos meses abarca el periodo (1 si es un solo mes; `null` si no tiene los dos extremos). */
+/** How many months the period spans (1 for a single month; `null` if it lacks either end). */
 export function periodSpan(period: Period): number | null {
   if (!period.from || !period.to) return null;
   const [fromYear, fromMonth] = period.from.split('-').map(Number);
@@ -105,12 +105,12 @@ export function periodSpan(period: Period): number | null {
   return (toYear! - fromYear!) * 12 + (toMonth! - fromMonth!) + 1;
 }
 
-/** Mes concreto que se puede pedir a la API con `month`; `null` si el periodo es un rango o está abierto. */
+/** Single month that can be sent to the API as `month`; `null` if the period is a range or open. */
 export function singleMonth(period: Period): string | null {
   return period.from !== null && period.from === period.to ? period.from : null;
 }
 
-/** Ordenaciones disponibles en móvil, donde las cabeceras de la tabla no se ven. */
+/** Sort options on mobile, where the table headers are hidden. */
 export interface SortChoice {
   id: string;
   label: string;
@@ -135,7 +135,7 @@ const DAY_SHORT_YEAR = new Intl.DateTimeFormat('es-ES', {
   year: 'numeric',
 });
 
-/** «noviembre de 2026», «oct 2026 – dic 2026» o «Todo el histórico». */
+/** Period label: "noviembre de 2026", "oct 2026 – dic 2026" or "Todo el histórico". */
 export function periodLabel(period: Period): string {
   if (!period.from && !period.to) return 'Todo el histórico';
   const from = period.from ?? period.to!;
@@ -144,7 +144,7 @@ export function periodLabel(period: Period): string {
   return `${MONTH_SHORT.format(dateOfMonth(from))} – ${MONTH_SHORT.format(dateOfMonth(to))}`;
 }
 
-/** «28 oct» (con el año si no es el actual) a partir de `YYYY-MM-DD`. */
+/** "28 oct" (with the year if not the current one) from `YYYY-MM-DD`. */
 export function formatDay(date: string, currentYear: number): string {
   const [year, month, day] = date.split('-').map(Number);
   const value = new Date(year!, month! - 1, day!);

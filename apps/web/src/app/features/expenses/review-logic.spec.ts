@@ -34,7 +34,7 @@ const group = (ids: string[], merchantKey: string | null = 'x'): ReviewGroup => 
 });
 
 describe('review-logic', () => {
-  it('suggestionIndex: 1-9 son las nueve primeras y 0 la décima', () => {
+  it('suggestionIndex: 1-9 are the first nine and 0 the tenth', () => {
     expect(suggestionIndex('1')).toBe(0);
     expect(suggestionIndex('4')).toBe(3);
     expect(suggestionIndex('0')).toBe(9);
@@ -45,7 +45,7 @@ describe('review-logic', () => {
     expect(suggestionIndex('10')).toBeNull();
   });
 
-  it('matchCategories ignora acentos y prioriza los que empiezan por el texto', () => {
+  it('matchCategories ignores accents and ranks prefix matches first', () => {
     expect(matchCategories(categories, 'cafe').map((c) => c.key)).toEqual(['cafeteria']);
     expect(
       matchCategories(categories, 'r')
@@ -56,44 +56,44 @@ describe('review-logic', () => {
     expect(matchCategories(categories, '  ')).toEqual([]);
   });
 
-  it('groupTitle usa el comercio o, si no hay, el concepto sin la localidad', () => {
-    expect(groupTitle({ merchantKey: 'froiz cangas 1', sampleDescription: 'FROIZ' })).toBe(
-      'Froiz cangas 1',
+  it('groupTitle uses the merchant or, if missing, the concept without the town', () => {
+    expect(groupTitle({ merchantKey: 'acme town 1', sampleDescription: 'ACME' })).toBe(
+      'Acme town 1',
     );
     expect(groupTitle({ merchantKey: null, sampleDescription: 'regalo panchuki' })).toBe(
       'Regalo panchuki',
     );
   });
 
-  it('sourceLabel concuerda en singular y plural', () => {
+  it('sourceLabel agrees in singular and plural', () => {
     expect(sourceLabel({ category: 'a', source: 'history', count: 1 })).toContain('1 vez');
     expect(sourceLabel({ category: 'a', source: 'history', count: 5 })).toContain('5 veces');
   });
 
-  it('progressPercent acota y no divide por cero', () => {
+  it('progressPercent clamps and does not divide by zero', () => {
     expect(progressPercent(5, 10)).toBe(50);
     expect(progressPercent(0, 0)).toBe(100);
     expect(progressPercent(20, 10)).toBe(100);
   });
 
-  it('mergeGroups no repite grupos ya cargados', () => {
+  it('mergeGroups does not repeat groups already loaded', () => {
     const merged = mergeGroups([group(['a', 'b'])], [group(['b']), group(['c'])]);
     expect(merged.map((g) => g.ids)).toEqual([['a', 'b'], ['c']]);
   });
 
-  it('newCategoryFromQuery propone nombre y clave, y no repite las existentes', () => {
+  it('newCategoryFromQuery proposes a name and key, and skips existing ones', () => {
     expect(newCategoryFromQuery('  mascotas ', categories)).toEqual({
       key: 'mascotas',
       name: 'Mascotas',
     });
     expect(newCategoryFromQuery('Ocio y cultura', categories)?.key).toBe('ocio_y_cultura');
-    expect(newCategoryFromQuery('cafetería', categories)).toBeNull(); // ya existe (sin acentos)
+    expect(newCategoryFromQuery('cafetería', categories)).toBeNull(); // already exists (accent-insensitive)
     expect(newCategoryFromQuery('ropa', categories)).toBeNull();
     expect(newCategoryFromQuery('  ', categories)).toBeNull();
     expect(newCategoryFromQuery('!!!', categories)).toBeNull();
   });
 
-  it('orderByUsage ordena por uso, deja Otros al final y desempata por orden de serie', () => {
+  it('orderByUsage sorts by usage, keeps Otros last and breaks ties by series order', () => {
     const list: Category[] = [
       { key: 'otros', name: 'Otros' },
       { key: 'ocio', name: 'Ocio' },

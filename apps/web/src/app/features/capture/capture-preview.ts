@@ -10,26 +10,26 @@ import { closestPrefix, listLikePrefix, type PrefixOption } from './capture-pref
 const euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
 const DAY = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
 
-/** Destino de lo que no va a ninguna lista: una tarjeta en el lienzo de Notas. */
+/** Destination of what goes to no list: a card on the Notas canvas. */
 export const NOTE_DESTINATION = 'Nota suelta en el lienzo';
 
-/** La lista con ese alias (sin importar mayúsculas ni tildes), si las listas ya han cargado. */
+/** The list with that alias (ignoring case and accents), if the lists have already loaded. */
 function listOf(alias: string, lists: readonly List[] | null): List | undefined {
   return lists?.find((list) => list.captureAlias === alias);
 }
 
-/** Nombre de la lista destino por su alias; mientras las listas no han cargado, el propio alias. */
+/** Name of the target list by its alias; while the lists have not loaded, the alias itself. */
 function listNameOf(result: CaptureItem, lists: readonly List[] | null): string {
   return listOf(result.list, lists)?.name ?? result.list;
 }
 
-/** Un dato que el parser ha reconocido en el texto. */
+/** A piece of data the parser recognized in the text. */
 export interface CaptureExtra {
   kind: 'date' | 'tags' | 'category' | 'price' | 'url';
   text: string;
 }
 
-/** Lo que acompaña al título: fecha, etiquetas, categoría, precio y enlace. */
+/** What goes with the title: date, tags, category, price and link. */
 function itemExtras(result: CaptureItem, formatDate: (date: string) => string): CaptureExtra[] {
   const extras: CaptureExtra[] = [];
   if (result.dueDate) extras.push({ kind: 'date', text: `para el ${formatDate(result.dueDate)}` });
@@ -44,7 +44,7 @@ function itemExtras(result: CaptureItem, formatDate: (date: string) => string): 
   return extras;
 }
 
-/** Resumen legible de cómo se ha interpretado una captura, para mostrarlo mientras se escribe. */
+/** Readable summary of how a capture was interpreted, to show while typing. */
 export function describeCapture(result: CaptureResult, lists: readonly List[] | null): string {
   switch (result.kind) {
     case 'empty':
@@ -59,38 +59,38 @@ export function describeCapture(result: CaptureResult, lists: readonly List[] | 
   }
 }
 
-/** Vista previa de la captura: adónde irá, qué se guardará y qué avisar. */
+/** Capture preview: where it will go, what will be saved and what to warn about. */
 export interface CapturePreview {
-  /** `list`: una lista; `note`: tarjeta suelta en el lienzo; `none`: no se puede guardar. */
+  /** `list`: a list; `note`: loose card on the canvas; `none`: it cannot be saved. */
   target: 'list' | 'note' | 'none';
-  /** El nombre de la lista, «Nota suelta en el lienzo» o «Falta el título». */
+  /** The list name, "Nota suelta en el lienzo" or "Falta el título". */
   destination: string;
-  /** Dirección de la lista destino, si se conoce. */
+  /** Address of the target list, if known. */
   listSlug?: string;
-  /** El título (o el texto entero de una nota). */
+  /** The title (or the whole text of a note). */
   title: string;
-  /** Fecha, etiquetas, categoría, importe y enlace reconocidos. */
+  /** Recognized date, tags, category, amount and link. */
   extras: CaptureExtra[];
-  /** Aviso discreto (prefijo que no es una lista, lista que falta…); vacío si no hay. */
+  /** Discreet warning (a prefix that is not a list, a missing list...); empty if none. */
   notice: string;
-  /** La captura no se puede guardar tal cual. */
+  /** The capture cannot be saved as is. */
   incomplete: boolean;
 }
 
-/** Contexto extra con el que se afinan los avisos: el texto escrito y los prefijos que existen. */
+/** Extra context to refine the warnings: the typed text and the prefixes that exist. */
 export interface PreviewContext {
   text: string;
   prefixes: readonly PrefixOption[];
 }
 
-/** «2026-11-04» → «4 nov». */
+/** "2026-11-04" to "4 nov". */
 export function friendlyDate(date: string): string {
   const [year, month, day] = date.split('-').map(Number);
   if (!year || !month || !day) return date;
   return DAY.format(new Date(year, month - 1, day)).replace(/\./g, '');
 }
 
-/** Aviso de un prefijo que parece de una lista pero no lo es: con la corrección más probable si la hay. */
+/** Warning for a prefix that looks like a list one but is not: with the most likely correction if any. */
 function unknownPrefixNotice(raw: string, prefixes: readonly PrefixOption[]): string {
   const close = closestPrefix(raw, prefixes);
   return close
@@ -98,7 +98,7 @@ function unknownPrefixNotice(raw: string, prefixes: readonly PrefixOption[]): st
     : `No hay ninguna lista con el prefijo «${raw}:». Se guardará como nota, con el texto entero.`;
 }
 
-/** Con `no_title` el parser no dice la lista; se resuelve el prefijo a mano para poder nombrarla. */
+/** With `no_title` the parser does not say the list; the prefix is resolved by hand to be able to name it. */
 function emptyTitleTarget(
   context: PreviewContext | undefined,
   lists: readonly List[] | null,
@@ -108,7 +108,7 @@ function emptyTitleTarget(
   const typed = normalize(raw);
   const known = context!.prefixes.find((option) => normalize(option.prefix) === typed);
   if (!known) return null;
-  // «hoy:» y «mañana:» van a la lista con el alias de las tareas.
+  // "hoy:" and "mañana:" go to the list with the tasks alias.
   const isDate = typed === 'hoy' || typed === 'manana';
   const list = listOf(isDate ? TASK_LIST_ALIAS : known.prefix, lists);
   return { destination: list?.name ?? known.label, listSlug: list?.slug, prefix: raw };
@@ -148,7 +148,7 @@ export function previewCapture(
     case 'item': {
       const list = listOf(result.list, lists);
       const extras = itemExtras(result, friendlyDate);
-      // Con las listas cargadas y sin una con ese alias, el servidor lo guarda como nota (p. ej. `hoy:` sin lista de tareas).
+      // With the lists loaded and none with that alias, the server saves it as a note (e.g. `hoy:` without a tasks list).
       if (lists && !list) {
         const when = result.dueDate ? ` (para el ${friendlyDate(result.dueDate)})` : '';
         return {

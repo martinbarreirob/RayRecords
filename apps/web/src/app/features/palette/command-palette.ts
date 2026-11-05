@@ -5,11 +5,11 @@ import { PaletteService } from '../../core/palette/palette.service';
 import { PaletteDialog } from './palette-dialog';
 
 /**
- * Parte de la paleta de comandos que vive siempre en el shell: los atajos globales de una tecla
- * (Mayús+N · L · C · G · U para ir a una sección y «/» para escribir una nota o tarea) y el hueco
- * donde se monta la paleta. El cuerpo (`PaletteDialog`, con sus estilos, su búsqueda y el modo de
- * captura) no entra en el bundle inicial: se precarga cuando el navegador está ocioso y se pinta al
- * abrirla con Ctrl+K, con «/» o con el botón de la barra.
+ * The part of the command palette that always lives in the shell: the single-key global shortcuts
+ * (Shift+N, L, C, G, U to go to a section and "/" to write a note or task) and the slot where the
+ * palette is mounted. The body (`PaletteDialog`, with its styles, search and capture mode) is not in
+ * the initial bundle: it is preloaded when the browser is idle and drawn when opened with Ctrl+K,
+ * with "/" or with the bar button.
  */
 @Component({
   selector: 'app-command-palette',
@@ -26,15 +26,15 @@ export class CommandPalette {
   private readonly router = inject(Router);
 
   /**
-   * Con Ctrl/Alt/Meta, un modal, un desplegable o un campo con el foco no se hace nada: son atajos de
-   * una sola tecla y ahí la tecla es para escribir. Con la paleta abierta tampoco (es un modal).
+   * With Ctrl/Alt/Meta, a modal, an overlay or a focused field nothing happens: these are single-key
+   * shortcuts and there the key is for typing. With the palette open neither (it is a modal).
    */
   protected onKeydown(event: KeyboardEvent): void {
     if (event.isComposing || event.repeat) return;
     if (this.palette.isOpen() || !canUseGlobalShortcut(event)) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-    // «/» (en el teclado español es Mayús+7, por eso no se mira Mayús) abre la paleta ya en el modo de escribir.
+    // "/" (Shift+7 on the Spanish keyboard, so Shift is not checked) opens the palette already in write mode.
     if (event.key === '/') {
       event.preventDefault();
       this.palette.show({ capture: true });

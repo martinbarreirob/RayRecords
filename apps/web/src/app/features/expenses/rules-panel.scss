@@ -95,7 +95,7 @@ h2 + p {
   gap: var(--space-3);
 }
 
-/* El botón se alinea con los campos (no con el texto de ayuda que hay bajo algunos). */
+/* The button lines up with the fields, not with the help text under some of them. */
 .submit {
   margin-top: calc(var(--text-sm) * 1.5 + var(--space-1));
 }
@@ -117,7 +117,7 @@ h2 + p {
   }
 }
 
-/* Campo numérico: botones − y + con los tokens propios, y el valor centrado. */
+/* Number field: minus and plus buttons using our own tokens, value centred. */
 :host ::ng-deep {
   .p-inputnumber {
     width: 100%;
@@ -160,7 +160,7 @@ h2 + p {
   }
 }
 
-/* Esqueleto de carga de reglas y categorías. */
+/* Loading skeleton for rules and categories. */
 .skel-in {
   @include skeleton.reveal;
 }

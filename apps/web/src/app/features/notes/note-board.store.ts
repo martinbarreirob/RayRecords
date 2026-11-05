@@ -18,10 +18,10 @@ import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { mergeFinished } from './note-board.logic';
 
-/** Cuántos cambios se pueden deshacer y cuánto dura el aviso «Deshacer». */
+/** How many changes can be undone and how long the «Deshacer» notice lasts. */
 const UNDO_DEPTH = 30;
 const UNDO_NOTICE_MS = 8_000;
-/** Máximo de tarjetas que admite una petición de movimiento por lotes. */
+/** Maximum cards accepted by one batch move request. */
 const MOVE_BATCH = 200;
 
 interface UndoEntry {
@@ -29,9 +29,9 @@ interface UndoEntry {
 }
 
 /**
- * Estado del lienzo de notas. Las acciones son optimistas: la pantalla refleja el cambio al
- * instante y, si el servidor lo rechaza, se vuelve a cargar el lienzo para no mostrar algo falso.
- * Borrar, mover y agrupar se pueden deshacer (`undo`); el aviso visible solo sale con lo destructivo.
+ * State of the notes canvas. Actions are optimistic: the screen shows the change at once and, if the
+ * server rejects it, the canvas is reloaded so nothing false is shown.
+ * Deleting, moving and grouping can be undone (`undo`); the visible notice only appears for destructive actions.
  */
 @Injectable()
 export class NoteBoardStore {
@@ -39,24 +39,24 @@ export class NoteBoardStore {
   private readonly undoStack: UndoEntry[] = [];
   private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** Texto del aviso «… · Deshacer» mientras proceda; `null` cuando ya no. */
+  /** Text of the «… · Deshacer» notice while it applies; `null` when it no longer does. */
   readonly undoNotice = signal<string | null>(null);
 
   readonly cards = signal<NoteCard[]>([]);
   readonly groups = signal<NoteGroup[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
-  /** Reloj de la pantalla: al avanzar, las tarjetas hechas hace más de 24 h desaparecen solas. */
+  /** Screen clock: as it advances, cards done more than 24 h ago disappear on their own. */
   readonly now = signal(Date.now());
-  /** Hechas hace más de 24 h; `null` mientras no se haya pedido la vista «Terminadas». */
+  /** Done more than 24 h ago; `null` until the «Terminadas» view is requested. */
   readonly doneOld = signal<NoteCard[] | null>(null);
 
   readonly visibleCards = computed(() =>
     this.cards().filter((card) => isVisible(card.doneAt, this.now())),
   );
-  /** Terminadas: hechas hace más de 24 h (las del servidor y las que acaban de caducar aquí). */
+  /** Finished: done more than 24 h ago (those from the server and those that just expired here). */
   readonly finished = computed(() => mergeFinished(this.cards(), this.doneOld(), this.now()));
-  /** Tarjetas sueltas, de atrás hacia delante. */
+  /** Loose cards, back to front. */
   readonly looseCards = computed(() =>
     this.visibleCards()
       .filter((card) => card.groupId === null)
@@ -70,11 +70,11 @@ export class NoteBoardStore {
       list.push(card);
       map.set(card.groupId, list);
     }
-    // Dentro de un grupo van apiladas, en el orden de la pila.
+    // Inside a group they are stacked, in stack order.
     for (const [id, list] of map) map.set(id, stackOrder(list));
     return map;
   });
-  /** Para la lista del móvil: por posición (arriba→abajo, izquierda→derecha). */
+  /** For the mobile list: by position (top→bottom, left→right). */
   readonly byPosition = (cards: readonly NoteCard[]): NoteCard[] =>
     [...cards].sort((a, b) => a.y - b.y || a.x - b.x);
 
@@ -86,9 +86,9 @@ export class NoteBoardStore {
     this.now.set(Date.now());
   }
 
-  // ---------- Deshacer ----------
+  // ---------- Undo ----------
 
-  /** Guarda cómo revertir un cambio. Con `notice` además se ofrece «Deshacer» durante unos segundos. */
+  /** Stores how to revert a change. With `notice`, «Deshacer» is also offered for a few seconds. */
   record(run: () => void, notice?: string): void {
     this.undoStack.push({ run });
     if (this.undoStack.length > UNDO_DEPTH) this.undoStack.shift();
@@ -101,7 +101,7 @@ export class NoteBoardStore {
     this.noticeTimer = setTimeout(() => this.undoNotice.set(null), UNDO_NOTICE_MS);
   }
 
-  /** Revierte el último cambio registrado. Devuelve `false` si no había nada que deshacer. */
+  /** Reverts the last recorded change. Returns `false` if there was nothing to undo. */
   undo(): boolean {
     const entry = this.undoStack.pop();
     clearTimeout(this.noticeTimer);
@@ -131,7 +131,7 @@ export class NoteBoardStore {
     });
   }
 
-  /** El servidor rechazó un cambio optimista: se avisa y se recarga lo real, conservando el aviso. */
+  /** Server rejected an optimistic change: warn, reload the real state, keep the notice. */
   private fail(error: unknown, fallback: string): void {
     this.error.set(apiErrorMessage(error, fallback));
     this.load(true);
@@ -147,7 +147,7 @@ export class NoteBoardStore {
       .pipe(tap({ next: (card) => this.cards.update((list) => [...list, card]) }));
   }
 
-  /** Aplica el cambio en local y lo envía; si falla, recarga. */
+  /** Applies the change locally and sends it; if it fails, reloads. */
   patchCard(id: string, patch: UpdateNoteCard): void {
     const now = new Date().toISOString();
     this.cards.update((list) =>
@@ -169,8 +169,8 @@ export class NoteBoardStore {
   }
 
   /**
-   * Mueve tarjetas (y las cambia de grupo si se indica). Con `undo` se registra cómo devolverlas a su
-   * sitio; `then` se llama cuando el servidor ha confirmado el cambio.
+   * Moves cards (and changes their group if given). With `undo` it records how to put them back;
+   * `then` is called once the server has confirmed the change.
    */
   moveCards(input: MoveNoteCards, options: { undo?: boolean; then?: () => void } = {}): void {
     const byId = new Map(input.moves.map((m) => [m.id, m]));
@@ -202,9 +202,8 @@ export class NoteBoardStore {
   }
 
   /**
-   * «Ordenar»: aplica las posiciones nuevas de tarjetas sueltas y de grupos como UNA sola operación
-   * deshacible (con aviso). Solo se envía lo que de verdad cambia de sitio. Devuelve `false` si no
-   * había nada que mover.
+   * «Ordenar»: applies the new positions of loose cards and groups as ONE undoable operation (with a
+   * notice). Only what really changes place is sent. Returns `false` if there was nothing to move.
    */
   arrange(placements: readonly { id: string; x: number; y: number }[]): boolean {
     const groups = new Map(this.groups().map((g) => [g.id, g]));
@@ -228,7 +227,7 @@ export class NoteBoardStore {
     if (cardMoves.length === 0 && groupMoves.length === 0) return false;
 
     const apply = (cardList: MoveNoteCards['moves'], groupList: typeof groupMoves) => {
-      // El servidor admite hasta 200 movimientos por petición.
+      // The server accepts up to 200 moves per request.
       for (let i = 0; i < cardList.length; i += MOVE_BATCH) {
         this.moveCards({ moves: cardList.slice(i, i + MOVE_BATCH) });
       }
@@ -244,8 +243,8 @@ export class NoteBoardStore {
   }
 
   /**
-   * Borra varias tarjetas de una vez; se pueden recuperar con `undo` (se vuelven a crear), salvo con
-   * `undoable: false` (una nota nueva que se deja en blanco no merece un «Deshacer»).
+   * Deletes several cards at once; they can be recovered with `undo` (recreated), except with
+   * `undoable: false` (a new note left blank does not deserve a «Deshacer»).
    */
   removeCards(ids: readonly string[], options: { undoable?: boolean } = {}): void {
     const gone = this.cards().filter((card) => ids.includes(card.id));
@@ -263,7 +262,7 @@ export class NoteBoardStore {
     );
   }
 
-  /** Vuelve a crear una tarjeta borrada (el servidor le da un id nuevo) con su ancho y su estado. */
+  /** Recreates a deleted card (the server gives it a new id) with its width and state. */
   private restoreCard(card: NoteCard): void {
     const groupId = this.groups().some((g) => g.id === card.groupId) ? card.groupId : null;
     this.createCard({ text: card.text, x: card.x, y: card.y, groupId }).subscribe({
@@ -293,16 +292,16 @@ export class NoteBoardStore {
   }
 
   /**
-   * Disuelve un grupo; sus tarjetas quedan sueltas donde estaban. Se puede deshacer. Como en el grupo
-   * van apiladas, `positions` trae el sitio real de cada una en el lienzo (si falta, se calcula con
-   * sus coordenadas guardadas).
+   * Dissolves a group; its cards become loose where they were. Can be undone. Since cards in the group
+   * are stacked, `positions` carries each one's real place on the canvas (if missing, it is computed
+   * from their stored coordinates).
    */
   dissolveGroup(id: string, positions: ReadonlyMap<string, Point> = new Map()): void {
     const group = this.groups().find((g) => g.id === id);
     if (!group) return;
     const members = this.cards().filter((card) => card.groupId === id);
     this.groups.update((list) => list.filter((g) => g.id !== id));
-    // Las tarjetas pasan a coordenadas del lienzo ya, sin esperar al servidor, para que no desaparezcan.
+    // Cards switch to canvas coordinates at once, without waiting for the server, so they do not vanish.
     this.cards.update((list) =>
       list.map((card) =>
         card.groupId === id
@@ -312,7 +311,7 @@ export class NoteBoardStore {
     );
     this.api.deleteNoteGroup(id).subscribe({
       next: (released) => {
-        // El servidor suma las coordenadas guardadas; si la tarjeta estaba en otro sitio, se corrige.
+        // The server adds the stored coordinates; if the card was elsewhere, it is corrected.
         const fixes = released.flatMap((card) => {
           const at = this.releasedAt(card, { x: 0, y: 0 }, positions);
           return at.x === card.x && at.y === card.y ? [] : [{ id: card.id, ...at, groupId: null }];
@@ -332,7 +331,7 @@ export class NoteBoardStore {
     return { x: clampCoord(at.x), y: clampCoord(at.y) };
   }
 
-  /** Vuelve a crear un grupo disuelto y le devuelve sus tarjetas (el id del grupo cambia). */
+  /** Recreates a dissolved group and gives it back its cards (the group id changes). */
   private restoreGroup(group: NoteGroup, members: readonly NoteCard[]): void {
     const { title, x, y, w, h } = group;
     this.createGroup({ title, x, y, w, h }).subscribe({
@@ -347,8 +346,8 @@ export class NoteBoardStore {
   }
 
   /**
-   * Agrupa tarjetas en un grupo ya creado. Se registra cómo deshacerlo: las tarjetas vuelven a su
-   * sitio de antes y, cuando el servidor lo confirma, se borra el grupo (que queda vacío).
+   * Groups cards into an already created group. It records how to undo it: the cards go back to
+   * where they were and, once the server confirms, the group (now empty) is deleted.
    */
   adoptCards(group: NoteGroup, moves: MoveNoteCards['moves']): void {
     const ids = new Set(moves.map((m) => m.id));
@@ -378,7 +377,7 @@ export class NoteBoardStore {
     });
   }
 
-  /** Recupera una terminada: vuelve al lienzo sin hacer. */
+  /** Recovers a finished card: it returns to the canvas, not done. */
   recover(card: NoteCard): void {
     this.doneOld.update((list) => list?.filter((c) => c.id !== card.id) ?? null);
     const restored = { ...card, doneAt: null };

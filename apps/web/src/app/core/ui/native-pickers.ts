@@ -1,6 +1,6 @@
 /**
- * `true` en dispositivos táctiles o sin cursor: ahí el selector nativo de fecha y hora del sistema es
- * lo más cómodo, y se usa en lugar del de escritorio. `matchMedia` no existe en jsdom: de ahí el `?.`.
+ * `true` on touch or no-cursor devices: there the system's native date and time picker is the most
+ * comfortable and is used instead of the desktop one. `matchMedia` does not exist in jsdom, hence the `?.`.
  */
 export function prefersNativePickers(): boolean {
   if (typeof matchMedia !== 'function') return false;

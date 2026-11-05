@@ -20,7 +20,7 @@
   }
 }
 
-/* El anillo de foco va en la tarjeta entera (el enlace cubre toda la tarjeta con ::after). */
+/* The focus ring goes on the whole card (the link covers the card with ::after). */
 .list-card h2 a:focus-visible {
   outline: none;
 }
@@ -35,7 +35,7 @@
   overflow-wrap: anywhere;
 }
 
-/* El enlace cubre toda la tarjeta; el botón de archivar queda por encima. */
+/* The link covers the whole card; the archive button stays on top. */
 .list-card h2 a {
   color: var(--text);
 }
@@ -73,7 +73,7 @@
   z-index: 1;
 }
 
-/* Controles de orden: asa de arrastre y «Mover antes/después». Aparecen al pasar el ratón o al enfocar. */
+/* Order controls: drag handle and «Mover antes/después». They show on hover or focus. */
 .tools {
   position: absolute;
   top: var(--space-2);
@@ -90,7 +90,7 @@
   opacity: 1;
 }
 
-/* Sin ratón (táctil) no hay pasar por encima: los controles se ven siempre. */
+/* Without a mouse (touch) there is no hover: the controls are always visible. */
 @media (hover: none) {
   .tools {
     opacity: 1;
@@ -125,12 +125,12 @@
   }
 }
 
-/* En rejilla se mueve a izquierda/derecha; en una sola columna (móvil), arriba/abajo. */
+/* In the grid it moves left/right; in a single column (mobile), up/down. */
 .ico-v {
   display: none;
 }
 
-/* Arrastre: la tarjeta se levanta con sombra (sin giro) y una marca discontinua indica dónde caerá. */
+/* Drag: the card lifts with a shadow (no tilt) and a dashed mark shows where it will land. */
 .slot {
   min-height: 128px;
   border: 2px dashed var(--accent);

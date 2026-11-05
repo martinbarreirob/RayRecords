@@ -42,10 +42,10 @@ import {
   type SectionFilter,
 } from './movements-logic';
 
-/** Tamaño de cada petición a la API (su máximo) y tope de movimientos que se cargan a la vez. */
+/** Size of each API request (its maximum) and cap on movements loaded at once. */
 const FETCH_SIZE = 500;
 const FETCH_MAX = 10_000;
-/** Cuántas correcciones de categoría viajan a la vez en una acción masiva. */
+/** How many category fixes are sent together in one bulk action. */
 const BULK_CONCURRENCY = 4;
 
 interface SectionCard {
@@ -361,19 +361,19 @@ export class MovementsPanel {
   protected readonly sortChoices = SORT_CHOICES;
   private readonly currentYear = Number(todayIn(DEFAULT_TIME_ZONE).slice(0, 4));
 
-  // Filtros
+  // Filters
   protected readonly period = signal<Period>(this.currentMonthPeriod());
   protected readonly section = signal<SectionFilter>('all');
   protected readonly query = signal('');
   protected readonly createRule = signal(false);
 
-  // Orden y paginación
+  // Sorting and paging
   protected readonly sortField = signal<string>('date');
   protected readonly sortOrder = signal<1 | -1>(-1);
   protected readonly pageSize = signal(50);
   protected readonly first = signal(0);
 
-  // Datos
+  // Data
   private readonly loaded = signal<Transaction[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -398,7 +398,7 @@ export class MovementsPanel {
     filterMovements(this.periodRows(), this.section(), this.query()),
   );
 
-  /** Sin nada que enseñar todavía del periodo: esqueleto en lugar de ceros o de «vacío». */
+  /** Nothing to show for the period yet: skeleton instead of zeros or the empty state. */
   protected readonly pending = computed(() => this.loading() && this.periodRows().length === 0);
 
   protected readonly ghostSections = [120, 148, 134, 126, 140];
@@ -423,13 +423,13 @@ export class MovementsPanel {
         count: total?.count ?? 0,
       };
     });
-    // Categorías que ya no existen pero siguen en algún movimiento.
+    // Categories that no longer exist but are still on some movement.
     for (const [key, total] of totals) {
       if (key !== null && !known.has(key)) {
         cards.push({ id: key, key, name: key, totalCents: total.totalCents, count: total.count });
       }
     }
-    // Con movimientos primero (los de mayor importe antes), vacías al final.
+    // Categories with movements first (largest amount first), empty ones last.
     cards.sort(
       (a, b) =>
         Number(b.count > 0) - Number(a.count > 0) ||
@@ -489,7 +489,7 @@ export class MovementsPanel {
     return { from: month, to: month };
   }
 
-  // ───────────────────────── carga ─────────────────────────
+  // Loading
 
   private load(period: Period): void {
     this.subscription?.unsubscribe();
@@ -498,7 +498,7 @@ export class MovementsPanel {
     this.subscription = this.fetchAll({ ...(month && { month }) }).subscribe({
       next: (items) => {
         this.loaded.set(items);
-        // Los movimientos se recargan tras cada cambio: la selección sigue a los que aún existen.
+        // Movements reload after every change; the selection keeps only those that still exist.
         const byId = new Map(this.rows().map((row) => [row.id, row]));
         this.selection.update((selected) =>
           selected.flatMap((row) => {
@@ -516,7 +516,7 @@ export class MovementsPanel {
     });
   }
 
-  /** Pide todas las páginas de la consulta (la API limita a 500 por petición). */
+  /** Fetches every page of the query (the API caps requests at 500). */
   private fetchAll(base: Partial<TransactionQuery>) {
     return this.api.transactions({ ...base, limit: FETCH_SIZE, offset: 0 }).pipe(
       switchMap((first) => {
@@ -534,7 +534,7 @@ export class MovementsPanel {
     );
   }
 
-  // ───────────────────────── filtros ─────────────────────────
+  // Filters
 
   protected setPeriod(period: Period): void {
     this.period.set(period);
@@ -548,7 +548,7 @@ export class MovementsPanel {
   }
 
   protected pick(section: SectionFilter): void {
-    // Pulsar la sección activa vuelve a mostrarlas todas.
+    // Clicking the active section shows all of them again.
     this.section.set(this.section() === section ? 'all' : section);
     this.first.set(0);
   }
@@ -559,7 +559,7 @@ export class MovementsPanel {
     this.first.set(0);
   }
 
-  // ───────────────────────── tabla ─────────────────────────
+  // Table
 
   protected day(date: string): string {
     return formatDay(date, this.currentYear);
@@ -586,7 +586,7 @@ export class MovementsPanel {
     if (event.rows) this.pageSize.set(event.rows);
   }
 
-  // ───────────────────────── cambios de categoría ─────────────────────────
+  // Category changes
 
   protected assign(row: MovementRow, value: string): void {
     const category = value === '' ? null : value;
@@ -596,7 +596,7 @@ export class MovementsPanel {
     this.api.setCategory(row.id, { category, createRule: this.createRule() }).subscribe({
       next: (updated) => {
         this.patchLoaded([updated]);
-        // La regla nueva puede afectar a otras pantallas (reglas, resumen): se avisa a todas.
+        // A new rule can affect other screens (rules, summary), so notify them all.
         this.bus.changed();
       },
       error: (error: unknown) => this.error.set(apiErrorMessage(error)),
@@ -649,14 +649,14 @@ export class MovementsPanel {
       });
   }
 
-  /** Refleja ya en la tabla los movimientos corregidos, sin esperar a la recarga. */
+  /** Shows the corrected movements in the table right away, without waiting for the reload. */
   private patchLoaded(updated: Transaction[]): void {
     if (!updated.length) return;
     const byId = new Map(updated.map((tx) => [tx.id, tx]));
     this.loaded.update((items) => items.map((tx) => byId.get(tx.id) ?? tx));
   }
 
-  /** Al editar una categoría el desplegable se abre solo: un clic en la celda basta, sin segundo clic. */
+  /** When editing a category the dropdown opens by itself, so one click on the cell is enough. */
   private readonly autoOpened = new WeakSet<Select>();
 
   protected openOnFocus(select: Select): void {

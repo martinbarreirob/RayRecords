@@ -1,32 +1,32 @@
 import { Injectable, signal } from '@angular/core';
 
 /**
- * Estado de la paleta de comandos (Ctrl+K). El componente que la pinta lo lee; el shell la abre.
- * Recuerda qué tenía el foco al abrirla para devolvérselo al cerrar.
+ * Command palette state (Ctrl+K). The component that renders it reads it; the shell opens it.
+ * It remembers what had focus on open so it can give it back on close.
  */
 @Injectable({ providedIn: 'root' })
 export class PaletteService {
   readonly isOpen = signal(false);
   /**
-   * Id de la tarjeta que acaba de crear «Nueva nota». La pantalla de notas puede leerlo para
-   * enfocarla y debe devolverlo a `null` al consumirlo (navegar a la misma URL no lleva estado).
+   * Id of the card just created by "Nueva nota". The notes screen can read it to focus the card
+   * and must reset it to `null` once consumed (navigating to the same URL carries no state).
    */
   readonly newNoteId = signal<string | null>(null);
   /**
-   * Se abrió con «/»: la paleta entra directamente en el modo «escribir una nota o tarea». La paleta
-   * lo consume (`takeCaptureRequest`) al montarse, así que solo vale para esa apertura.
+   * Opened with "/": the palette goes straight into the "write a note or task" mode. The palette
+   * consumes it (`takeCaptureRequest`) when it mounts, so it only applies to that opening.
    */
   private captureRequested = false;
   private opener: HTMLElement | null = null;
   private restoreTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** Abre la paleta; con `capture`, ya en el modo de escribir una nota o tarea. */
+  /** Opens the palette; with `capture`, already in the write-a-note-or-task mode. */
   show(options: { capture?: boolean } = {}): void {
     if (this.isOpen()) return;
     this.captureRequested = options.capture === true;
     if (this.restoreTimer !== undefined) {
-      // Se reabre antes de devolver el foco del cierre anterior: se cancela (no debe robárselo al
-      // campo de la paleta nueva) y se conserva quien lo tenía de verdad.
+      // Reopened before the previous close gave focus back: cancel that (it must not steal focus
+      // from the new palette field) and keep whoever really had it.
       clearTimeout(this.restoreTimer);
       this.restoreTimer = undefined;
     } else {
@@ -36,20 +36,20 @@ export class PaletteService {
     this.isOpen.set(true);
   }
 
-  /** ¿Se pidió abrir en modo captura? Devuelve la petición y la borra. */
+  /** Was capture mode requested? Returns the request and clears it. */
   takeCaptureRequest(): boolean {
     const requested = this.captureRequested;
     this.captureRequested = false;
     return requested;
   }
 
-  /** Cierra la paleta. Con `restoreFocus: false` (p. ej. al navegar a otra pantalla) no toca el foco. */
+  /** Closes the palette. With `restoreFocus: false` (e.g. when navigating away) it leaves focus alone. */
   hide(restoreFocus = true): void {
     if (!this.isOpen()) return;
     this.isOpen.set(false);
     const opener = this.opener;
     if (restoreFocus && opener) {
-      // Tras el siguiente pintado, cuando la capa ya no está en el DOM.
+      // After the next paint, once the layer is no longer in the DOM.
       this.restoreTimer = setTimeout(() => {
         this.restoreTimer = undefined;
         this.opener = null;

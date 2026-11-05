@@ -23,7 +23,7 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
   { id: 'rules', slug: 'reglas', label: 'Reglas' },
 ];
 
-/** Gastos: movimientos por categoría, resumen mensual, importación de extractos y reglas. */
+/** Expenses: movements by category, monthly summary, statement import and rules. */
 @Component({
   selector: 'app-expenses-page',
   imports: [SummaryPanel, MovementsPanel, ImportPanel, RulesPanel, ReviewPanel],
@@ -40,7 +40,7 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
       margin-bottom: var(--space-4);
     }
 
-    /* Las cuatro vistas caben a 375 px: ocupan todo el ancho y se pulsan con el dedo. */
+    /* The four views fit at 375 px: full width and easy to tap. */
     @media (width <= 767px) {
       .page-header .segmented {
         display: flex;
@@ -107,10 +107,10 @@ export class ExpensesPage {
   private readonly api = inject(ApiClient);
   private readonly bus = inject(RefreshBus);
 
-  /** Movimientos sin categoría, para el contador de la pestaña «Revisar». */
+  /** Uncategorised movements, for the counter on the "Revisar" tab. */
   protected readonly pending = toSignal(
     toObservable(this.bus.version).pipe(
-      // `switchMap` descarta la respuesta anterior si llega un refresco nuevo.
+      // switchMap drops the previous response when a new refresh arrives.
       switchMap(() =>
         this.api.reviewPending().pipe(catchError(() => of({ pendingTransactions: 0 }))),
       ),
@@ -119,7 +119,7 @@ export class ExpensesPage {
     { initialValue: 0 },
   );
 
-  /** Vista elegida, en el parámetro de ruta ?vista= para que sobreviva a recargas y se pueda enlazar. */
+  /** Selected view, kept in the ?vista= query param so it survives reloads and can be linked. */
   readonly vista = input<string | undefined>();
   protected readonly view = computed<View>(
     () => VIEWS.find((entry) => entry.slug === this.vista())?.id ?? 'movements',

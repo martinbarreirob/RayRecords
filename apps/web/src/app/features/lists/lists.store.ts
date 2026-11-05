@@ -12,21 +12,21 @@ import { RefreshBus } from '../../core/refresh';
 import { planReorder, sortByOrder } from './lists-logic';
 
 /**
- * Estado de las listas, compartido por la pantalla de listas y por la captura de la paleta
- * (que necesita los alias de cada lista para interpretar `peli:`, `compra:`…).
+ * State of the lists, shared by the lists screen and the palette capture
+ * (which needs each list's aliases to interpret `peli:`, `compra:`…).
  */
 @Injectable({ providedIn: 'root' })
 export class ListsStore {
   private readonly api = inject(ApiClient);
   private readonly bus = inject(RefreshBus);
 
-  /** `null` mientras carga o si la API falló. */
+  /** `null` while loading or if the API failed. */
   readonly lists = signal<List[] | null>(null);
   readonly failed = signal(false);
-  /** Número de elementos por lista (id → total); se rellena con `loadCounts()`. */
+  /** Item count per list (id → total); filled by `loadCounts()`. */
   readonly counts = signal<Record<string, number>>({});
 
-  /** Alias de captura de las listas; los de los presets mientras no haya datos. */
+  /** Capture aliases of the lists; those of the presets while there is no data. */
   readonly aliases = computed(
     () =>
       this.lists()?.flatMap((list) => (list.captureAlias ? [list.captureAlias] : [])) ??
@@ -34,7 +34,7 @@ export class ListsStore {
   );
 
   constructor() {
-    // Carga inicial y recarga cada vez que algo cambia datos (p. ej. una captura).
+    // Initial load and reload each time something changes data (e.g. a capture).
     effect(() => {
       this.bus.version();
       this.load();
@@ -49,7 +49,7 @@ export class ListsStore {
     });
   }
 
-  /** Cuenta los elementos de cada lista (una petición por lista: son pocas y es un solo usuario). */
+  /** Counts the items of each list (one request per list: there are few and it is a single user). */
   loadCounts(): void {
     const lists = this.lists();
     if (!lists?.length) {
@@ -91,9 +91,9 @@ export class ListsStore {
   }
 
   /**
-   * Mueve la lista `id` a la posición `toIndex` (la que tendrá al terminar). Es optimista: el orden
-   * cambia al suscribirse y, si la API falla, se devuelven a su sitio las listas tocadas y el error
-   * llega al suscriptor. Solo se guarda el `order` que cambia (una lista; varias si hay que renumerar).
+   * Moves list `id` to position `toIndex` (the one it will have at the end). It is optimistic: the order
+   * changes on subscribe and, if the API fails, the touched lists are put back and the error reaches
+   * the subscriber. Only the `order` that changes is saved (one list; several if renumbering).
    */
   reorder(id: string, toIndex: number): Observable<void> {
     return defer(() => {
@@ -116,7 +116,7 @@ export class ListsStore {
     });
   }
 
-  /** Aplica órdenes sueltos y reordena. Solo toca esas listas, así otras operaciones en curso no se pisan. */
+  /** Applies loose orders and re-sorts, touching only those lists. */
   private setOrders(orders: readonly { id: string; order: number }[]): void {
     const byId = new Map(orders.map((o) => [o.id, o.order]));
     this.lists.update(

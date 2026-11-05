@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { loginErrorMessage } from './login-page';
 
 describe('loginErrorMessage', () => {
-  it('distingue credenciales incorrectas, límite de intentos y falta de conexión', () => {
+  it('tells apart wrong credentials, rate limit and no connection', () => {
     expect(loginErrorMessage(new HttpErrorResponse({ status: 401 }))).toBe(
       'Usuario o contraseña incorrectos.',
     );
@@ -12,7 +12,7 @@ describe('loginErrorMessage', () => {
     expect(loginErrorMessage(new HttpErrorResponse({ status: 0 }))).toMatch(/conectar/);
   });
 
-  it('usa un mensaje genérico para el resto', () => {
+  it('uses a generic message for the rest', () => {
     expect(loginErrorMessage(new HttpErrorResponse({ status: 500 }))).toMatch(/Inténtalo de nuevo/);
     expect(loginErrorMessage(new Error('x'))).toMatch(/Inténtalo de nuevo/);
   });

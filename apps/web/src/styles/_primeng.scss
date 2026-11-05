@@ -1,7 +1,7 @@
-// Los componentes de PrimeNG se visten con los tokens propios: así cambian solos con el tema claro/oscuro
-// y la app tiene un único origen de colores. El preset (core/theme/primeng-preset.ts) solo fija la escala
-// del acento; el resto se mapea aquí. `:root[data-theme]` sube la especificidad para ganar a las variables
-// que PrimeNG inyecta después en `:root`.
+// PrimeNG components are dressed with our own tokens: they change with the light/dark theme on their
+// own and the app has a single source of colors. The preset (core/theme/primeng-preset.ts) only sets the
+// accent scale; the rest is mapped here. `:root[data-theme]` raises specificity to beat the variables
+// that PrimeNG injects later into `:root`.
 
 :root[data-theme] {
   --p-primary-color: var(--accent);
@@ -38,7 +38,7 @@
   --p-list-option-focus-background: var(--surface-2);
   --p-navigation-item-focus-background: var(--surface-2);
 
-  // Casillas: borde visible en reposo (en oscuro se perdía contra la superficie) y acento al marcarlas.
+  // Checkboxes: visible border at rest (in dark it got lost against the surface) and accent when checked.
   --p-checkbox-width: 18px;
   --p-checkbox-height: 18px;
   --p-checkbox-border-radius: 5px;
@@ -52,7 +52,7 @@
   --p-checkbox-icon-checked-color: var(--on-accent);
   --p-checkbox-icon-checked-hover-color: var(--on-accent);
 
-  // Diálogos: superficie opaca, borde fino y aire en cabecera, contenido y pie.
+  // Dialogs: opaque surface, thin border and room in header, content and footer.
   --p-dialog-background: var(--surface);
   --p-dialog-color: var(--text);
   --p-dialog-border-color: var(--line);
@@ -65,7 +65,7 @@
   --p-dialog-footer-padding: 1rem 1.5rem;
   --p-dialog-footer-gap: 0.5rem;
 
-  // Desplegables (p-select): mismo aspecto que `.input`, y panel redondeado y ligero.
+  // Dropdowns (p-select): same look as `.input`, and a rounded, light panel.
   --p-select-background: var(--surface);
   --p-select-border-color: var(--line);
   --p-select-hover-border-color: var(--line-strong);
@@ -142,10 +142,10 @@
   font-size: 12px;
 }
 
-/* Tabla: plana y silenciosa. Líneas muy suaves entre filas, cabecera discreta y sin cuadrícula. */
+/* Table: flat and quiet. Very soft lines between rows, discreet header and no grid. */
 :root[data-theme] {
-  // Las variables derivadas (`body-cell-border-color`, …) se resuelven en :root, así que hay que fijarlas
-  // aquí una a una: cambiar solo `--p-datatable-border-color` en `.p-datatable` no llega a ellas.
+  // Derived variables (`body-cell-border-color`, ...) resolve at :root, so they must be set here one by
+  // one: changing only `--p-datatable-border-color` on `.p-datatable` does not reach them.
   --p-datatable-border-color: var(--line-soft);
   --p-datatable-body-cell-border-color: var(--line-soft);
   --p-datatable-header-cell-border-color: var(--line-soft);
@@ -188,7 +188,7 @@
     border-bottom-color: transparent;
   }
 
-  // Iconos de orden: pequeños, pegados al título y centrados en su línea.
+  // Sort icons: small, next to the title and centered on their line.
   .p-datatable-sortable-column {
     cursor: pointer;
   }

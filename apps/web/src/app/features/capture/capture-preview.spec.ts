@@ -13,15 +13,15 @@ const shopping = list('Compras', 'compras', 'compra');
 const tasks = list('Tareas', 'tareas', 'tarea');
 
 describe('describeCapture', () => {
-  it('nombra la lista por su alias cuando está cargada', () => {
+  it('names the list by its alias when loaded', () => {
     expect(describe_('peli: Dune #scifi', [films])).toBe('Películas: Dune · #scifi');
   });
 
-  it('usa el alias como nombre mientras las listas no han cargado', () => {
+  it('uses the alias as the name while lists have not loaded', () => {
     expect(describe_('peli: Dune')).toBe('peli: Dune');
   });
 
-  it('resume precio, categoría y enlace de una compra', () => {
+  it('summarizes price, category and link of a purchase', () => {
     const text = describe_('compra: Cafetera @hogar 89€ https://tienda.com/p');
     expect(text).toContain('compra: Cafetera');
     expect(text).toContain('@hogar');
@@ -29,17 +29,17 @@ describe('describeCapture', () => {
     expect(text).toContain('con enlace');
   });
 
-  it('indica la fecha de las tareas', () => {
+  it('shows the date of tasks', () => {
     expect(describe_('mañana: llamar al dentista')).toBe(
       'tarea: llamar al dentista · para el 2026-11-04',
     );
   });
 
-  it('describe una nota nueva como destino por defecto', () => {
+  it('describes a new note as the default destination', () => {
     expect(describe_('una idea suelta')).toBe('Nota nueva');
   });
 
-  it('avisa del prefijo sin título y calla con la entrada vacía', () => {
+  it('warns about a prefix without a title and stays quiet on empty input', () => {
     expect(describe_('peli:')).toBe('Falta el título');
     expect(describe_('   ')).toBe('');
   });
@@ -52,7 +52,7 @@ describe('previewCapture', () => {
     return previewCapture(parsed, loaded, { text: input, prefixes: prefixOptions(loaded) });
   };
 
-  it('«compra: leche» va a la lista Compras, con su título', () => {
+  it('"compra: leche" goes to the Compras list, with its title', () => {
     expect(preview('compra: leche semidesnatada')).toEqual({
       target: 'list',
       destination: 'Compras',
@@ -64,14 +64,14 @@ describe('previewCapture', () => {
     });
   });
 
-  it('reconoce etiquetas, categoría, importe y enlace', () => {
+  it('recognizes tags, category, amount and link', () => {
     const result = preview('compra: Cafetera @hogar #regalo 89,50€ https://tienda.com/p');
     expect(result?.title).toBe('Cafetera');
     expect(result?.extras.map((extra) => extra.kind)).toEqual(['tags', 'category', 'price', 'url']);
     expect(result?.extras.find((extra) => extra.kind === 'price')?.text).toContain('89,50');
   });
 
-  it('«mañana:» es una tarea con fecha corta y va a la lista de tareas', () => {
+  it('"mañana:" is a task with a short date and goes to the tasks list', () => {
     const result = preview('mañana: llamar al dentista');
     expect(result).toMatchObject({
       target: 'list',
@@ -81,14 +81,14 @@ describe('previewCapture', () => {
     expect(result?.extras).toEqual([{ kind: 'date', text: 'para el 4 nov' }]);
   });
 
-  it('sin lista de tareas, «hoy:» se previsualiza como nota con aviso (igual que el servidor)', () => {
+  it('without a tasks list, "hoy:" is previewed as a note with a warning (same as the server)', () => {
     const result = preview('hoy: pagar el recibo', [films, shopping]);
     expect(result).toMatchObject({ target: 'note', destination: NOTE_DESTINATION });
     expect(result?.title).toBe('pagar el recibo (para el 3 nov)');
     expect(result?.notice).toContain('tarea');
   });
 
-  it('sin prefijo es una nota suelta en el lienzo, sin avisos', () => {
+  it('without a prefix it is a loose note on the canvas, no warnings', () => {
     expect(preview('una idea suelta')).toEqual({
       target: 'note',
       destination: NOTE_DESTINATION,
@@ -99,18 +99,18 @@ describe('previewCapture', () => {
     });
   });
 
-  it('un prefijo que parece una lista pero no existe avisa, y propone el parecido', () => {
+  it('a prefix that looks like a list but does not exist warns and suggests the similar one', () => {
     expect(preview('idea: probar el tema oscuro')?.notice).toContain('No hay ninguna lista');
     expect(preview('compras: leche')?.notice).toContain('¿Querías «compra:»?');
     expect(preview('compras: leche')?.target).toBe('note');
   });
 
-  it('una frase con dos puntos no se toma por una lista: sin aviso', () => {
+  it('a sentence with a colon is not taken for a list: no warning', () => {
     expect(preview('reunión con Ana: preparar el informe')?.notice).toBe('');
     expect(preview('10:30 llamar')?.notice).toBe('');
   });
 
-  it('un prefijo sin título es incompleto y nombra la lista', () => {
+  it('a prefix without a title is incomplete and names the list', () => {
     expect(preview('compra:')).toMatchObject({
       target: 'list',
       destination: 'Compras',
@@ -119,16 +119,16 @@ describe('previewCapture', () => {
     });
   });
 
-  it('no dice nada con la entrada vacía', () => {
+  it('says nothing on empty input', () => {
     expect(preview('   ')).toBeNull();
   });
 
-  it('mientras las listas no han cargado usa el alias como nombre y no avisa de listas que faltan', () => {
+  it('while lists have not loaded it uses the alias as the name and does not warn about missing lists', () => {
     const result = preview('peli: Dune', null);
     expect(result).toMatchObject({ target: 'list', destination: 'peli', notice: '' });
   });
 
-  it('sin el contexto, un prefijo sin título es «Falta el título»', () => {
+  it('without the context, a prefix without a title is "Falta el título"', () => {
     expect(previewCapture(parseQuickCapture('peli:', { now }), null)).toEqual({
       target: 'none',
       destination: 'Falta el título',
@@ -141,7 +141,7 @@ describe('previewCapture', () => {
 });
 
 describe('friendlyDate', () => {
-  it('abrevia el mes y deja intacto lo que no es una fecha', () => {
+  it('abbreviates the month and leaves non-dates untouched', () => {
     expect(friendlyDate('2026-11-04')).toBe('4 nov');
     expect(friendlyDate('mañana')).toBe('mañana');
   });

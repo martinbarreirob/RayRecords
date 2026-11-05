@@ -18,12 +18,12 @@ const lists = [
 const options = prefixOptions(lists);
 
 describe('prefixOptions', () => {
-  it('toma el alias de cada lista con alias y no archivada, más hoy y mañana', () => {
+  it('takes the alias of each non-archived list with an alias, plus hoy and mañana', () => {
     expect(options.map((option) => option.prefix)).toEqual(['peli', 'compra', 'hoy', 'mañana']);
     expect(options[1]).toEqual({ prefix: 'compra', label: 'Compras' });
   });
 
-  it('mientras no hay listas usa los alias de los presets', () => {
+  it('while there are no lists it uses the preset aliases', () => {
     expect(prefixOptions(null).map((option) => option.prefix)).toEqual([
       'peli',
       'compra',
@@ -34,26 +34,26 @@ describe('prefixOptions', () => {
 });
 
 describe('suggestPrefixes', () => {
-  it('«com» sugiere compra: y Tab lo completa con los dos puntos', () => {
+  it('"com" suggests compra: and Tab completes it with the colon', () => {
     const [first] = suggestPrefixes('com', options);
     expect(first?.prefix).toBe('compra');
     expect(completion(first!)).toBe('compra: ');
   });
 
-  it('ignora mayúsculas y tildes: «man» → mañana', () => {
+  it('ignores case and accents: "man" gives mañana', () => {
     expect(suggestPrefixes('MAN', options).map((option) => option.prefix)).toEqual(['mañana']);
   });
 
-  it('encaja también por el nombre de la lista: «pel» → peli (Películas)', () => {
+  it('also matches by list name: "pel" gives peli (Películas)', () => {
     expect(suggestPrefixes('pel', options).map((option) => option.prefix)).toEqual(['peli']);
   });
 
-  it('el prefijo gana al nombre cuando los dos encajan', () => {
+  it('the prefix wins over the name when both match', () => {
     const extra = [{ prefix: 'cine', label: 'Pelis' }, ...options];
     expect(suggestPrefixes('pel', extra).map((option) => option.prefix)).toEqual(['peli', 'cine']);
   });
 
-  it('con una sola letra, o con espacios o dos puntos, no sugiere', () => {
+  it('with a single letter, or with spaces or a colon, it does not suggest', () => {
     expect(suggestPrefixes('c', options)).toEqual([]);
     expect(suggestPrefixes('compra leche', options)).toEqual([]);
     expect(suggestPrefixes('compra:', options)).toEqual([]);
@@ -61,18 +61,18 @@ describe('suggestPrefixes', () => {
     expect(suggestPrefixes('123', options)).toEqual([]);
   });
 
-  it('una palabra que no encaja con nada no sugiere', () => {
+  it('a word that matches nothing does not suggest', () => {
     expect(suggestPrefixes('zzz', options)).toEqual([]);
   });
 });
 
 describe('listLikePrefix', () => {
-  it('devuelve la palabra corta antes de los dos puntos', () => {
+  it('returns the short word before the colon', () => {
     expect(listLikePrefix('compras: leche')).toBe('compras');
     expect(listLikePrefix('  Idea : algo')).toBe('Idea');
   });
 
-  it('no toma por prefijo frases, números ni enlaces', () => {
+  it('does not take phrases, numbers or links as a prefix', () => {
     expect(listLikePrefix('reunión con Ana: informe')).toBeNull();
     expect(listLikePrefix('10:30 llamar')).toBeNull();
     expect(listLikePrefix('https://tienda.com/p')).toBeNull();
@@ -82,7 +82,7 @@ describe('listLikePrefix', () => {
 });
 
 describe('closestPrefix', () => {
-  it('encuentra el prefijo parecido (plural, letras de menos o de más)', () => {
+  it('finds the similar prefix (plural, missing or extra letters)', () => {
     expect(closestPrefix('compras', options)?.prefix).toBe('compra');
     expect(closestPrefix('comp', options)?.prefix).toBe('compra');
     expect(closestPrefix('pelis', options)?.prefix).toBe('peli');
@@ -90,7 +90,7 @@ describe('closestPrefix', () => {
     expect(closestPrefix('copra', options)?.prefix).toBe('compra');
   });
 
-  it('lo que no se parece a nada devuelve null', () => {
+  it('what resembles nothing returns null', () => {
     expect(closestPrefix('idea', options)).toBeNull();
     expect(closestPrefix('ab', options)).toBeNull();
   });

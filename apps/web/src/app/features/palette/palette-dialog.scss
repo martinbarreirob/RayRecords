@@ -41,7 +41,7 @@
   font-size: var(--text-lg);
 }
 
-/* Etiqueta del modo «escribir una nota o tarea»: la «/» que lo activa ya está consumida. */
+/* Label of the "write a note or task" mode: the "/" that triggers it is already consumed. */
 .mode-chip {
   display: inline-flex;
   flex: none;
@@ -101,7 +101,7 @@
   outline: none;
 }
 
-/* Cerrar: «Esc» en escritorio, una cruz en táctil (donde no hay tecla). */
+/* Close: "Esc" on desktop, a cross on touch (where there is no key). */
 .close {
   display: inline-flex;
   flex: none;
@@ -147,7 +147,7 @@
 
 .results {
   flex: 1;
-  /* Altura mínima: la lista no encoge ni da saltos al teclear y cambiar el número de resultados. */
+  /* Minimum height: the list does not shrink or jump while typing and the result count changes. */
   min-height: min(260px, 40dvh);
   padding: var(--space-2);
   overflow-y: auto;
@@ -192,7 +192,7 @@
   font-weight: 500;
 }
 
-/* Lo que coincide con lo escrito. */
+/* What matches what was typed. */
 .hit {
   color: var(--accent);
   font-weight: 700;
@@ -266,7 +266,7 @@
   }
 }
 
-/* Móvil: la capa ocupa casi toda el área visible (sin el teclado, que se mide con visualViewport). */
+/* Mobile: the layer takes almost the whole visible area (without the keyboard, measured with visualViewport). */
 @media (width <= 767px) {
   .backdrop {
     inset: auto;
@@ -289,7 +289,7 @@
 
   .search input {
     min-height: var(--touch-target);
-    /* 16 px como mínimo: con menos, iOS hace zoom al enfocar el campo. */
+    /* 16 px minimum: with less, iOS zooms when focusing the field. */
     font-size: max(var(--text-lg), 16px);
   }
 

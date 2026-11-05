@@ -1,6 +1,6 @@
 import type { PrimeNG } from 'primeng/config';
 
-/** Textos de los selectores de fecha y de la tabla de PrimeNG en español (semana desde el lunes). */
+/** Spanish texts for the PrimeNG date pickers and table (week starts on Monday). */
 export function useSpanishTexts(config: PrimeNG): void {
   config.setTranslation({
     firstDayOfWeek: 1,

@@ -1,4 +1,4 @@
-/** Preferencias de la pantalla de notas que se recuerdan en el navegador. Nunca fallan si no hay almacenamiento. */
+/** Notes screen preferences remembered in the browser. They never fail when there is no storage. */
 
 export const HINTS_KEY = 'rayrecords.notes.hints';
 export const LOCK_KEY = 'rayrecords.notes.locked';
@@ -13,7 +13,7 @@ function defaultStore(): Store | null {
   }
 }
 
-/** ¿Se muestra la barra de atajos? Por defecto sí; solo un «0» guardado la oculta. */
+/** Is the shortcut bar shown? Yes by default; only a stored «0» hides it. */
 export function readHintsOpen(store: Store | null = defaultStore()): boolean {
   try {
     return store?.getItem(HINTS_KEY) !== '0';
@@ -26,13 +26,13 @@ export function writeHintsOpen(open: boolean, store: Store | null = defaultStore
   try {
     store?.setItem(HINTS_KEY, open ? '1' : '0');
   } catch {
-    // Sin almacenamiento (modo privado, cuota): la preferencia vale solo para esta sesión.
+    // No storage (private mode, quota): the preference only holds for this session.
   }
 }
 
 /**
- * ¿Está bloqueada la disposición (no se pueden mover las notas)? Por defecto sí: solo un «0» guardado,
- * es decir, haberla desbloqueado a propósito, la deja libre.
+ * Is the layout locked (notes cannot be moved)? Yes by default: only a stored «0», that is, having
+ * unlocked it on purpose, leaves it free.
  */
 export function readLayoutLocked(store: Store | null = defaultStore()): boolean {
   try {
@@ -46,6 +46,6 @@ export function writeLayoutLocked(locked: boolean, store: Store | null = default
   try {
     store?.setItem(LOCK_KEY, locked ? '1' : '0');
   } catch {
-    // Sin almacenamiento: la preferencia vale solo para esta sesión.
+    // No storage: the preference only holds for this session.
   }
 }

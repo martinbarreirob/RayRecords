@@ -43,8 +43,8 @@ import { map, type Observable } from 'rxjs';
 import { ApiClient, type ItemFilters } from './api-client';
 
 /**
- * Implementación contra la API real. Los tipos vienen de `@rayrecords/shared`; la validación la
- * hace el servidor con los mismos esquemas, así que el cliente no necesita cargar Zod.
+ * Implementation against the real API. Types come from `@rayrecords/shared`; the server validates
+ * with the same schemas, so the client does not need to load Zod.
  */
 @Injectable()
 export class HttpApiClient extends ApiClient {
@@ -203,7 +203,7 @@ export class HttpApiClient extends ApiClient {
     file: File,
     dryRun: boolean,
   ): Observable<ImportResult> {
-    // El extracto va como cuerpo en bruto (text/csv), no como multipart.
+    // The statement goes as a raw body (text/csv), not as multipart.
     return this.http.post<ImportResult>(`/api/accounts/${accountId}/imports`, file, {
       headers: { 'Content-Type': 'text/csv' },
       params: { fileName: file.name, dryRun: String(dryRun) },

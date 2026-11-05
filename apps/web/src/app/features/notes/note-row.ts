@@ -4,7 +4,7 @@ import { splitNoteText } from './note-board.logic';
 import { NoteCheck } from './note-check';
 import { NoteEditor } from './note-editor';
 
-/** Fila de la lista móvil (< 768 px): casilla de 44 px, texto que se edita al tocarlo. */
+/** Row of the mobile list (< 768 px): 44 px checkbox, text that is edited by tapping it. */
 @Component({
   selector: 'app-note-row',
   imports: [NoteCheck, NoteEditor],
@@ -17,7 +17,7 @@ import { NoteEditor } from './note-editor';
       min-height: var(--touch-target);
       padding: var(--space-3) 14px;
       background: var(--surface);
-      /* Al enfocar el editor, deja sitio para el botón flotante de «Nueva nota». */
+      /* When the editor is focused, leave room for the floating «Nueva nota» button. */
       scroll-margin-bottom: 96px;
     }
 
@@ -45,7 +45,7 @@ import { NoteEditor } from './note-editor';
       min-width: 0;
     }
 
-    /* El foco de teclado se ve en el borde de la propia fila, no en un anillo aparte por fuera. */
+    /* Keyboard focus shows on the row's own border, not in a separate ring outside. */
     :host(:has(.text:focus-visible)) {
       border-color: var(--accent);
       box-shadow: inset 0 0 0 1px var(--accent);
@@ -67,7 +67,7 @@ import { NoteEditor } from './note-editor';
       cursor: pointer;
     }
 
-    /* Toda la fila (no solo el texto) es tocable: el área llega hasta el borde de la tarjeta. */
+    /* The whole row (not only the text) is tappable: the area reaches the edge of the card. */
     .text::after {
       content: '';
       position: absolute;
@@ -146,7 +146,7 @@ import { NoteEditor } from './note-editor';
           (blur)="finished.emit(editor.value)"
         ></textarea>
         <div class="actions">
-          <!-- pointerdown evita que el campo pierda el foco y guarde antes de actuar -->
+          <!-- pointerdown keeps the field from losing focus and saving before acting -->
           <button
             type="button"
             class="btn danger sm"

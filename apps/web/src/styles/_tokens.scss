@@ -1,6 +1,6 @@
-// Tokens de diseño de RayRecords. Estética neutra y silenciosa: grises suaves, una sola tipografía y
-// un único color de acento. Todo lo demás (componentes propios y PrimeNG) se construye sobre estas variables.
-// El tema se elige con `data-theme="light|dark"` en <html> (ver core/theme/theme.service.ts).
+// RayRecords design tokens. Neutral, quiet look: soft grays, a single typeface and one accent color.
+// Everything else (own components and PrimeNG) is built on these variables.
+// The theme is chosen with `data-theme="light|dark"` on <html> (see core/theme/theme.service.ts).
 
 :root {
   --font: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -36,7 +36,7 @@
   --z-nav: 20;
   --z-overlay: 1000;
 
-  // Claro (por defecto).
+  // Light (default).
   color-scheme: light;
   --bg: #fafaf8;
   --surface: #ffffff;
@@ -45,8 +45,8 @@
   --line-strong: #cfcfc8;
   --line-soft: #eeeeea;
 
-  // Paleta categórica (columnas del tablero, etiquetas): `--hue-x` para puntos y franjas,
-  // `-soft` de fondo y `-text` para el texto sobre ese fondo (contraste ≥ 4.5).
+  // Categorical palette (board columns, labels): `--hue-x` for dots and stripes,
+  // `-soft` for the background and `-text` for text on that background (contrast >= 4.5).
   --hue-blue: #3b6fe0;
   --hue-blue-soft: #e8effc;
   --hue-blue-text: #1d4fb8;

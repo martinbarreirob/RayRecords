@@ -38,19 +38,19 @@ const rows: MovementRow[] = [
 ];
 
 describe('movements-logic', () => {
-  it('suma céntimos', () => {
+  it('sums cents', () => {
     expect(sumCents([])).toBe(0);
     expect(sumCents(rows.slice(0, 3))).toBe(-7040);
   });
 
-  it('agrupa totales y cuenta por categoría, con una entrada para las sin categoría', () => {
+  it('groups totals and counts by category, with an entry for uncategorised', () => {
     const totals = sectionTotals(rows);
     expect(totals.get('ocio')).toEqual({ key: 'ocio', totalCents: -2040, count: 2 });
     expect(totals.get(null)).toEqual({ key: null, totalCents: -999, count: 1 });
     expect(totals.get('viajes')).toBeUndefined();
   });
 
-  it('calcula gastos, ingresos y balance sin contar los traspasos', () => {
+  it('computes expenses, income and balance, ignoring transfers', () => {
     expect(periodTotals(rows)).toEqual({
       expensesCents: -1240 - 5000 - 800 - 999,
       incomeCents: 200000,
@@ -59,7 +59,7 @@ describe('movements-logic', () => {
     expect(periodTotals([])).toEqual({ expensesCents: 0, incomeCents: 0, balanceCents: 0 });
   });
 
-  it('filtra por sección activa', () => {
+  it('filters by active section', () => {
     expect(filterMovements(rows, 'all', '')).toHaveLength(6);
     expect(filterMovements(rows, 'ocio', '').map((r) => r.description)).toEqual([
       'Café del Rincón',
@@ -70,7 +70,7 @@ describe('movements-logic', () => {
     ]);
   });
 
-  it('filtra por texto sin distinguir acentos ni mayúsculas, y lo combina con la sección', () => {
+  it('filters by text ignoring accents and case, combined with the section', () => {
     expect(filterMovements(rows, 'all', 'CAFE')).toHaveLength(1);
     expect(filterMovements(rows, 'all', ' dia ').map((r) => r.description)).toEqual([
       'Supermercado Día',
@@ -79,11 +79,11 @@ describe('movements-logic', () => {
     expect(filterMovements(rows, 'ocio', 'cine')).toHaveLength(1);
   });
 
-  it('normaliza texto', () => {
+  it('normalises text', () => {
     expect(normalizeText('  ÁÉÍóú Ñ ')).toBe('aeiou n');
   });
 
-  it('comprueba si un mes cae en el periodo', () => {
+  it('checks whether a month falls in the period', () => {
     expect(inPeriod('2026-10', { from: '2026-09', to: '2026-11' })).toBe(true);
     expect(inPeriod('2026-08', { from: '2026-09', to: '2026-11' })).toBe(false);
     expect(inPeriod('2027-01', { from: '2026-09', to: '2026-11' })).toBe(false);
@@ -91,7 +91,7 @@ describe('movements-logic', () => {
     expect(inPeriod('2026-12', { from: '2026-11', to: null })).toBe(true);
   });
 
-  it('distingue un mes único de un rango o un periodo abierto', () => {
+  it('tells a single month from a range or an open period', () => {
     expect(singleMonth({ from: '2026-11', to: '2026-11' })).toBe('2026-11');
     expect(singleMonth({ from: '2026-10', to: '2026-11' })).toBeNull();
     expect(singleMonth({ from: null, to: null })).toBeNull();
@@ -100,14 +100,14 @@ describe('movements-logic', () => {
     expect(periodSpan({ from: null, to: '2026-02' })).toBeNull();
   });
 
-  it('convierte entre meses y fechas locales', () => {
+  it('converts between months and local dates', () => {
     expect(monthOfDate(dateOfMonth('2026-03'))).toBe('2026-03');
     expect(dateOfMonth('2026-11').getDate()).toBe(1);
   });
 });
 
-describe('formato de periodo y fecha', () => {
-  it('describe el periodo', () => {
+describe('period and date formatting', () => {
+  it('describes the period', () => {
     expect(periodLabel({ from: null, to: null })).toBe('Todo el histórico');
     expect(periodLabel({ from: '2026-11', to: '2026-11' })).toBe('noviembre de 2026');
     expect(periodLabel({ from: '2026-09', to: '2026-11' })).toMatch(
@@ -115,7 +115,7 @@ describe('formato de periodo y fecha', () => {
     );
   });
 
-  it('abrevia el día y añade el año solo si no es el actual', () => {
+  it('shortens the day and adds the year only when it is not the current one', () => {
     expect(formatDay('2026-10-28', 2026)).toBe('28 oct');
     expect(formatDay('2025-10-28', 2026)).toBe('28 oct 2025');
   });

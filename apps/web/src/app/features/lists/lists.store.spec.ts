@@ -21,7 +21,7 @@ function list(n: number, name: string, order: number): List {
   };
 }
 
-describe('ListsStore: reordenar', () => {
+describe('ListsStore: reorder', () => {
   let calls: { id: string; input: UpdateList }[];
   let respond: (listId: string, input: UpdateList) => Observable<List>;
 
@@ -49,12 +49,12 @@ describe('ListsStore: reordenar', () => {
   const shows = list(2, 'Series', 2000);
   const shop = list(3, 'Compras', 3000);
 
-  it('al cargar deja las listas ordenadas por order', () => {
+  it('on load it leaves the lists sorted by order', () => {
     const store = setup([shop, films, shows]);
     expect(names(store)).toEqual(['Películas', 'Series', 'Compras']);
   });
 
-  it('cambia el orden al instante y guarda solo el order de la lista movida', () => {
+  it('changes the order at once and saves only the order of the moved list', () => {
     const store = setup([films, shows, shop]);
     const pending = new Subject<List>();
     respond = () => pending;
@@ -62,7 +62,7 @@ describe('ListsStore: reordenar', () => {
     let done = false;
     store.reorder(films.id, 2).subscribe({ complete: () => (done = true) });
 
-    // Optimista: ya está en su sitio aunque la API no haya respondido.
+    // Optimistic: already in place even though the API has not responded.
     expect(names(store)).toEqual(['Series', 'Compras', 'Películas']);
     expect(store.lists()!.at(-1)!.order).toBe(4000);
     expect(calls).toEqual([{ id: films.id, input: { order: 4000 } }]);
@@ -74,9 +74,9 @@ describe('ListsStore: reordenar', () => {
     expect(names(store)).toEqual(['Series', 'Compras', 'Películas']);
   });
 
-  it('si la API falla, devuelve la lista a su sitio y propaga el error', () => {
+  it('if the API fails, it puts the list back and propagates the error', () => {
     const store = setup([films, shows, shop]);
-    const failure = new Error('sin red');
+    const failure = new Error('network down');
     respond = () => throwError(() => failure);
 
     let received: unknown;
@@ -87,14 +87,14 @@ describe('ListsStore: reordenar', () => {
     expect(store.lists()!.map((l) => l.order)).toEqual([1000, 2000, 3000]);
   });
 
-  it('sin hueco renumera: varias peticiones y, si una falla, vuelven todos los órdenes', () => {
+  it('with no gap it renumbers: several requests and, if one fails, all orders are restored', () => {
     const tight = [list(1, 'A', 1000), list(2, 'B', 2000), list(3, 'C', 2000), list(4, 'D', 5000)];
     const store = setup(tight);
     respond = (listId) =>
-      listId === tight[3]!.id ? throwError(() => new Error('falló')) : of(tight[0]!);
+      listId === tight[3]!.id ? throwError(() => new Error('failed')) : of(tight[0]!);
 
     let failed = false;
-    // D entre B y C, que están pegadas (mismo orden): no hay hueco y se renumera todo.
+    // D between B and C, which are adjacent (same order): no gap, so everything is renumbered.
     store.reorder(tight[3]!.id, 2).subscribe({ error: () => (failed = true) });
 
     expect(calls.map((c) => [c.id, c.input.order])).toEqual([
@@ -110,7 +110,7 @@ describe('ListsStore: reordenar', () => {
     ]);
   });
 
-  it('sin hueco y con éxito, deja los órdenes renumerados', () => {
+  it('with no gap and on success, it leaves the orders renumbered', () => {
     const tight = [list(1, 'A', 1000), list(2, 'B', 2000), list(3, 'C', 2000), list(4, 'D', 5000)];
     const store = setup(tight);
 
@@ -124,7 +124,7 @@ describe('ListsStore: reordenar', () => {
     ]);
   });
 
-  it('el rollback solo toca las listas de su petición', () => {
+  it('the rollback only touches the lists of its own request', () => {
     const store = setup([films, shows, shop]);
     const first = new Subject<List>();
     respond = (listId) => (listId === films.id ? first : of(shop));
@@ -133,13 +133,13 @@ describe('ListsStore: reordenar', () => {
     store.reorder(shop.id, 0).subscribe(); // Compras, Series, Películas
     expect(names(store)).toEqual(['Compras', 'Series', 'Películas']);
 
-    first.error(new Error('falló'));
-    // Películas vuelve a su orden original (1000); Compras conserva el suyo.
+    first.error(new Error('failed'));
+    // Películas goes back to its original order (1000); Compras keeps its own.
     expect(names(store)).toEqual(['Compras', 'Películas', 'Series']);
     expect(calls.map((c) => c.id)).toEqual([films.id, shop.id]);
   });
 
-  it('no hace nada ni llama a la API si la lista no cambia de sitio o no existe', () => {
+  it('does nothing and does not call the API if the list does not move or does not exist', () => {
     const store = setup([films, shows, shop]);
     let completed = 0;
     store.reorder(shows.id, 1).subscribe({ complete: () => completed++ });
@@ -149,8 +149,8 @@ describe('ListsStore: reordenar', () => {
     expect(names(store)).toEqual(['Películas', 'Series', 'Compras']);
   });
 
-  it('las listas archivadas (fuera del store) no alteran el orden', () => {
-    // La API solo devuelve las activas; una archivada con order intermedio no interviene.
+  it('archived lists (outside the store) do not alter the order', () => {
+    // The API only returns active ones; an archived one with an intermediate order does not take part.
     const store = setup([films, shop]);
     store.reorder(shop.id, 0).subscribe();
     expect(names(store)).toEqual(['Compras', 'Películas']);

@@ -43,13 +43,13 @@ const loose = (c: NoteCard) => ({ x: c.x, y: c.y });
 describe('advanceDrag', () => {
   const start = () => startDrag('card', 'a', { x: 100, y: 100 }, { x: 50, y: 50, w: 280, h: 0 });
 
-  it('un movimiento mínimo sigue siendo un clic', () => {
+  it('a minimal movement is still a click', () => {
     const drag = start();
 
     expect(advanceDrag(drag, { x: 102, y: 101 }, [])).toBe(drag);
   });
 
-  it('un clic con micro-movimiento (hasta unos 7 px) no arrastra', () => {
+  it('a click with micro-movement (up to about 7 px) does not drag', () => {
     const drag = start();
 
     expect(advanceDrag(drag, { x: 104, y: 103 }, [])).toBe(drag);
@@ -57,25 +57,25 @@ describe('advanceDrag', () => {
     expect(advanceDrag(drag, { x: 100 + DRAG_THRESHOLD, y: 100 }, []).moved).toBe(true);
   });
 
-  it('desplaza la tarjeta lo mismo que el puntero', () => {
+  it('moves the card the same as the pointer', () => {
     const next = advanceDrag(start(), { x: 160, y: 130 }, []);
 
     expect(next).toMatchObject({ moved: true, x: 110, y: 80, over: null });
   });
 
-  it('detecta el grupo que hay bajo el centro de la tarjeta', () => {
+  it('detects the group under the card centre', () => {
     const next = advanceDrag(start(), { x: 600, y: 160 }, [group]);
 
     expect(next.over).toBe('g1');
   });
 
-  it('no deja salir de los límites', () => {
+  it('does not leave the bounds', () => {
     const next = advanceDrag(start(), { x: -500, y: -500 }, []);
 
     expect(next).toMatchObject({ x: 0, y: 0 });
   });
 
-  it('redimensionar respeta el tamaño mínimo del grupo', () => {
+  it('resizing respects the group minimum size', () => {
     const drag = startDrag('resize', 'g1', { x: 0, y: 0 }, group);
 
     const next = advanceDrag(drag, { x: -1000, y: -1000 }, [group]);
@@ -83,7 +83,7 @@ describe('advanceDrag', () => {
     expect(next).toMatchObject({ w: 160, h: 160, x: 500, y: 100 });
   });
 
-  it('un grupo que se mueve nunca tiene grupo destino', () => {
+  it('a moving group never has a target group', () => {
     const drag = startDrag('group', 'g1', { x: 0, y: 0 }, group);
 
     expect(advanceDrag(drag, { x: 50, y: 50 }, [group]).over).toBeNull();
@@ -95,7 +95,7 @@ describe('dropMoves', () => {
   const b = card('b', 400, 100);
   const cards = [a, b, card('c', 700, 700)];
 
-  it('mueve toda la selección el mismo desplazamiento', () => {
+  it('moves the whole selection by the same offset', () => {
     const drag = { ...startDrag('card', 'a', { x: 0, y: 0 }, { x: 100, y: 100, w: 280, h: 0 }) };
     const moved = { ...drag, moved: true, x: 130, y: 90 };
 
@@ -107,7 +107,7 @@ describe('dropMoves', () => {
     ]);
   });
 
-  it('si la tarjeta arrastrada no estaba seleccionada, solo se mueve ella', () => {
+  it('if the dragged card was not selected, only it moves', () => {
     const moved = {
       ...startDrag('card', 'c', { x: 0, y: 0 }, { x: 700, y: 700, w: 280, h: 0 }),
       moved: true,
@@ -120,7 +120,7 @@ describe('dropMoves', () => {
     expect(moves).toEqual([{ id: 'c', x: 710, y: 700, groupId: null }]);
   });
 
-  it('al caer en un grupo las posiciones pasan a ser relativas a él', () => {
+  it('when dropped in a group, positions become relative to it', () => {
     const moved = {
       ...startDrag('card', 'a', { x: 0, y: 0 }, { x: 100, y: 100, w: 280, h: 0 }),
       moved: true,
@@ -134,12 +134,12 @@ describe('dropMoves', () => {
     expect(moves).toEqual([{ id: 'a', x: 0, y: 0, groupId: 'g1' }]);
   });
 
-  describe('pila del grupo', () => {
+  describe('group stack', () => {
     const m1 = card('m1', 0, 0, { groupId: 'g1' });
     const m2 = card('m2', 0, 10, { groupId: 'g1' });
     const m3 = card('m3', 0, 20, { groupId: 'g1' });
     const all = [card('a', 100, 100), m1, m2, m3];
-    // Posiciones reales: tres tarjetas de 100 px de alto una debajo de otra.
+    // Real positions: three 100 px tall cards one below the other.
     const tops: Record<string, number> = { m1: 150, m2: 260, m3: 370 };
     const abs = (c: NoteCard) => (c.groupId ? { x: 500, y: tops[c.id]! } : { x: c.x, y: c.y });
     const heightOf = () => 100;
@@ -151,7 +151,7 @@ describe('dropMoves', () => {
       over: 'g1',
     });
 
-    it('al soltar entre dos tarjetas se inserta ahí y se reasignan las de debajo', () => {
+    it('dropping between two cards inserts there and reassigns the ones below', () => {
       const moves = dropMoves(dropAt(240), all, new Set(['a']), [group], abs, heightOf);
 
       expect(moves).toEqual([
@@ -161,20 +161,20 @@ describe('dropMoves', () => {
       ]);
     });
 
-    it('al soltar por debajo de todas va la última y no toca a las demás', () => {
+    it('dropping below all makes it last and does not touch the others', () => {
       const moves = dropMoves(dropAt(600), all, new Set(['a']), [group], abs, heightOf);
 
       expect(moves).toEqual([{ id: 'a', x: 0, y: 30, groupId: 'g1' }]);
     });
 
-    it('al soltar por encima de todas va la primera', () => {
+    it('dropping above all makes it first', () => {
       const moves = dropMoves(dropAt(0), all, new Set(['a']), [group], abs, heightOf);
 
       expect(moves[0]).toEqual({ id: 'a', x: 0, y: 0, groupId: 'g1' });
       expect(moves.map((m) => m.id)).toEqual(['a', 'm1', 'm2', 'm3']);
     });
 
-    it('arrastrar una tarjeta del grupo dentro del mismo grupo la reordena', () => {
+    it('dragging a group card within the same group reorders it', () => {
       const drag = {
         ...startDrag('card', 'm1', { x: 0, y: 0 }, { x: 500, y: 150, w: 280, h: 0 }),
         moved: true,
@@ -191,7 +191,7 @@ describe('dropMoves', () => {
       ]);
     });
 
-    it('una selección múltiple entra junta y conserva su orden', () => {
+    it('a multiple selection enters together and keeps its order', () => {
       const b = card('b', 100, 300);
       const drag = {
         ...startDrag('card', 'a', { x: 0, y: 0 }, { x: 100, y: 100, w: 280, h: 0 }),
@@ -212,11 +212,11 @@ describe('dropMoves', () => {
 });
 
 describe('groupAround', () => {
-  it('no hace nada sin tarjetas', () => {
+  it('does nothing without cards', () => {
     expect(groupAround([], loose)).toBeNull();
   });
 
-  it('envuelve las tarjetas con margen y hueco para el título', () => {
+  it('wraps the cards with margin and room for the title', () => {
     const result = groupAround([card('a', 100, 200)], loose);
 
     expect(result?.group).toMatchObject({ x: 84, y: 144, w: 312 });
@@ -224,7 +224,7 @@ describe('groupAround', () => {
     expect(result?.rects).toHaveLength(1);
   });
 
-  it('el grupo nunca baja del tamaño mínimo', () => {
+  it('the group never goes below the minimum size', () => {
     const result = groupAround([card('a', 0, 0, { w: 40 })], loose);
 
     expect(result?.group.w).toBeGreaterThanOrEqual(160);
@@ -245,7 +245,7 @@ describe('dragPreview', () => {
     y,
   });
 
-  it('desplaza todas las tarjetas de la selección y las pinta sueltas', () => {
+  it('moves all cards of the selection and paints them loose', () => {
     const preview = dragPreview(moved('a', 130, 90), cards, new Set(['a', 'd']), absolute);
 
     expect(preview.map((c) => [c.id, c.x, c.y, c.groupId])).toEqual([
@@ -254,14 +254,14 @@ describe('dragPreview', () => {
     ]);
   });
 
-  it('sin la tarjeta en la selección solo viaja ella', () => {
+  it('without the card in the selection only it travels', () => {
     const drag = moved('b', 410, 100);
 
     expect(draggedIds(drag, new Set(['a']))).toEqual(new Set(['b']));
     expect(dragPreview(drag, cards, new Set(['a']), absolute).map((c) => c.id)).toEqual(['b']);
   });
 
-  it('no se sale de los límites del lienzo', () => {
+  it('does not leave the canvas bounds', () => {
     const preview = dragPreview(moved('a', 0, 0), [card('a', 5, 5)], new Set(), absolute);
 
     expect(preview[0]).toMatchObject({ x: 0, y: 0 });

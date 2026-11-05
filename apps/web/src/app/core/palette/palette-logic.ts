@@ -3,14 +3,14 @@ import { formatCents } from '../format';
 import { GO_TARGETS, shortcutLabel, type GoKey } from './go-shortcuts';
 
 /**
- * Lógica pura de la paleta de comandos (sin Angular): puntuar coincidencias, construir y filtrar
- * resultados, agruparlos para pintarlos y mover la selección con el teclado. El componente solo
- * la pega con el ratón, el teclado y las peticiones.
+ * Pure command palette logic (no Angular): scoring matches, building and filtering results,
+ * grouping them for display and moving the selection with the keyboard. The component only wires
+ * it to the mouse, the keyboard and the requests.
  */
 
 export type PaletteKind = 'list' | 'item' | 'note' | 'expense' | 'command' | 'capture';
 
-/** Chips de filtro por tipo (Tab y Mayús+Tab los recorren). */
+/** Type filter chips (Tab and Shift+Tab cycle through them). */
 export type PaletteFilter = 'all' | 'lists' | 'notes' | 'expenses' | 'commands';
 
 export const PALETTE_FILTERS: readonly { id: PaletteFilter; label: string }[] = [
@@ -21,7 +21,7 @@ export const PALETTE_FILTERS: readonly { id: PaletteFilter; label: string }[] = 
   { id: 'commands', label: 'Comandos' },
 ];
 
-/** Qué hace un resultado al elegirlo. Es solo un dato: lo ejecuta el componente. */
+/** What a result does when chosen. Just data: the component runs it. */
 export type PaletteAction =
   | { type: 'go'; url: string }
   | { type: 'new-note' }
@@ -31,13 +31,13 @@ export type PaletteAction =
   | { type: 'capture'; text: string };
 
 export interface PaletteResult {
-  /** Único en toda la paleta (sirve de clave y de id del `option`). */
+  /** Unique across the palette (used as key and as the `option` id). */
   id: string;
   kind: PaletteKind;
   label: string;
-  /** Texto secundario junto al principal («· 7 tarjetas», «· Reforma del baño»…). */
+  /** Secondary text next to the main one ("· 7 tarjetas", "· Reforma del baño"...). */
   hint?: string;
-  /** Atajo de teclado, una tecla o combinación por elemento (`['⇧N']`, `['/']`); se pinta como `.kbd`. */
+  /** Keyboard shortcut, one key or combination per element (`['⇧N']`, `['/']`); rendered as `.kbd`. */
   shortcut?: readonly string[];
   score: number;
   action: PaletteAction;
@@ -46,7 +46,7 @@ export interface PaletteResult {
 export type PaletteGroupId = 'lists' | 'cards' | 'notes' | 'commands';
 
 export interface PaletteRow extends PaletteResult {
-  /** Posición en la lista plana: es la que mueve el teclado. */
+  /** Position in the flat list: the one the keyboard moves. */
   index: number;
 }
 
@@ -56,7 +56,7 @@ export interface PaletteGroup {
   rows: PaletteRow[];
 }
 
-/** Máximo de resultados por tipo con «Todo»; con un filtro concreto caben más. */
+/** Maximum results per type with "Todo"; a specific filter allows more. */
 const KIND_LIMIT: Record<PaletteKind, number> = {
   list: 4,
   item: 6,
@@ -67,7 +67,7 @@ const KIND_LIMIT: Record<PaletteKind, number> = {
 };
 const FILTERED_LIMIT = 12;
 
-/** Minúsculas y sin tildes, para que «bano» encuentre «Baño». */
+/** Lowercase and without accents, so "bano" finds "Baño". */
 export function normalize(text: string): string {
   return text
     .normalize('NFD')
@@ -80,9 +80,9 @@ function isWordChar(char: string | undefined): boolean {
 }
 
 /**
- * Puntuación de una coincidencia de `query` en `text`: 0 si no coincide y, si coincide, más cuanto
- * mejor (texto exacto > empieza por > palabra que empieza por > aparece dentro). Cada palabra
- * escrita debe aparecer en el texto, en cualquier orden. Con la consulta vacía todo vale 1.
+ * Score of a match of `query` in `text`: 0 if no match and, if it matches, higher the better
+ * (exact text > starts with > a word starts with > appears inside). Every typed word must appear
+ * in the text, in any order. An empty query scores 1.
  */
 export function scoreMatch(query: string, text: string): number {
   const tokens = normalize(query).split(/\s+/).filter(Boolean);
@@ -102,12 +102,12 @@ export function scoreMatch(query: string, text: string): number {
   const whole = tokens.join(' ');
   if (haystack === whole) score += 60;
   else if (haystack.startsWith(whole)) score += 30;
-  // A igualdad de coincidencia gana el texto más corto (más específico).
+  // On equal match quality the shorter text wins (more specific).
   score += Math.max(0, 5 - haystack.length / 40);
   return score;
 }
 
-/** Mejor puntuación de la consulta sobre varios textos (el primero pesa más que los demás). */
+/** Best score of the query over several texts (the first weighs more than the rest). */
 export function scoreAny(query: string, texts: readonly string[]): number {
   let best = 0;
   texts.forEach((text, index) => {
@@ -117,22 +117,22 @@ export function scoreAny(query: string, texts: readonly string[]): number {
   return best;
 }
 
-/** Trozo de un texto, marcado si es lo que coincide con la consulta. */
+/** Piece of a text, marked if it is what matches the query. */
 export interface HighlightSegment {
   text: string;
   match: boolean;
 }
 
 /**
- * Parte `text` en trozos para resaltar en él las palabras de `query` (sin tildes ni mayúsculas, como
- * `scoreMatch`). Cada palabra marca su primera aparición; los solapes se funden. Sin consulta o sin
- * coincidencias devuelve el texto entero sin marcar.
+ * Splits `text` into pieces to highlight the words of `query` (ignoring accents and case, like
+ * `scoreMatch`). Each word marks its first occurrence; overlaps are merged. With no query or no
+ * matches it returns the whole text unmarked.
  */
 export function highlightSegments(text: string, query: string): HighlightSegment[] {
   const tokens = normalize(query).split(/\s+/).filter(Boolean);
   if (tokens.length === 0 || text === '') return [{ text, match: false }];
 
-  // Se normaliza carácter a carácter para saber a qué posición del original corresponde cada una.
+  // Normalized character by character to know which position in the original each one maps to.
   const chars = Array.from(text);
   let folded = '';
   const starts: number[] = [];
@@ -174,10 +174,10 @@ export function highlightSegments(text: string, query: string): HighlightSegment
   return segments;
 }
 
-// --- Comandos -----------------------------------------------------------------------------------
+// --- Commands -----------------------------------------------------------------------------------
 
 export interface CommandContext {
-  /** Etiqueta del tema actual («Claro», «Oscuro», «Sistema»). */
+  /** Label of the current theme ("Claro", "Oscuro", "Sistema"). */
   themeLabel: string;
   username: string;
 }
@@ -232,7 +232,7 @@ const COMMANDS: readonly CommandDef[] = [
   },
 ];
 
-/** Comandos que encajan con la consulta; sin consulta, todos en su orden natural. */
+/** Commands matching the query; with no query, all of them in their natural order. */
 export function searchCommands(query: string, context: CommandContext): PaletteResult[] {
   const results: PaletteResult[] = [];
   for (const command of COMMANDS) {
@@ -251,7 +251,7 @@ export function searchCommands(query: string, context: CommandContext): PaletteR
   return query.trim() ? sortByScore(results) : results;
 }
 
-/** Resultado «Capturar: <texto>», que se ofrece cuando nada más encaja con lo escrito. */
+/** "Capturar: <text>" result, offered when nothing else matches what was typed. */
 export function captureResult(text: string, hint?: string): PaletteResult {
   return {
     id: 'capture',
@@ -263,7 +263,7 @@ export function captureResult(text: string, hint?: string): PaletteResult {
   };
 }
 
-// --- Datos --------------------------------------------------------------------------------------
+// --- Data --------------------------------------------------------------------------------------
 
 export function searchLists(query: string, lists: readonly List[]): PaletteResult[] {
   const results: PaletteResult[] = [];
@@ -284,8 +284,8 @@ export function searchLists(query: string, lists: readonly List[]): PaletteResul
 }
 
 /**
- * Tarjetas de lista que devolvió el servidor para `query`. Con `trusted` (la respuesta es de la
- * consulta actual) se muestran todas; si no (se sigue escribiendo), solo las que aún encajan.
+ * List cards the server returned for `query`. With `trusted` (the response is for the current
+ * query) all are shown; otherwise (still typing) only the ones that still match.
  */
 export function itemResults(
   query: string,
@@ -312,7 +312,7 @@ export function itemResults(
   return sortByScore(results);
 }
 
-/** Línea de una nota que se enseña: la primera que contiene la consulta, o la primera con texto. */
+/** Line of a note to show: the first one containing the query, or the first with text. */
 export function noteLine(text: string, query: string): string {
   const lines = text
     .split(/\r?\n/)
@@ -341,7 +341,7 @@ export function searchNotes(query: string, cards: readonly NoteCard[]): PaletteR
   return sortByScore(results);
 }
 
-/** «2026-11-04» → «04/11/2026». */
+/** "2026-11-04" to "04/11/2026". */
 export function formatShortDate(date: string): string {
   const [year, month, day] = date.split('-');
   return year && month && day ? `${day}/${month}/${year}` : date;
@@ -369,7 +369,7 @@ export function expenseResults(
   return sortByScore(results);
 }
 
-/** Ordena de mayor a menor puntuación sin alterar el orden de los empates. */
+/** Sorts from highest to lowest score without changing the order of ties. */
 export function sortByScore<T extends { score: number }>(results: readonly T[]): T[] {
   return results
     .map((result, position) => ({ result, position }))
@@ -377,7 +377,7 @@ export function sortByScore<T extends { score: number }>(results: readonly T[]):
     .map(({ result }) => result);
 }
 
-// --- Filtro y agrupación ------------------------------------------------------------------------
+// --- Filtering and grouping ------------------------------------------------------------------------
 
 const FILTER_KINDS: Record<PaletteFilter, readonly PaletteKind[] | null> = {
   all: null,
@@ -417,7 +417,7 @@ function groupLabel(id: PaletteGroupId, rows: readonly PaletteResult[]): string 
     case 'commands':
       return 'Comandos';
     default: {
-      // Notas y gastos comparten grupo; el título dice lo que hay de verdad.
+      // Notes and expenses share a group; the title says what is really in it.
       const hasNotes = rows.some((row) => row.kind === 'note');
       const hasExpenses = rows.some((row) => row.kind === 'expense');
       if (hasNotes && hasExpenses) return 'Notas y gastos';
@@ -427,8 +427,8 @@ function groupLabel(id: PaletteGroupId, rows: readonly PaletteResult[]): string 
 }
 
 /**
- * Filtra por tipo, agrupa en el orden fijo Listas · Tarjetas · Notas y gastos · Comandos, recorta
- * cada tipo y numera las filas de corrido para que ↑↓ las recorra de arriba abajo.
+ * Filters by type, groups in the fixed order Lists, Cards, Notes and expenses, Commands, trims
+ * each type and numbers the rows continuously so the up/down keys walk them top to bottom.
  */
 export function groupResults(
   results: readonly PaletteResult[],
@@ -467,15 +467,15 @@ export function flattenGroups(groups: readonly PaletteGroup[]): PaletteRow[] {
   return groups.flatMap((group) => group.rows);
 }
 
-// --- Teclado ------------------------------------------------------------------------------------
+// --- Keyboard ------------------------------------------------------------------------------------
 
-/** Mueve la selección `delta` posiciones, dando la vuelta por los extremos. Sin filas, 0. */
+/** Moves the selection `delta` positions, wrapping at the ends. With no rows, 0. */
 export function moveSelection(current: number, delta: number, count: number): number {
   if (count <= 0) return 0;
   return (((current + delta) % count) + count) % count;
 }
 
-/** Siguiente (o anterior, con `delta` -1) filtro de la lista de chips, en círculo. */
+/** Next (or previous, with `delta` -1) filter in the chip list, in a circle. */
 export function cycleFilter(current: PaletteFilter, delta: 1 | -1): PaletteFilter {
   const index = PALETTE_FILTERS.findIndex((filter) => filter.id === current);
   return PALETTE_FILTERS[moveSelection(index, delta, PALETTE_FILTERS.length)]!.id;

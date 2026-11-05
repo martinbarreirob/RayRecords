@@ -1,5 +1,5 @@
-// La barra ocupa todo el ancho (fondo y línea), pero su contenido se alinea con el de las pantallas:
-// marca a la izquierda, navegación centrada y acciones a la derecha.
+// The bar spans the full width (background and line), but its content lines up with the screens:
+// brand on the left, navigation centered, actions on the right.
 .topbar {
   position: sticky;
   top: 0;
@@ -114,7 +114,7 @@ main {
   display: block;
 }
 
-// Ancho intermedio: la paleta se reduce al icono para que la navegación siga centrada y completa.
+// Medium width: the palette shrinks to its icon so the navigation stays centered and complete.
 @media (width <= 1023px) {
   .palette-trigger {
     justify-content: center;
@@ -129,7 +129,7 @@ main {
 }
 
 @media (width <= 767px) {
-  // Primera fila: marca a la izquierda y acciones a la derecha. Segunda fila: la navegación, que se desliza.
+  // First row: brand left, actions right. Second row: the navigation, which scrolls.
   .topbar-inner {
     grid-template-columns: 1fr auto;
     gap: 0 var(--space-3);

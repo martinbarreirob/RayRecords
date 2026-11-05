@@ -77,19 +77,19 @@ interface PaletteData {
   cards: NoteCard[];
 }
 
-/** «Buscar y ejecutar» (Ctrl+K) o «escribir una nota o tarea» (con «/»). */
+/** "Buscar y ejecutar" (Ctrl+K) or "escribir una nota o tarea" (with "/"). */
 type PaletteMode = 'search' | 'capture';
 
-/** Ayuda del pie con los atajos de sección: «⇧N · ⇧L · ⇧C · ⇧G · ⇧U». */
+/** Footer help with the section shortcuts: "⇧N · ⇧L · ⇧C · ⇧G · ⇧U". */
 const GO_HINT = (Object.keys(GO_TARGETS) as (keyof typeof GO_TARGETS)[])
   .map(shortcutLabel)
   .join(' · ');
 
 /**
- * Cuerpo de la paleta de comandos (Ctrl+K): buscar en listas, tarjetas, notas y gastos, lanzar
- * comandos y, con «/» al principio, escribir una nota o tarea con vista previa de adónde irá (la
- * antigua barra de captura rápida). Se descarga al abrir la paleta por primera vez (ver
- * `CommandPalette`). Es CSS propio y no `p-dialog` por fidelidad al diseño (A5).
+ * Body of the command palette (Ctrl+K): search lists, cards, notes and expenses, run commands and,
+ * with "/" first, write a note or task with a preview of where it will go (the former quick capture
+ * bar). Downloaded the first time the palette opens (see `CommandPalette`). It uses its own CSS and
+ * not `p-dialog`, to match the design (A5).
  */
 @Component({
   selector: 'app-palette-dialog',
@@ -119,36 +119,36 @@ export class PaletteDialog {
   private readonly data = signal<PaletteData | null>(null);
   private readonly remote = signal<RemoteState>(EMPTY_REMOTE);
   protected readonly mode = signal<PaletteMode>('search');
-  /** Guardando lo escrito en modo captura (el campo es de solo lectura hasta que responde la API). */
+  /** Saving what was typed in capture mode (the field is read-only until the API answers). */
   protected readonly saving = signal(false);
-  /** Qué se acaba de guardar, con su enlace y su «Deshacer». */
+  /** What was just saved, with its link and its "Deshacer". */
   protected readonly feedback = signal<CaptureFeedback | null>(null);
-  /** Cómo deshacer lo último guardado (borra el elemento o la tarjeta). */
+  /** How to undo the last save (deletes the item or the card). */
   private undoLast: Observable<unknown> | null = null;
-  /** Error de una acción (crear nota, guardar…); se enseña en el pie de los resultados o sobre la vista previa. */
+  /** Error of an action (create note, save...); shown in the results footer or above the preview. */
   protected readonly statusError = signal('');
   protected readonly goHint = GO_HINT;
 
-  /** Lo escrito para buscar. En modo captura es lo que se guardará, no una búsqueda: queda vacío. */
+  /** What is typed to search. In capture mode it is what will be saved, not a search: it stays empty. */
   protected readonly trimmedQuery = computed(() =>
     this.mode() === 'search' ? this.query().trim() : '',
   );
 
-  /** Área visible de verdad (sin el teclado en pantalla): en móvil la capa se ajusta a ella. `null` = sin dato. */
+  /** Really visible area (without the on-screen keyboard): on mobile the layer fits it. `null` = no data. */
   private readonly visual = signal<{ height: number; top: number } | null>(null);
   protected readonly viewport = computed(() => ({
     height: this.visual() ? `${this.visual()!.height}px` : null,
     top: this.visual() ? `${this.visual()!.top}px` : null,
   }));
 
-  /** Esperando a que lleguen las listas o la respuesta del servidor para la consulta actual. */
+  /** Waiting for the lists or the server response for the current query. */
   private readonly searching = computed(
     () =>
       this.trimmedQuery().length >= MIN_REMOTE_CHARS &&
       (this.data() === null || this.remote().query !== this.trimmedQuery()),
   );
 
-  /** Listas para interpretar lo que se escribe: las recién cargadas por la paleta o, mientras llegan, las del store de listas. */
+  /** Lists used to parse the input: the palette's, or the store's until they load. */
   private readonly captureLists = computed(
     () => this.data()?.lists ?? this.listsStore.lists() ?? null,
   );
@@ -159,7 +159,7 @@ export class PaletteDialog {
   );
   protected readonly prefixes = computed(() => prefixOptions(this.captureLists()));
 
-  /** Cómo se interpreta lo escrito en modo captura, con avisos y adónde irá. */
+  /** How what is typed in capture mode is interpreted, with warnings and where it will go. */
   protected readonly preview = computed(() => {
     if (this.mode() !== 'capture') return null;
     const text = this.query();
@@ -169,7 +169,7 @@ export class PaletteDialog {
   protected readonly suggestions = computed(() =>
     this.mode() === 'capture' ? suggestPrefixes(this.query(), this.prefixes()) : [],
   );
-  /** Lo que hace Esc ahora mismo en modo captura, para el pie. */
+  /** What Esc does right now in capture mode, for the footer. */
   protected readonly escHint = computed(() => {
     if (this.query()) return 'Esc vaciar';
     return this.feedback() ? 'Esc cerrar' : 'Esc volver a buscar';
@@ -197,7 +197,7 @@ export class PaletteDialog {
         username: this.auth.user()?.username ?? '',
       }),
     );
-    // Lo escrito no encaja con nada: se ofrece guardarlo como captura.
+    // What was typed matches nothing: offer to save it as a capture.
     if (query && results.length === 0 && !this.searching()) {
       const parsed = parseQuickCapture(query, { aliases: this.aliases() });
       results.push(captureResult(query, describeCapture(parsed, this.captureLists() ?? lists)));
@@ -232,12 +232,12 @@ export class PaletteDialog {
   });
 
   constructor() {
-    // Cada apertura empieza de cero y carga lo que se busca en local (listas y notas).
+    // Each opening starts from scratch and loads what is searched locally (lists and notes).
     effect(() => {
       if (this.palette.isOpen()) untracked(() => this.reset());
     });
 
-    // Con el teclado en pantalla el alto útil es menor que la ventana: se sigue al visualViewport.
+    // With the on-screen keyboard the usable height is less than the window: follow the visualViewport.
     effect((onCleanup) => {
       const viewport = typeof window === 'undefined' ? null : window.visualViewport;
       if (!this.palette.isOpen() || !viewport) return;
@@ -255,17 +255,17 @@ export class PaletteDialog {
       });
     });
 
-    // El foco va al campo al abrir.
+    // Focus goes to the field on open.
     effect(() => this.field()?.nativeElement.focus());
 
-    // La fila activa siempre a la vista, también cuando cambia la lista.
+    // The active row is always in view, also when the list changes.
     effect(() => {
       const index = this.activeIndex();
       this.groups();
       afterNextRender(() => this.scrollToActive(index), { injector: this.injector });
     });
 
-    // Búsqueda en el servidor: con retardo y cancelando la petición anterior al escribir más.
+    // Server search: debounced and cancelling the previous request when typing more.
     toObservable(
       computed(() => ({ query: this.trimmedQuery(), lists: this.data()?.lists ?? null })),
     )
@@ -279,7 +279,7 @@ export class PaletteDialog {
       .subscribe((remote) => this.remote.set(remote));
   }
 
-  /** Texto de la fila con lo que coincide con lo escrito marcado. «Capturar» no se marca: es lo escrito entero. */
+  /** Row text with what matches the typed text marked. "Capturar" is not marked: it is the whole typed text. */
   protected highlight(row: PaletteRow): HighlightSegment[] {
     return highlightSegments(row.label, row.kind === 'capture' ? '' : this.trimmedQuery());
   }
@@ -297,7 +297,7 @@ export class PaletteDialog {
     this.feedback.set(null);
     this.saving.set(false);
     this.undoLast = null;
-    // Abierta con «/» entra ya en el modo de escribir una nota o tarea.
+    // Opened with "/" it enters write-a-note-or-task mode directly.
     this.mode.set(this.palette.takeCaptureRequest() ? 'capture' : 'search');
     this.data.set(null);
 
@@ -312,10 +312,10 @@ export class PaletteDialog {
     });
   }
 
-  // --- Interacción ---------------------------------------------------------------------------
+  // --- Interaction ---------------------------------------------------------------------------
 
   protected onInput(value: string): void {
-    // «/» como primer carácter es el disparador del modo captura: se consume y no forma parte del texto.
+    // "/" as the first character triggers capture mode: it is consumed and is not part of the text.
     if (this.mode() === 'search' && this.query() === '' && value.startsWith('/')) {
       this.enterCapture(value.slice(1));
       return;
@@ -323,11 +323,11 @@ export class PaletteDialog {
     this.query.set(value);
     this.selected.set(0);
     this.statusError.set('');
-    // Escribir de nuevo descarta la confirmación de lo anterior (con «Deshacer» incluido).
+    // Typing again discards the confirmation of the previous one (including its "Deshacer").
     if (this.mode() === 'capture' && !this.saving()) this.feedback.set(null);
   }
 
-  /** Cambia el texto del campo (lo escrito o lo que se busca) y mantiene el DOM al día aunque el valor no cambie. */
+  /** Sets the field text and syncs the DOM even if the value is unchanged. */
   private setField(value: string): void {
     this.query.set(value);
     const element = this.field()?.nativeElement;
@@ -338,7 +338,7 @@ export class PaletteDialog {
     queueMicrotask(() => this.field()?.nativeElement.focus());
   }
 
-  /** Entra en «escribir una nota o tarea», con `text` ya escrito (vacío al venir de «/»). */
+  /** Enters "write a note or task", with `text` already typed (empty when coming from "/"). */
   protected enterCapture(text = ''): void {
     this.mode.set('capture');
     this.filter.set('all');
@@ -349,7 +349,7 @@ export class PaletteDialog {
     this.focusField();
   }
 
-  /** Vuelve a buscar y ejecutar, con el campo vacío. */
+  /** Goes back to search and run, with the field empty. */
   protected exitCapture(): void {
     if (this.saving()) return;
     this.mode.set('search');
@@ -359,7 +359,7 @@ export class PaletteDialog {
     this.focusField();
   }
 
-  /** Acepta una sugerencia de prefijo («com» → «compra: ») y deja el cursor al final del campo. */
+  /** Accepts a prefix suggestion ("com" becomes "compra: ") and leaves the cursor at the end of the field. */
   protected pickPrefix(option: PrefixOption): void {
     if (this.saving()) return;
     this.statusError.set('');
@@ -375,7 +375,7 @@ export class PaletteDialog {
   }
 
   protected onRowHover(event: MouseEvent, row: PaletteRow): void {
-    // Los `mousemove` sintéticos tras un scroll no traen movimiento: no deben robar la selección.
+    // Synthetic `mousemove` events after a scroll carry no movement: they must not steal the selection.
     if ((event.movementX || event.movementY) && row.index !== this.selected()) {
       this.selected.set(row.index);
     }
@@ -385,7 +385,7 @@ export class PaletteDialog {
     if (event.target === event.currentTarget) this.palette.hide();
   }
 
-  /** Clic en la capa sin tocar el campo: el foco no se pierde. */
+  /** Click on the layer without touching the field: focus is not lost. */
   protected keepInputFocus(event: MouseEvent): void {
     if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
   }
@@ -437,8 +437,8 @@ export class PaletteDialog {
   }
 
   /**
-   * Esc: al buscar, cierra. Al escribir una nota o tarea, primero vacía lo escrito, luego (sin texto)
-   * sale a la búsqueda; si acaba de guardar algo, cierra del todo.
+   * Esc: while searching, closes. While writing a note or task, first clears the text, then (with no
+   * text) goes back to search; if something was just saved, closes completely.
    */
   private onEscape(): void {
     if (this.mode() === 'search') {
@@ -460,14 +460,14 @@ export class PaletteDialog {
         this.save(this.query());
         break;
       case 'Tab': {
-        // Tab completa el prefijo sugerido; si no hay, el foco se queda en el campo.
+        // Tab completes the suggested prefix; if there is none, focus stays in the field.
         event.preventDefault();
         const first = this.suggestions()[0];
         if (first && !event.shiftKey) this.pickPrefix(first);
         break;
       }
       case 'Backspace':
-        // Con el campo vacío, borrar sale del modo (una pulsación suelta, no la repetición al mantener).
+        // With an empty field, backspace leaves the mode (a single press, not the repeat from holding it).
         if (!event.repeat && this.query() === '' && !this.saving()) {
           event.preventDefault();
           this.exitCapture();
@@ -486,7 +486,7 @@ export class PaletteDialog {
     list.querySelector(`#palette-option-${index}`)?.scrollIntoView({ block: 'nearest' });
   }
 
-  // --- Acciones ------------------------------------------------------------------------------
+  // --- Actions ------------------------------------------------------------------------------
 
   protected run(row: PaletteResult): void {
     this.statusError.set('');
@@ -508,7 +508,7 @@ export class PaletteDialog {
         break;
       case 'logout':
         this.palette.hide(false);
-        // Con error de red también se sale de la UI, igual que el botón «Salir» del shell.
+        // On a network error the UI is left too, like the shell's "Salir" button.
         this.auth.logout().subscribe({
           complete: () => void this.router.navigate(['/login']),
           error: () => void this.router.navigate(['/login']),
@@ -520,7 +520,7 @@ export class PaletteDialog {
     }
   }
 
-  /** «Nueva tarjeta vacía»: crea una tarjeta en blanco en el lienzo y va a Notas a editarla. */
+  /** "Nueva tarjeta vacía": creates a blank card on the canvas and goes to Notas to edit it. */
   private newNote(): void {
     this.api.createNoteCard({ text: '' }).subscribe({
       next: (card) => {
@@ -534,15 +534,15 @@ export class PaletteDialog {
     });
   }
 
-  /** Enter o «Añadir» en modo captura. */
+  /** Enter or "Añadir" in capture mode. */
   protected submit(): void {
     this.save(this.query());
   }
 
   /**
-   * Guarda `text` (el servidor lo interpreta con los alias reales). Desde la búsqueda (Ctrl+Enter o la
-   * fila «Capturar») pasa antes al modo captura, para que el resultado, el error y el campo vacío para
-   * la siguiente sean los mismos. Con error el texto se conserva para reintentar.
+   * Saves `text` (the server interprets it with the real aliases). From search (Ctrl+Enter or the
+   * "Capturar" row) it first switches to capture mode, so the result, the error and the empty field for
+   * the next one are the same. On error the text is kept to retry.
    */
   private save(text: string): void {
     if (this.saving()) return;
@@ -584,7 +584,7 @@ export class PaletteDialog {
     });
   }
 
-  /** Confirmación breve: «Añadido a Compras · Ver · Deshacer». */
+  /** Brief confirmation: "Añadido a Compras · Ver · Deshacer". */
   private showSaved(response: Exclude<CaptureResponse, { kind: 'empty' }>): void {
     const warning = response.warning ? ` · ${response.warning}` : '';
     if (response.kind === 'item') {
@@ -623,7 +623,7 @@ export class PaletteDialog {
     });
   }
 
-  /** «Ver»: cierra la paleta y va a donde está lo guardado. */
+  /** "Ver": closes the palette and goes to where the saved item is. */
   protected open(url: string): void {
     this.palette.hide(false);
     void this.router.navigateByUrl(url);

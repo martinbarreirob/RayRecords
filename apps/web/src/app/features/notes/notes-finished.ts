@@ -2,7 +2,7 @@ import { Component, input, output } from '@angular/core';
 import type { NoteCard } from '@rayrecords/shared';
 import { formatStamp, splitNoteText } from './note-board.logic';
 
-/** Panel de «Terminadas»: notas hechas hace más de 24 h, ya fuera del lienzo, con «Recuperar». */
+/** «Terminadas» panel: notes done more than 24 h ago, already off the canvas, with «Recuperar». */
 @Component({
   selector: 'app-notes-finished',
   host: { id: 'notes-finished', role: 'region', 'aria-label': 'Notas terminadas' },

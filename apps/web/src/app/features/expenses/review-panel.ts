@@ -29,21 +29,21 @@ import {
   suggestionIndex,
 } from './review-logic';
 
-/** Cuántos grupos se piden de una vez y cuándo se pide más. */
+/** How many groups to fetch at once and when to fetch more. */
 const PAGE = 20;
 const REFILL_BELOW = 4;
 
 interface Decision {
   group: ReviewGroup;
   category: string;
-  /** Regla que creó la decisión; llega cuando responde la API. */
+  /** Rule created by the decision; arrives when the API responds. */
   ruleId: string | null;
 }
 
 /**
- * Revisión de movimientos sin categoría, de uno en uno y con el teclado: se ve un comercio (con todos
- * sus movimientos), se pulsa 1–4 para una sugerencia o C para buscar, y pasa al siguiente.
- * Lo pendiente vive en la base de datos (es lo que no tiene categoría), así que no se pierde al salir.
+ * Keyboard-driven review of uncategorised movements, one at a time: a merchant is shown (with all
+ * its movements), 1-4 picks a suggestion or C searches, then it moves on to the next.
+ * Pending work lives in the database (it is whatever has no category), so nothing is lost on exit.
  */
 @Component({
   selector: 'app-review-panel',
@@ -213,7 +213,7 @@ export class ReviewPanel implements OnInit, OnDestroy {
   private readonly creating = signal(false);
   protected createRule = true;
 
-  /** Pendientes que quedan (se descuentan al decidir y se devuelven al deshacer) y los del inicio. */
+  /** Pending count (decremented on decide, restored on undo) and the count at the start. */
   protected readonly remaining = signal(0);
   protected readonly groupsLeft = signal(0);
   private readonly initial = signal(0);
@@ -228,7 +228,7 @@ export class ReviewPanel implements OnInit, OnDestroy {
   protected readonly percent = computed(() =>
     progressPercent(this.initial() - this.remaining(), this.initial()),
   );
-  /** Todas las categorías de más a menos usada (fijado al abrir la revisión) y Otros la última. */
+  /** All categories from most to least used (fixed when the review opens), Otros last. */
   private readonly usage = signal<{ category: string; count: number }[]>([]);
   protected readonly ordered = computed(() => orderByUsage(this.store.categories(), this.usage()));
   protected readonly newCategory = computed(() =>
@@ -247,7 +247,7 @@ export class ReviewPanel implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.noticeTimer);
-    // El contador de la pestaña se refresca una sola vez, al salir, y no tras cada decisión.
+    // The tab counter refreshes once on exit, not after every decision.
     this.store.changed();
   }
 
@@ -301,7 +301,7 @@ export class ReviewPanel implements OnInit, OnDestroy {
     return g.recentCents.map((c) => formatCents(c)).join(' · ');
   }
 
-  /** Asigna la categoría al grupo actual y pasa al siguiente sin esperar al servidor. */
+  /** Assigns the category to the current group and moves on without waiting for the server. */
   protected choose(category: string): void {
     const group = this.current();
     if (!group) return;
@@ -335,8 +335,8 @@ export class ReviewPanel implements OnInit, OnDestroy {
   }
 
   /**
-   * Lanza una petición en segundo plano. Van de una en una y en orden: deshacer no puede adelantarse a
-   * la decisión que deshace. Los errores se muestran; `onError` revierte el cambio optimista.
+   * Runs a request in the background. They run one at a time, in order: an undo must not overtake
+   * the decision it undoes. Errors are shown; `onError` reverts the optimistic change.
    */
   private track<T>(request: () => Observable<T>, onOk: (result: T) => void, onError?: () => void) {
     this.inFlight++;
@@ -369,7 +369,7 @@ export class ReviewPanel implements OnInit, OnDestroy {
     );
   }
 
-  /** Devuelve el grupo al principio de la cola y descuenta lo resuelto. */
+  /** Puts the group back at the front of the queue and takes back the resolved count. */
   private revert(decision: Decision): void {
     this.groups.update((list) => [decision.group, ...list.filter((g) => g !== decision.group)]);
     this.remaining.update((n) => n + decision.group.ids.length);
@@ -395,7 +395,7 @@ export class ReviewPanel implements OnInit, OnDestroy {
     else if (created) this.createAndChoose(created);
   }
 
-  /** Crea la categoría y, cuando existe en el servidor, se la asigna al grupo actual. */
+  /** Creates the category and, once it exists on the server, assigns it to the current group. */
   protected createAndChoose(created: { key: string; name: string }): void {
     if (this.creating()) return;
     this.creating.set(true);
@@ -432,10 +432,10 @@ export class ReviewPanel implements OnInit, OnDestroy {
       this.undo();
       return;
     }
-    // `/` y Mayús+letra son atajos globales de la app (captura y navegación): no se tocan.
+    // `/` and Shift+letter are global app shortcuts (capture and navigation); leave them alone.
     if (event.ctrlKey || event.shiftKey || typing) return;
 
-    // 1–9 son siempre las mismas categorías, en el orden en que se muestran.
+    // 1-9 always map to the same categories, in the order they are shown.
     const index = suggestionIndex(event.key);
     if (index !== null) {
       const category = this.ordered()[index];

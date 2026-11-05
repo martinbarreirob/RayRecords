@@ -29,7 +29,7 @@
   margin-bottom: var(--space-4);
 }
 
-/* Formulario de alta */
+/* Create form */
 .add {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 168px 120px 200px auto;
@@ -52,7 +52,7 @@
   font-size: var(--text-sm);
 }
 
-/* Mes: rejilla + detalle del día */
+/* Month: grid + day detail */
 .month-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -106,7 +106,7 @@
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-/* El botón del número cubre toda la celda: se puede pulsar en cualquier punto y con teclado. */
+/* The number button covers the whole cell: it can be pressed anywhere and with the keyboard. */
 .day {
   display: block;
   margin: 0;
@@ -247,7 +247,7 @@ td.outside .chips {
   font-size: var(--text-xs);
 }
 
-/* Detalle del día */
+/* Day detail */
 .day-panel {
   display: flex;
   flex-direction: column;
@@ -265,7 +265,7 @@ td.outside .chips {
   align-self: flex-start;
 }
 
-/* Filas de elementos (detalle del día y agenda) */
+/* Item rows (day detail and agenda) */
 .rows {
   display: flex;
   flex-direction: column;
@@ -417,7 +417,7 @@ td.outside .chips {
 }
 
 @media (width <= 767px) {
-  /* Rejilla compacta: solo el número y hasta tres puntos; el detalle va en el panel del día. */
+  /* Compact grid: only the number and up to three dots; the detail goes in the day panel. */
   .grid th {
     padding: var(--space-2) 0;
     text-align: center;

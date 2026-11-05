@@ -1,14 +1,14 @@
 /*
- * Aparición diferida de los esqueletos de carga (se usa con @use en el .scss del componente).
- * Empiezan invisibles y se muestran a los 150 ms: una carga rápida termina antes y no parpadea nada.
- * Sin temporizadores: lo resuelve el retraso de la animación.
+ * Delayed appearance of the loading skeletons (used with @use in the component .scss).
+ * They start invisible and show after 150 ms: a fast load finishes first and nothing flickers.
+ * No timers: the animation delay does it.
  */
 @mixin reveal {
   opacity: 0;
   animation: skeleton-reveal 0.2s ease-out 0.15s forwards;
 }
 
-/* Contenido anterior que se recarga: se atenúa en lugar de desaparecer. */
+/* Previous content being reloaded: dimmed instead of disappearing. */
 @mixin refreshing {
   transition: opacity 0.15s;
 

@@ -106,13 +106,13 @@ type View = 'list' | 'board';
       margin-bottom: var(--space-3);
     }
 
-    /* Título fantasma mientras aún no se sabe qué lista es: ocupa lo que el encabezado real. */
+    /* Ghost title while the list is still unknown: takes the space of the real header. */
     .skeleton.head-skeleton {
       width: 240px;
       max-width: 100%;
       height: 30px;
       margin-bottom: var(--space-5);
-      /* Aparece con retraso, como el resto del esqueleto: una carga rápida no lo muestra. */
+      /* Appears with a delay, like the rest of the skeleton: a fast load never shows it. */
       opacity: 0;
       animation:
         skeleton-shimmer 1.4s ease-in-out infinite,
@@ -296,7 +296,7 @@ export class ListDetailPage {
   private readonly confirmation = inject(ConfirmationService);
   protected readonly store = inject(ListsStore);
 
-  /** Parámetro `:slug` de la ruta (llega por `withComponentInputBinding`). */
+  /** `:slug` route parameter (arrives via `withComponentInputBinding`). */
   readonly slug = input.required<string>();
   protected readonly list = computed(() => this.store.lists()?.find((l) => l.slug === this.slug()));
 
@@ -307,7 +307,7 @@ export class ListDetailPage {
   protected readonly tag = signal('');
   protected readonly view = signal<View>('board');
   protected readonly editing = signal<Item | null>(null);
-  /** Etiquetas vistas en la lista (se acumulan para que el filtro no pierda opciones al aplicarse). */
+  /** Labels seen in the list (accumulated so the filter does not lose options when applied). */
   protected readonly knownTags = signal<string[]>([]);
 
   protected readonly filtering = computed(() => !!this.q().trim() || !!this.tag());
@@ -321,7 +321,7 @@ export class ListDetailPage {
   private pendingMoves = 0;
 
   constructor() {
-    // Recarga al cambiar de lista, de filtros o cuando cualquier otra pantalla avisa de cambios.
+    // Reload when the list or filters change, or when another screen reports changes.
     effect(() => {
       const list = this.list();
       const filters: ItemFilters = {
@@ -335,7 +335,7 @@ export class ListDetailPage {
 
   private load(list: List, filters: ItemFilters): void {
     if (list.id !== this.currentListId) {
-      // Otra lista: se parte de cero (filtros, etiquetas conocidas, vista).
+      // Another list: start from scratch (filters, known labels, view).
       this.currentListId = list.id;
       this.items.set(null);
       this.error.set('');
@@ -345,7 +345,7 @@ export class ListDetailPage {
       if (this.q() || this.tag()) {
         this.q.set('');
         this.tag.set('');
-        return; // el cambio de filtros vuelve a lanzar la carga
+        return; // the filter change triggers the load again
       }
     }
     this.api.items(list.id, filters).subscribe({
@@ -405,7 +405,7 @@ export class ListDetailPage {
     );
     this.error.set('');
     this.store
-      // `fieldDefs` se reenvía: el esquema de edición de la API lo vacía si no llega (ver informe).
+      // `fieldDefs` is forwarded because the API's edit schema clears it when absent.
       .update(list, { fieldDefs: list.fieldDefs, board: { columns: [...columns, { key, label }] } })
       .subscribe({ error: this.fail });
   }
@@ -416,7 +416,7 @@ export class ListDetailPage {
       .subscribe({ next: () => this.reload(), error: this.fail });
   }
 
-  /** Mueve una tarjeta: se refleja al instante y se guarda; si falla, se recarga el estado real. */
+  /** Moves a card: reflected at once and saved; if it fails, the real state is reloaded. */
   protected move({ id, request }: BoardMove): void {
     const column = request.column;
     if (column) {
@@ -426,7 +426,7 @@ export class ListDetailPage {
     this.pendingMoves++;
     this.api.moveItem(id, request).subscribe({
       next: () => {
-        // Con varios movimientos seguidos solo se recarga al terminar el último.
+        // With several moves in a row, reload only after the last one.
         if (--this.pendingMoves === 0) this.reload();
       },
       error: (error: unknown) => {
@@ -447,7 +447,7 @@ export class ListDetailPage {
     this.refocusBoard();
   }
 
-  /** El diálogo suelta el foco al terminar su animación de cierre: se devuelve a la tarjeta después. */
+  /** The dialog releases focus when its close animation ends: focus goes back to the card afterwards. */
   private refocusBoard(): void {
     setTimeout(() => this.board()?.focusCard(), 250);
   }

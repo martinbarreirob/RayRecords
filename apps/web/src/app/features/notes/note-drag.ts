@@ -11,26 +11,26 @@ import {
   type Rect,
 } from '@rayrecords/shared';
 
-/** Estado de un arrastre en curso y reglas del mismo. Todo son funciones puras, sin DOM. */
+/** State of a drag in progress and its rules. All pure functions, no DOM. */
 
 export interface Drag {
   kind: 'card' | 'group' | 'resize';
-  /** Tarjeta o grupo que se arrastra. */
+  /** Card or group being dragged. */
   id: string;
-  /** Puntero al empezar. */
+  /** Pointer at the start. */
   startX: number;
   startY: number;
-  /** Posición y tamaño de partida, en coordenadas del lienzo. */
+  /** Starting position and size, in canvas coordinates. */
   originX: number;
   originY: number;
   originW: number;
   originH: number;
-  /** Posición y tamaño actuales mientras se arrastra. */
+  /** Current position and size while dragging. */
   x: number;
   y: number;
   w: number;
   h: number;
-  /** Grupo sobre el que cae la tarjeta arrastrada. */
+  /** Group the dragged card drops onto. */
   over: string | null;
   moved: boolean;
   additive: boolean;
@@ -38,8 +38,8 @@ export interface Drag {
 
 export const MIN_GROUP = 160;
 /**
- * Por debajo de esta distancia (suma de |dx| y |dy|) es un clic, no un arrastre. Es generoso a
- * propósito: un clic con un pequeño temblor de la mano no debe mover la tarjeta.
+ * Below this distance (sum of |dx| and |dy|) it is a click, not a drag. Deliberately generous:
+ * a click with a slight hand tremor must not move the card.
  */
 export const DRAG_THRESHOLD = 8;
 
@@ -69,7 +69,7 @@ export function startDrag(
   };
 }
 
-/** Nuevo estado del arrastre con el puntero en `pointer`. Un movimiento mínimo no cuenta. */
+/** New drag state with the pointer at `pointer`. A minimal movement does not count. */
 export function advanceDrag(drag: Drag, pointer: Point, groups: readonly NoteGroup[]): Drag {
   const dx = pointer.x - drag.startX;
   const dy = pointer.y - drag.startY;
@@ -86,7 +86,7 @@ export function advanceDrag(drag: Drag, pointer: Point, groups: readonly NoteGro
 
   const x = clampCoord(drag.originX + dx);
   const y = clampCoord(drag.originY + dy);
-  // La tarjeta cae en el grupo que haya bajo su centro.
+  // The card drops into the group under its centre.
   const over =
     drag.kind === 'card'
       ? (groupAtPoint(groups, { x: x + drag.w / 2, y: y + 24 })?.id ?? null)
@@ -101,14 +101,14 @@ export interface CardMove {
   groupId: string | null;
 }
 
-/** Tarjetas que viajan con el arrastre: toda la selección si incluye la que se coge; si no, solo ella. */
+/** Cards that travel with the drag: the whole selection if it includes the grabbed one; otherwise only it. */
 export function draggedIds(drag: Drag, selected: ReadonlySet<string>): ReadonlySet<string> {
   return selected.has(drag.id) ? selected : new Set([drag.id]);
 }
 
 /**
- * Cómo se ven las tarjetas mientras se arrastran: cada una en su sitio del lienzo más el desplazamiento
- * del arrastre. Salen sueltas (sin grupo) porque se pintan por encima de todo el lienzo.
+ * How the cards look while dragged: each at its place on the canvas plus the drag offset. They come
+ * out loose (no group) because they are painted above the whole canvas.
  */
 export function dragPreview(
   drag: Drag,
@@ -128,11 +128,11 @@ export function dragPreview(
 }
 
 /**
- * Movimientos al soltar: la tarjeta arrastrada y el resto de la selección se desplazan lo mismo.
- * `absolute` da la posición en el lienzo de cada tarjeta. Si cae sobre un grupo, pasan a ser suyas y
- * se colocan en su pila (ver `stackOrder`) según la altura a la que se suelten, entre las que ya
- * estaban; la `y` de las que cambian de puesto se reasigna y `x` queda en 0. Si no, quedan sueltas.
- * `heightOf` da el alto real de una tarjeta (por defecto, la estimación).
+ * Moves on drop: the dragged card and the rest of the selection shift by the same amount.
+ * `absolute` gives each card's canvas position. If it lands on a group, they become its own and are
+ * placed in its stack (see `stackOrder`) by the height they are dropped at, among those already
+ * there; the `y` of those that change place is reassigned and `x` becomes 0. Otherwise they stay loose.
+ * `heightOf` gives a card's real height (by default, the estimate).
  */
 export function dropMoves(
   drag: Drag,
@@ -167,7 +167,7 @@ export function dropMoves(
   return moves;
 }
 
-/** Rectángulo del grupo nuevo que envuelve a estas tarjetas: margen alrededor y hueco para el título. */
+/** Rectangle of the new group wrapping these cards: margin around and room for the title. */
 export function groupAround(
   cards: readonly NoteCard[],
   absolute: (card: NoteCard) => Point,

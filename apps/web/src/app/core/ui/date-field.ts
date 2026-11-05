@@ -18,16 +18,16 @@ import { parseIsoDate, toIsoDate } from './date-time-logic';
 import { prefersNativePickers } from './native-pickers';
 
 /**
- * Campo de fecha. El valor es un texto `YYYY-MM-DD` (vacío = `''`), el mismo que da un
- * `<input type="date">`, así que sustituye a ese input sin tocar el resto del código.
+ * Date field. The value is a `YYYY-MM-DD` string (empty = `''`), the same one an
+ * `<input type="date">` gives, so it replaces that input without touching the rest of the code.
  *
- * - Táctil o sin cursor: el `<input type="date">` nativo.
- * - Escritorio: `p-datepicker` (calendario desplegable en español, semana desde el lunes, `dd/mm/aaaa`,
- *   botón «Hoy», panel anexado al `body` para que ningún diálogo lo recorte). Se abre al pulsar el
- *   campo o con ↓; Esc lo cierra sin cerrar también el diálogo o formulario que lo contiene.
+ * - Touch or no cursor: the native `<input type="date">`.
+ * - Desktop: `p-datepicker` (dropdown calendar in Spanish, week starting Monday, `dd/mm/aaaa`,
+ *   "Hoy" button, panel appended to `body` so no dialog clips it). It opens on click on the
+ *   field or with the down arrow; Esc closes it without also closing the enclosing dialog or form.
  *
- * Se usa con `[(value)]="señal"` o con `ngModel` / formularios reactivos. Requiere que la ruta que lo
- * muestre declare `providePrimeNgTheme()`. Los estilos del panel están en `date-field.scss`.
+ * Use it with `[(value)]="signal"` or with `ngModel` / reactive forms. The route that shows it must
+ * declare `providePrimeNgTheme()`. The panel styles are in `date-field.scss`.
  */
 @Component({
   selector: 'app-date-field',
@@ -83,20 +83,20 @@ import { prefersNativePickers } from './native-pickers';
   ],
 })
 export class DateField implements ControlValueAccessor {
-  /** Fecha como `YYYY-MM-DD`; `''` si no hay. */
+  /** Date as `YYYY-MM-DD`; `''` if none. */
   readonly value = model('');
-  /** `id` del campo de entrada (para enlazar una `label for`). */
+  /** `id` of the input (to link a `label for`). */
   readonly inputId = input<string>();
   readonly ariaLabel = input<string>();
   readonly required = input(false, { transform: booleanAttribute });
-  /** Límites como `YYYY-MM-DD`. */
+  /** Limits as `YYYY-MM-DD`. */
   readonly min = input('');
   readonly max = input('');
   readonly placeholder = input('dd/mm/aaaa');
 
   protected readonly native = prefersNativePickers();
   protected readonly disabled = signal(false);
-  /** Panel abierto (hasta que termina su animación de cierre): lo usa el control de Esc. */
+  /** Panel open (until its close animation ends): used by the Esc handling. */
   private readonly open = signal(false);
   private readonly picker = viewChild(DatePicker);
 
@@ -127,7 +127,7 @@ export class DateField implements ControlValueAccessor {
     this.disabled.set(disabled);
   }
 
-  /** Cambio hecho por el usuario (desde el calendario, escribiendo o con el selector nativo). */
+  /** Change made by the user (from the calendar, typing or the native picker). */
   protected commit(value: string): void {
     if (value === this.value()) return;
     this.value.set(value);
@@ -144,7 +144,7 @@ export class DateField implements ControlValueAccessor {
 
   protected shown(panel: HTMLElement): void {
     this.open.set(true);
-    // El panel vive en el `body`: su Esc tampoco debe llegar al diálogo.
+    // The panel lives in `body`: its Esc must not reach the dialog either.
     panel.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') event.stopPropagation();
     });
@@ -155,7 +155,7 @@ export class DateField implements ControlValueAccessor {
     this.onTouched();
   }
 
-  /** Abre con un clic en el campo (por defecto PrimeNG solo abre al enfocar, que aquí estorba). */
+  /** Opens on a click in the field (PrimeNG only opens on focus by default, which gets in the way here). */
   protected onClick(event: Event): void {
     const target = event.target as HTMLElement;
     if (this.native || this.disabled() || !target.closest('.p-datepicker-input')) return;

@@ -1,7 +1,7 @@
 :host {
   display: block;
   flex: 1;
-  /* Misma altura mínima que la lista de resultados: al entrar en el modo no hay saltos. */
+  /* Same minimum height as the results list: no jump when entering the mode. */
   min-height: min(260px, 40dvh);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -55,7 +55,7 @@ p {
   cursor: pointer;
 }
 
-/* Vista previa: adónde irá y qué se guardará. */
+/* Preview: where it will go and what will be saved. */
 .plan {
   display: flex;
   flex-direction: column;
@@ -112,7 +112,7 @@ p {
   font-size: var(--text-sm);
 }
 
-/* Sugerencias de prefijo: la primera se acepta con Tab; todas con un toque. */
+/* Prefix suggestions: the first is accepted with Tab; all with a tap. */
 .suggest {
   display: flex;
   flex-wrap: wrap;
@@ -138,7 +138,7 @@ p {
   }
 }
 
-/* Ayuda con ejemplos cuando aún no hay texto. */
+/* Help with examples while there is no text yet. */
 .help {
   display: flex;
   flex-direction: column;

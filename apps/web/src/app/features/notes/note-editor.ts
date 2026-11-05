@@ -1,11 +1,11 @@
 import { Directive, ElementRef, afterNextRender, inject } from '@angular/core';
 
-/** Con el teclado en pantalla tarda en aparecer y reduce la altura visible: se espera antes de recolocar. */
+/** The on-screen keyboard appears late and shrinks the viewport: wait before repositioning. */
 const KEYBOARD_DELAY_MS = 300;
 
 /**
- * Al aparecer, el campo toma el foco con el cursor al final del texto y se asegura de que se vea
- * entero (con sus botones) aunque salga el teclado del móvil.
+ * On appearing, the field takes focus with the cursor at the end of the text and makes sure it is
+ * fully visible (with its buttons) even when the mobile keyboard shows.
  */
 @Directive({ selector: 'textarea[appNoteEditor]' })
 export class NoteEditor {

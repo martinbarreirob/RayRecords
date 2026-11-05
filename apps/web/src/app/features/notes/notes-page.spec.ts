@@ -57,8 +57,8 @@ describe('NotesPage', () => {
       (b.getAttribute('aria-label') ?? b.textContent ?? '').replace(/\s+/g, ' ').trim(),
     );
 
-  describe('esqueleto de carga', () => {
-    it('en escritorio, mientras carga, muestra el esqueleto dentro del lienzo y no el vacío', () => {
+  describe('loading skeleton', () => {
+    it('on desktop, while loading, shows the skeleton inside the canvas and not the empty state', () => {
       const { el } = render();
 
       const skeleton = el.querySelector('.board.loading app-notes-skeleton');
@@ -71,7 +71,7 @@ describe('NotesPage', () => {
       expect(el.textContent).not.toContain('Un folio en blanco');
     });
 
-    it('en móvil, mientras carga, muestra filas fantasma (5 o 6) y no el vacío', () => {
+    it('on mobile, while loading, shows ghost rows (5 or 6) and not the empty state', () => {
       mobile = true;
       const { el } = render();
 
@@ -84,7 +84,7 @@ describe('NotesPage', () => {
       expect(el.textContent).not.toContain('Un folio en blanco');
     });
 
-    it('al llegar los datos el esqueleto desaparece y aparecen las tarjetas', () => {
+    it('when data arrives the skeleton disappears and the cards appear', () => {
       const { fixture, el } = render();
 
       board$.next({ cards: [card(1), card(2)], groups: [] });
@@ -95,7 +95,7 @@ describe('NotesPage', () => {
       expect(el.textContent).not.toContain('Un folio en blanco');
     });
 
-    it('el vacío solo se muestra tras cargar un lienzo sin notas', () => {
+    it('the empty state only shows after loading a canvas with no notes', () => {
       const { fixture, el } = render();
       expect(el.textContent).not.toContain('Un folio en blanco');
 
@@ -107,8 +107,8 @@ describe('NotesPage', () => {
     });
   });
 
-  describe('cabecera', () => {
-    it('en escritorio: Nueva nota, Ordenar, Terminadas y el candado al final', () => {
+  describe('header', () => {
+    it('on desktop: Nueva nota, Ordenar, Terminadas and the lock at the end', () => {
       const { fixture, el } = render();
       board$.next({ cards: [card(1)], groups: [] });
       fixture.detectChanges();
@@ -121,7 +121,7 @@ describe('NotesPage', () => {
       ]);
     });
 
-    it('«Ordenar» lleva texto visible junto al icono', () => {
+    it('«Ordenar» has visible text next to the icon', () => {
       const { el } = render();
 
       const arrange = el.querySelector<HTMLElement>('button[aria-label="Ordenar notas"]');
@@ -129,7 +129,7 @@ describe('NotesPage', () => {
       expect(arrange?.querySelector('.pi-th-large')).not.toBeNull();
     });
 
-    it('ya no hay botones de agrupar ni de marcar hecha en la cabecera', () => {
+    it('there are no group or mark-as-done buttons in the header any more', () => {
       const { el } = render();
 
       const text = el.querySelector('header')?.textContent ?? '';
@@ -138,7 +138,7 @@ describe('NotesPage', () => {
       expect(text).not.toContain('Reabrir');
     });
 
-    it('en móvil solo queda «Terminadas»', () => {
+    it('on mobile only «Terminadas» remains', () => {
       mobile = true;
       const { el } = render();
 

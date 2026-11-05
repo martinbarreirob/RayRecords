@@ -15,7 +15,7 @@ const entry = {
   listSlug: 'tareas',
 } as CalendarEntry;
 
-describe('CalendarPage: carga', () => {
+describe('CalendarPage: loading', () => {
   let requests: { from: string; to: string; subject: Subject<CalendarEntry[]> }[];
 
   function setup(): ComponentFixture<CalendarPage> {
@@ -59,7 +59,7 @@ describe('CalendarPage: carga', () => {
   const click = (fixture: ComponentFixture<CalendarPage>, label: string) =>
     el(fixture).querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!.click();
 
-  it('en la primera carga pinta la rejilla fantasma y no el estado vacío', () => {
+  it('on first load draws the ghost grid and not the empty state', () => {
     const fixture = setup();
     expect(ghostCells(fixture)).toBeGreaterThanOrEqual(35);
     expect(el(fixture).querySelector('.day-panel .rows.skel-in')).not.toBeNull();
@@ -69,7 +69,7 @@ describe('CalendarPage: carga', () => {
     expect(el(fixture).querySelector('.grid-card')?.getAttribute('aria-busy')).toBe('true');
   });
 
-  it('con los datos desaparece el esqueleto y salen los días y los elementos', async () => {
+  it('with data the skeleton goes away and the days and items appear', async () => {
     const fixture = setup();
     await respond(fixture, 0, [entry]);
 
@@ -80,7 +80,7 @@ describe('CalendarPage: carga', () => {
     expect(el(fixture).querySelector('[role="status"]')?.textContent?.trim()).toBe('');
   });
 
-  it('un día sin elementos muestra «vacío» solo después de cargar', async () => {
+  it('a day without items shows "vacío" only after loading', async () => {
     const fixture = setup();
     expect(el(fixture).querySelector('.day-panel .empty')).toBeNull();
     await respond(fixture, 0, []);
@@ -89,7 +89,7 @@ describe('CalendarPage: carga', () => {
     );
   });
 
-  it('al cambiar a un mes sin datos vuelve el esqueleto; al volver a uno visto, no', async () => {
+  it('switching to a month without data brings back the skeleton; going back to a seen one does not', async () => {
     const fixture = setup();
     await respond(fixture, 0, [entry]);
 
@@ -103,13 +103,13 @@ describe('CalendarPage: carga', () => {
 
     click(fixture, 'Mes anterior');
     await settle(fixture);
-    // El mes anterior ya se vio: se enseña lo que había, atenuado mientras se renueva.
+    // The previous month was already seen: what was there is shown, dimmed while it refreshes.
     expect(ghostCells(fixture)).toBe(0);
     expect(el(fixture).querySelector('.grid-card')?.classList).toContain('is-refreshing');
     expect(el(fixture).querySelector('.day-panel')?.textContent).toContain('Llamar al dentista');
   });
 
-  it('con datos ya cargados, una recarga atenúa en vez de volver al esqueleto', async () => {
+  it('with data already loaded, a reload dims instead of going back to the skeleton', async () => {
     const fixture = setup();
     await respond(fixture, 0, [entry]);
     TestBed.inject(RefreshBus).changed();
@@ -122,7 +122,7 @@ describe('CalendarPage: carga', () => {
     expect(el(fixture).querySelector('.grid-card')?.classList).not.toContain('is-refreshing');
   });
 
-  it('si la carga falla, no se queda en esqueleto: avisa del error', async () => {
+  it('if loading fails it does not stay on the skeleton: it shows the error', async () => {
     const api = {
       lists: () => of([]),
       calendar: () => throwError(() => new Error('sin red')),

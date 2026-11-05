@@ -113,11 +113,11 @@ describe('PaletteDialog', () => {
     await fixture.whenStable();
   }
 
-  it('cerrada no pinta nada', () => {
+  it('closed it renders nothing', () => {
     expect(el().querySelector('.panel')).toBeNull();
   });
 
-  it('abierta es un diálogo modal con el campo enfocado y los comandos', async () => {
+  it('open it is a modal dialog with the field focused and the commands', async () => {
     document.body.append(el());
     await open();
 
@@ -129,7 +129,7 @@ describe('PaletteDialog', () => {
     expect(active()).toContain('Escribir una nota o tarea');
     expect(el().querySelector('.row.active .kbd.enter')).not.toBeNull();
     expect(input().placeholder).toBe('Buscar, ejecutar o escribir / para crear…');
-    // La primera fila lleva el atajo «/» y cada «Ir a» el suyo con Mayús; ya no existe la secuencia G.
+    // The first row carries the "/" shortcut and each "Ir a" its own with Shift; the G sequence no longer exists.
     const keysOf = (text: string) =>
       [
         ...[...el().querySelectorAll('.row')]
@@ -143,7 +143,7 @@ describe('PaletteDialog', () => {
     expect(el().querySelector('.foot')?.textContent).not.toContain('G N');
   });
 
-  it('al escribir busca en listas y notas, agrupado por tipo', async () => {
+  it('typing searches lists and notes, grouped by type', async () => {
     await open();
     await type('baño');
 
@@ -153,7 +153,7 @@ describe('PaletteDialog', () => {
     expect(labels()[1]).toContain('Llamar al fontanero del baño');
   });
 
-  it('con retardo busca tarjetas y gastos en el servidor', async () => {
+  it('after a delay it searches cards and expenses on the server', async () => {
     api['items']!.mockReturnValue(
       of([
         {
@@ -188,7 +188,7 @@ describe('PaletteDialog', () => {
     );
     await open();
     await type('ducha');
-    expect(api['items']).not.toHaveBeenCalled(); // aún dentro del retardo
+    expect(api['items']).not.toHaveBeenCalled(); // still inside the delay
 
     await wait(300);
     await fixture.whenStable();
@@ -199,7 +199,7 @@ describe('PaletteDialog', () => {
     expect(titles).toEqual(['Tarjetas', 'Gastos']);
   });
 
-  it('↑↓ mueven la selección dando la vuelta y Tab cambia el filtro', async () => {
+  it('up/down move the selection wrapping around and Tab changes the filter', async () => {
     await open();
     const total = labels().length;
 
@@ -223,7 +223,7 @@ describe('PaletteDialog', () => {
     expect(pressed()).toBe('Comandos');
   });
 
-  it('Enter ejecuta la fila activa: «Ir a Notas» navega y cierra', async () => {
+  it('Enter runs the active row: "Ir a Notas" navigates and closes', async () => {
     await open();
     await type('notas');
     const row = [...el().querySelectorAll('.row')].find((r) =>
@@ -231,7 +231,7 @@ describe('PaletteDialog', () => {
     );
     expect(row).toBeDefined();
 
-    // Con «notas» la nota coincidente va primero; bajamos hasta el comando.
+    // With "notas" the matching note comes first; move down to the command.
     while (!active()?.includes('Ir a Notas')) {
       press('ArrowDown');
       await fixture.whenStable();
@@ -243,7 +243,7 @@ describe('PaletteDialog', () => {
     expect(palette.isOpen()).toBe(false);
   });
 
-  it('«ir a notas» y «notas» encuentran «Ir a Notas»; «gn» ya no es un atajo', async () => {
+  it('"ir a notas" and "notas" find "Ir a Notas"; "gn" is no longer a shortcut', async () => {
     await open();
     await type('ir a notas');
     expect(labels()[0]).toContain('Ir a Notas');
@@ -255,7 +255,7 @@ describe('PaletteDialog', () => {
     expect(labels().some((label) => label?.includes('Ir a Notas'))).toBe(false);
   });
 
-  it('«Nueva tarjeta vacía» crea una tarjeta en blanco, avisa al resto de pantallas y va a /notas', async () => {
+  it('"Nueva tarjeta vacía" creates a blank card, notifies the other screens and goes to /notas', async () => {
     const bus = TestBed.inject(RefreshBus);
     const before = bus.version();
     await open();
@@ -273,7 +273,7 @@ describe('PaletteDialog', () => {
     expect(palette.isOpen()).toBe(false);
   });
 
-  it('Escape cierra y el foco vuelve a quien lo tenía', async () => {
+  it('Escape closes and focus goes back to whoever had it', async () => {
     const opener = document.createElement('button');
     document.body.append(opener, el());
     opener.focus();
@@ -289,7 +289,7 @@ describe('PaletteDialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
-  it('un clic fuera de la capa cierra; dentro no', async () => {
+  it('a click outside the layer closes; inside it does not', async () => {
     await open();
     el()
       .querySelector('.panel')!
@@ -304,7 +304,7 @@ describe('PaletteDialog', () => {
     expect(palette.isOpen()).toBe(false);
   });
 
-  it('lo que no encaja con nada se ofrece como captura: Enter la guarda y sigue en modo captura con confirmación', async () => {
+  it('what matches nothing is offered as a capture: Enter saves it and stays in capture mode with a confirmation', async () => {
     const bus = TestBed.inject(RefreshBus);
     const before = bus.version();
     await open();
@@ -331,7 +331,7 @@ describe('PaletteDialog', () => {
     expect(el().querySelector('.done')?.textContent).toContain('Captura deshecha');
   });
 
-  describe('modo «escribir una nota o tarea»', () => {
+  describe('"escribir una nota o tarea" mode', () => {
     const chip = () => el().querySelector('.mode-chip');
     const plan = () => el().querySelector('.plan');
     const typeCapture = async (text: string) => {
@@ -347,7 +347,7 @@ describe('PaletteDialog', () => {
       api['lists']!.mockReturnValue(of([LIST, SHOPPING]));
     });
 
-    it('«/» como primer carácter entra en el modo, con la «/» consumida y la etiqueta visible', async () => {
+    it('"/" as the first character enters the mode, with the "/" consumed and the label visible', async () => {
       await open();
       expect(chip()).toBeNull();
 
@@ -361,7 +361,7 @@ describe('PaletteDialog', () => {
       expect(el().querySelector('app-palette-capture .help')).not.toBeNull();
     });
 
-    it('pegar «/texto» entra en el modo con el texto sin la «/»', async () => {
+    it('pasting "/text" enters the mode with the text minus the "/"', async () => {
       await open();
       await type('/compra: pan');
 
@@ -369,7 +369,7 @@ describe('PaletteDialog', () => {
       expect(input().value).toBe('compra: pan');
     });
 
-    it('una «/» que no es la primera es un carácter normal de la búsqueda', async () => {
+    it('a "/" that is not first is a normal search character', async () => {
       await open();
       await type('a/b');
 
@@ -377,7 +377,7 @@ describe('PaletteDialog', () => {
       expect(input().value).toBe('a/b');
     });
 
-    it('la fila «Escribir una nota o tarea» (Enter o un toque) entra en el modo', async () => {
+    it('the "Escribir una nota o tarea" row (Enter or a tap) enters the mode', async () => {
       await open();
       press('Enter');
       await fixture.whenStable();
@@ -392,13 +392,13 @@ describe('PaletteDialog', () => {
       expect(chip()).not.toBeNull();
     });
 
-    it('abierta con «/» desde fuera (show con capture) ya está en el modo', async () => {
+    it('opened with "/" from outside (show with capture) it is already in the mode', async () => {
       palette.show({ capture: true });
       await fixture.whenStable();
 
       expect(chip()).not.toBeNull();
 
-      // La petición vale solo para esa apertura.
+      // The request only applies to that opening.
       palette.hide(false);
       await fixture.whenStable();
       palette.show();
@@ -406,7 +406,7 @@ describe('PaletteDialog', () => {
       expect(chip()).toBeNull();
     });
 
-    it('construye en vivo adónde irá: lista destino resaltada, título y avisos', async () => {
+    it('builds the destination live: highlighted target list, title and warnings', async () => {
       await open();
       await typeCapture('compra: leche semidesnatada');
 
@@ -433,7 +433,7 @@ describe('PaletteDialog', () => {
       expect(el().querySelector<HTMLButtonElement>('.send .btn')!.disabled).toBe(true);
     });
 
-    it('no busca en el servidor mientras se escribe una nota', async () => {
+    it('does not search the server while a note is typed', async () => {
       await open();
       await typeCapture('compra: leche');
       await wait(300);
@@ -442,7 +442,7 @@ describe('PaletteDialog', () => {
       expect(api['transactions']).not.toHaveBeenCalled();
     });
 
-    it('sugiere el prefijo («com» → compra:) y Tab lo completa', async () => {
+    it('suggests the prefix ("com" gives compra:) and Tab completes it', async () => {
       await open();
       await typeCapture('com');
 
@@ -456,7 +456,7 @@ describe('PaletteDialog', () => {
       expect(el().querySelector('.suggestion')).toBeNull();
     });
 
-    it('un toque en un prefijo de la ayuda lo escribe', async () => {
+    it('a tap on a prefix in the help types it', async () => {
       await open();
       await typeCapture('');
       el().querySelector<HTMLButtonElement>('.prefix')!.click();
@@ -464,7 +464,7 @@ describe('PaletteDialog', () => {
       expect(input().value).toBe('compra: ');
     });
 
-    it('Enter guarda con estado de carga, confirma «Añadido a…» con «Ver» y deja el campo vacío', async () => {
+    it('Enter saves with a loading state, confirms "Añadido a…" with "Ver" and leaves the field empty', async () => {
       let finish!: (response: CaptureResponse) => void;
       api['capture']!.mockReturnValue(
         new Observable<CaptureResponse>((subscriber) => {
@@ -486,7 +486,7 @@ describe('PaletteDialog', () => {
       expect(el().querySelector<HTMLButtonElement>('.send .btn')!.textContent).toContain(
         'Guardando',
       );
-      // Una segunda pulsación mientras guarda no duplica.
+      // A second press while saving does not duplicate.
       press('Enter');
       expect(api['capture']).toHaveBeenCalledTimes(1);
 
@@ -519,7 +519,7 @@ describe('PaletteDialog', () => {
       expect(palette.isOpen()).toBe(false);
     });
 
-    it('una nota sin prefijo se confirma como nota suelta y «Ver» lleva al lienzo', async () => {
+    it('a note without a prefix is confirmed as a loose note and "Ver" goes to the canvas', async () => {
       api['capture']!.mockReturnValue(
         of({ kind: 'note_card', card: CARD } satisfies CaptureResponse),
       );
@@ -533,7 +533,7 @@ describe('PaletteDialog', () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith('/notas');
     });
 
-    it('con error enseña un mensaje accionable y conserva el texto para reintentar', async () => {
+    it('on error shows an actionable message and keeps the text to retry', async () => {
       api['capture']!.mockReturnValueOnce(throwError(() => new Error('caído')));
       await open();
       await typeCapture('compra: leche');
@@ -553,7 +553,7 @@ describe('PaletteDialog', () => {
       expect(el().querySelector('.done')).not.toBeNull();
     });
 
-    it('Enter sin título avisa y no llama a la API', async () => {
+    it('Enter without a title warns and does not call the API', async () => {
       await open();
       await typeCapture('compra:');
       press('Enter');
@@ -563,7 +563,7 @@ describe('PaletteDialog', () => {
       expect(el().querySelector('.error')?.textContent).toContain('Falta el título');
     });
 
-    it('Esc vacía el texto; sin texto vuelve a la búsqueda; en la búsqueda cierra', async () => {
+    it('Esc clears the text; with no text goes back to search; in search it closes', async () => {
       await open();
       await typeCapture('compra: leche');
 
@@ -583,7 +583,7 @@ describe('PaletteDialog', () => {
       expect(palette.isOpen()).toBe(false);
     });
 
-    it('tras guardar, Esc con el campo vacío cierra la paleta', async () => {
+    it('after saving, Esc with an empty field closes the palette', async () => {
       await open();
       await typeCapture('compra: leche');
       press('Enter');
@@ -595,7 +595,7 @@ describe('PaletteDialog', () => {
       expect(palette.isOpen()).toBe(false);
     });
 
-    it('Retroceso con el campo vacío sale del modo, pero no con texto ni al mantenerlo pulsado', async () => {
+    it('Backspace with an empty field leaves the mode, but not with text or when held down', async () => {
       await open();
       await typeCapture('a');
 
@@ -614,7 +614,7 @@ describe('PaletteDialog', () => {
       expect(input().placeholder).toBe('Buscar, ejecutar o escribir / para crear…');
     });
 
-    it('el botón de la etiqueta sale del modo con un toque', async () => {
+    it('the label button leaves the mode with a tap', async () => {
       await open();
       await type('/');
       el().querySelector<HTMLButtonElement>('.mode-exit')!.click();
@@ -623,7 +623,7 @@ describe('PaletteDialog', () => {
       expect(chip()).toBeNull();
     });
 
-    it('Ctrl+Enter desde la búsqueda guarda y pasa al modo captura', async () => {
+    it('Ctrl+Enter from search saves and switches to capture mode', async () => {
       await open();
       await type('compra: pan');
       press('Enter', { ctrlKey: true });

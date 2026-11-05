@@ -17,49 +17,49 @@ const press = (key: string, init: Partial<ShortcutKeyEvent> = {}): ShortcutKeyEv
   ...init,
 });
 
-describe('goShortcutTarget (Mayús + letra)', () => {
-  it('Mayús+N · L · C · G llevan a su sección', () => {
+describe('goShortcutTarget (Shift + letter)', () => {
+  it('Shift+N, L, C, G go to their section', () => {
     expect(goShortcutTarget(press('N'))).toBe('/notas');
     expect(goShortcutTarget(press('L'))).toBe('/listas');
     expect(goShortcutTarget(press('C'))).toBe('/calendario');
     expect(goShortcutTarget(press('G'))).toBe('/gastos');
   });
 
-  it('con Bloq Mayús y Mayús la tecla llega en minúscula y también vale', () => {
+  it('with Caps Lock plus Shift the key arrives lowercase and still works', () => {
     expect(goShortcutTarget(press('n'))).toBe('/notas');
   });
 
-  it('sin Mayús no hace nada (la «n» suelta es «nueva nota» en Notas)', () => {
+  it('without Shift it does nothing (a bare "n" is "new note" on Notas)', () => {
     for (const key of ['n', 'l', 'c', 'g']) {
       expect(goShortcutTarget(press(key, { shiftKey: false }))).toBeNull();
     }
   });
 
-  it('con Ctrl, Alt o Meta no se activa', () => {
+  it('does not fire with Ctrl, Alt or Meta', () => {
     expect(goShortcutTarget(press('N', { ctrlKey: true }))).toBeNull();
     expect(goShortcutTarget(press('N', { altKey: true }))).toBeNull();
     expect(goShortcutTarget(press('N', { metaKey: true }))).toBeNull();
   });
 
-  it('otras letras y teclas especiales no hacen nada', () => {
+  it('other letters and special keys do nothing', () => {
     expect(goShortcutTarget(press('X'))).toBeNull();
     expect(goShortcutTarget(press('Shift'))).toBeNull();
     expect(goShortcutTarget(press('ArrowLeft'))).toBeNull();
   });
 
-  it('ya no existe la secuencia «G» + letra', () => {
+  it('the "G" + letter sequence no longer exists', () => {
     expect('stepGoSequence' in goShortcuts).toBe(false);
     expect('GO_SEQUENCE_MS' in goShortcuts).toBe(false);
     expect(goShortcutTarget(press('g', { shiftKey: false }))).toBeNull();
   });
 
-  it('el atajo se enseña como «⇧N»', () => {
+  it('the shortcut is shown as "⇧N"', () => {
     expect(shortcutLabel('n')).toBe('⇧N');
     expect(shortcutLabel('g')).toBe('⇧G');
   });
 });
 
-describe('isTypingTarget y canUseGlobalShortcut', () => {
+describe('isTypingTarget and canUseGlobalShortcut', () => {
   afterEach(() => document.body.replaceChildren());
 
   const add = (html: string): HTMLElement => {
@@ -74,7 +74,7 @@ describe('isTypingTarget y canUseGlobalShortcut', () => {
     return event;
   };
 
-  it('campos, áreas de texto, selects y contenido editable cuentan como escribir', () => {
+  it('inputs, textareas, selects and editable content count as typing', () => {
     expect(isTypingTarget(add('<input />'))).toBe(true);
     expect(isTypingTarget(add('<textarea></textarea>'))).toBe(true);
     expect(isTypingTarget(add('<select><option>a</option></select>'))).toBe(true);
@@ -82,7 +82,7 @@ describe('isTypingTarget y canUseGlobalShortcut', () => {
     expect(isTypingTarget(add('<div contenteditable="">hola</div>'))).toBe(true);
   });
 
-  it('los selectores de PrimeNG y sus hijos cuentan como escribir', () => {
+  it('PrimeNG selects and their children count as typing', () => {
     const select = add('<div class="p-select"><span class="p-select-label">x</span></div>');
     expect(isTypingTarget(select)).toBe(true);
     expect(isTypingTarget(select.firstElementChild)).toBe(true);
@@ -92,7 +92,7 @@ describe('isTypingTarget y canUseGlobalShortcut', () => {
     expect(isTypingTarget(add('<div role="textbox"></div>'))).toBe(true);
   });
 
-  it('botones, enlaces y el cuerpo de la página no cuentan', () => {
+  it('buttons, links and the page body do not count', () => {
     expect(isTypingTarget(add('<button>ok</button>'))).toBe(false);
     expect(isTypingTarget(add('<a href="/x">x</a>'))).toBe(false);
     expect(isTypingTarget(document.body)).toBe(false);
@@ -100,16 +100,16 @@ describe('isTypingTarget y canUseGlobalShortcut', () => {
     expect(isTypingTarget(null)).toBe(false);
   });
 
-  it('se pueden usar con el foco en el cuerpo o en un botón', () => {
+  it('can be used with focus on the body or a button', () => {
     expect(canUseGlobalShortcut(eventOn(document.body))).toBe(true);
     expect(canUseGlobalShortcut(eventOn(add('<button>ok</button>')))).toBe(true);
   });
 
-  it('no con un campo enfocado', () => {
+  it('not with a focused field', () => {
     expect(canUseGlobalShortcut(eventOn(add('<input />')))).toBe(false);
   });
 
-  it('no con un modal abierto ni con un desplegable de PrimeNG abierto', () => {
+  it('not with an open modal or an open PrimeNG overlay', () => {
     const modal = add('<div role="dialog" aria-modal="true"></div>');
     expect(canUseGlobalShortcut(eventOn(document.body))).toBe(false);
     modal.remove();
@@ -122,7 +122,7 @@ describe('isTypingTarget y canUseGlobalShortcut', () => {
     }
   });
 
-  it('no si otro código ya atendió la tecla', () => {
+  it('not if other code already handled the key', () => {
     const event = new KeyboardEvent('keydown', { key: 'N', shiftKey: true, cancelable: true });
     event.preventDefault();
     expect(canUseGlobalShortcut(event)).toBe(false);
@@ -130,28 +130,28 @@ describe('isTypingTarget y canUseGlobalShortcut', () => {
 });
 
 describe('adjacentSection (Alt+← / Alt+→)', () => {
-  it('avanza por el orden de la barra: notas, listas, calendario, gastos', () => {
+  it('moves forward in navbar order: notes, lists, calendar, expenses', () => {
     expect(adjacentSection('/notas', 1)).toBe('/listas');
     expect(adjacentSection('/listas', 1)).toBe('/calendario');
     expect(adjacentSection('/calendario', 1)).toBe('/gastos');
   });
 
-  it('retrocede en el mismo orden', () => {
+  it('moves back in the same order', () => {
     expect(adjacentSection('/gastos', -1)).toBe('/calendario');
     expect(adjacentSection('/listas', -1)).toBe('/notas');
   });
 
-  it('una lista concreta cuenta como la sección Listas', () => {
+  it('a specific list counts as the Listas section', () => {
     expect(adjacentSection('/listas/compras', 1)).toBe('/calendario');
     expect(adjacentSection('/listas/compras?vista=kanban', -1)).toBe('/notas');
   });
 
-  it('en los extremos no da la vuelta', () => {
+  it('does not wrap at the ends', () => {
     expect(adjacentSection('/notas', -1)).toBeNull();
     expect(adjacentSection('/gastos', 1)).toBeNull();
   });
 
-  it('fuera de las secciones no hace nada', () => {
+  it('outside the sections it does nothing', () => {
     expect(adjacentSection('/login', 1)).toBeNull();
     expect(adjacentSection('/', 1)).toBeNull();
   });

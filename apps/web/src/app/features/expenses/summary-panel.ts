@@ -331,11 +331,11 @@ export class SummaryPanel {
   protected readonly from = signal(shiftMonth(this.currentMonth, -5));
   protected readonly to = signal(this.currentMonth);
   protected readonly type = signal<'expense' | 'income' | 'both'>('expense');
-  /** Con «Ambos» son los gastos; con «Ingresos», los ingresos. */
+  /** With "Ambos" these are the expenses; with "Ingresos", the income. */
   private readonly rows = signal<MonthlyCategoryTotal[]>([]);
   private readonly incomeRows = signal<MonthlyCategoryTotal[]>([]);
   protected readonly error = signal('');
-  /** Ya llegó algún resultado (o error): antes de eso no se puede decir que «no hay datos». */
+  /** A result (or error) has arrived; before that we cannot say there is no data. */
   protected readonly loaded = signal(false);
   protected readonly loading = signal(true);
 
@@ -352,7 +352,7 @@ export class SummaryPanel {
   private readonly maxMonth = computed(() =>
     Math.max(1, ...Object.values(this.summary().monthTotals).map(Math.abs)),
   );
-  /** Para las barras de «Ambos»: gastos e ingresos comparten escala. */
+  /** For the "Ambos" bars: expenses and income share one scale. */
   private readonly maxPair = computed(() =>
     Math.max(
       1,
@@ -404,13 +404,13 @@ export class SummaryPanel {
 
   protected setPeriod(period: Period): void {
     if (!period.from) return;
-    // Un rango no puede pasar del tope de meses que admite el resumen.
+    // A range cannot exceed the month cap the summary supports.
     const [from, to] = clampRange(period.from, period.to ?? period.from);
     this.from.set(from);
     this.to.set(to);
   }
 
-  /** Importe sin céntimos para las etiquetas de las barras, donde falta sitio. */
+  /** Amount without cents for the bar labels, where space is tight. */
   protected wholeEuros(cents: number): string {
     return WHOLE_EUROS.format(Math.abs(cents) / 100) + ' €';
   }

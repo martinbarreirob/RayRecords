@@ -36,13 +36,13 @@ import {
 } from './board-logic';
 import { formatField } from './field-format';
 
-/** Mover una tarjeta: qué tarjeta y dónde queda. Lo ejecuta (y guarda) quien usa el tablero. */
+/** Move a card: which card and where it ends up. Run (and saved) by whoever uses the board. */
 export interface BoardMove {
   id: string;
   request: MoveItem;
 }
 
-/** Texto de los extras de una tarjeta (prioridad, importe…), solo los que tienen valor. */
+/** Extras text of a card (priority, amount…), only those with a value. */
 function extras(defs: readonly FieldDef[], extra: Extra): string {
   return defs
     .map((def) => formatField(def, extra[def.key]))
@@ -51,9 +51,9 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
 }
 
 /**
- * Tablero Kanban. El arrastre usa `@angular/cdk/drag-drop` (ratón, lápiz y táctil con hueco de
- * inserción) y todo lo que se puede arrastrar también se puede hacer con teclado o con los botones de
- * la tarjeta seleccionada: J/K recorren, ←/→ cambian de columna, Alt+↑/↓ reordenan, Espacio abre.
+ * Kanban board. Dragging uses `@angular/cdk/drag-drop` (mouse, pen and touch with an insertion gap)
+ * and everything draggable can also be done with the keyboard or the buttons of the selected card:
+ * J/K traverse, ←/→ change column, Alt+↑/↓ reorder, Space opens.
  */
 @Component({
   selector: 'app-list-board',
@@ -145,7 +145,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
         box-shadow: 0 0 0 1px var(--accent);
       }
 
-      /* Hecha: sin llamar la atención. Todo lo que lleva color pasa a gris neutro (contraste intacto). */
+      /* Done: unobtrusive. Everything coloured turns neutral grey (contrast kept). */
       &.done {
         border-color: var(--line-soft);
       }
@@ -216,7 +216,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       border-top: 1px solid var(--line);
     }
 
-    /* «Mover a…»: alternativa al arrastre en táctil; ocupa su propia fila. */
+    /* «Mover a…»: alternative to dragging on touch; takes its own row. */
     .move-to {
       flex: 1 1 100%;
       margin: var(--space-1) var(--space-1) 0;
@@ -620,10 +620,10 @@ export class ListBoard {
   protected readonly newTitle = signal('');
   protected readonly addingColumn = signal(false);
   protected readonly newColumn = signal('');
-  /** Columna sobre la que está la tarjeta que se arrastra (para el texto de la tarjeta fantasma). */
+  /** Column the dragged card is over (for the ghost card text). */
   protected readonly hoverColumn = signal('');
 
-  /** En móvil y pantallas táctiles el arrastre se desactiva: ahí se desliza el tablero y se usan los botones. */
+  /** On mobile and touch screens dragging is disabled: the board scrolls there and buttons are used. */
   protected readonly dragOff = signal(false);
 
   private readonly today = todayLocal();
@@ -633,7 +633,7 @@ export class ListBoard {
     return new Map(this.columns().map((c) => [c.key, itemsInColumn(items, c.key)]));
   });
 
-  /** Tarjeta que recibe el foco con Tab: la seleccionada o, si no hay, la primera. */
+  /** Card that receives focus with Tab: the selected one or, if none, the first. */
   protected readonly rovingId = computed(() => {
     const selected = this.selectedId();
     if (selected && this.items().some((i) => i.id === selected)) return selected;
@@ -652,12 +652,12 @@ export class ListBoard {
     return this.cards().get(column) ?? [];
   }
 
-  /** El primer campo de tipo «selección» (p. ej. la prioridad) hace de identificador con color de la tarjeta. */
+  /** The first «select» field (e.g. priority) acts as the card's coloured identifier. */
   private badgeField(): FieldDef | undefined {
     return this.fieldDefs().find((def) => def.type === 'select');
   }
 
-  /** Identificador junto al título: el valor del campo de selección y, si no lo hay, la primera etiqueta. */
+  /** Identifier next to the title: the select field value and, if none, the first label. */
   protected leadOf(item: Item): string | null {
     const field = this.badgeField();
     const value = field ? item.extra[field.key] : undefined;
@@ -665,7 +665,7 @@ export class ListBoard {
     return item.tags[0] ?? null;
   }
 
-  /** Etiquetas que quedan para la fila de datos (la que ya es identificador no se repite). */
+  /** Labels left for the data row (the one already used as identifier is not repeated). */
   protected restTags(item: Item): string[] {
     const usedTag = this.leadOf(item) === item.tags[0] && item.tags[0] !== undefined;
     return item.tags.slice(usedTag ? 1 : 0, usedTag ? 3 : 2);
@@ -714,7 +714,7 @@ export class ListBoard {
     return this.columns().filter((c) => c.key !== item.column);
   }
 
-  /** Menú «Mover a…»: la tarjeta pasa al final de la columna elegida. */
+  /** «Mover a…» menu: the card goes to the end of the chosen column. */
   protected moveTo(item: Item, column: string | null): void {
     const request = column ? moveToRequest(this.items(), item.id, column) : null;
     if (!request) return;
@@ -740,7 +740,7 @@ export class ListBoard {
     this.focusCard(item.id);
   }
 
-  /** Teclado: solo actúa con el foco en una tarjeta (no interfiere con los campos de texto). */
+  /** Keyboard: only acts with focus on a card (does not interfere with text fields). */
   protected onKeydown(event: KeyboardEvent): void {
     const target = event.target as HTMLElement;
     const id = target.closest<HTMLElement>('[data-card]')?.dataset['card'];
@@ -780,7 +780,7 @@ export class ListBoard {
     }
   }
 
-  /** Devuelve el foco a una tarjeta (tras renderizar, porque al cambiar de columna se recrea). */
+  /** Gives focus back to a card (after rendering, since changing column recreates it). */
   focusCard(id: string | null = this.selectedId()): void {
     if (!id) return;
     afterNextRender(
@@ -812,7 +812,7 @@ export class ListBoard {
     this.newTitle.set('');
   }
 
-  /** Al salir del campo con algo escrito no se pierde: se cierra solo si está vacío. */
+  /** Leaving the field with text typed does not lose it: it only closes if empty. */
   protected blurAdd(): void {
     if (!this.newTitle().trim()) this.adding.set(null);
   }

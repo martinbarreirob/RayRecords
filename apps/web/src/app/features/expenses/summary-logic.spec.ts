@@ -9,18 +9,18 @@ const data: MonthlyCategoryTotal[] = [
 ];
 
 describe('summary-logic', () => {
-  it('enumera los meses del rango cruzando años y respetando el tope', () => {
+  it('lists the months of the range across years, respecting the cap', () => {
     expect(monthsInRange('2026-11', '2027-01')).toEqual(['2026-11', '2026-12', '2027-01']);
     expect(monthsInRange('2026-11', '2026-10')).toEqual([]);
     expect(monthsInRange('2020-01', '2026-12')).toHaveLength(24);
   });
 
-  it('recorta un rango demasiado largo', () => {
+  it('trims a range that is too long', () => {
     expect(clampRange('2020-01', '2026-12')).toEqual(['2020-01', '2021-12']);
     expect(clampRange('2026-01', '2026-03')).toEqual(['2026-01', '2026-03']);
   });
 
-  it('agrupa por categoría con totales por mes y general', () => {
+  it('groups by category with monthly and overall totals', () => {
     const summary = buildSummary(data, ['2026-09', '2026-10', '2026-11']);
     expect(summary.rows.map((r) => r.category)).toEqual(['hogar', 'ocio', null]);
     expect(summary.rows[1]).toEqual({
@@ -34,14 +34,14 @@ describe('summary-logic', () => {
     expect(summary.monthlyAverageCents).toBe(-3583);
   });
 
-  it('con datos vacíos devuelve ceros', () => {
+  it('returns zeros for empty data', () => {
     const summary = buildSummary([], ['2026-10']);
     expect(summary.rows).toEqual([]);
     expect(summary.grandTotalCents).toBe(0);
     expect(buildSummary([], []).monthlyAverageCents).toBe(0);
   });
 
-  it('calcula porcentajes sin dividir por cero', () => {
+  it('computes percentages without dividing by zero', () => {
     expect(share(-2500, -10000)).toBe(25);
     expect(share(5, 0)).toBe(0);
   });

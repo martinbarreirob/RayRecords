@@ -7,7 +7,7 @@ interface Hint {
   text: string;
 }
 
-/** Solo lo esencial, en una línea. Con la disposición bloqueada no se habla de mover. */
+/** Only the essentials, on one line. With a locked layout, moving is not mentioned. */
 const HINTS: readonly Hint[] = [
   { keys: '', text: 'Arrastra para colocar' },
   { keys: 'Mayús+clic', text: 'o marco: varias' },
@@ -24,13 +24,13 @@ const LOCKED_HINTS: readonly Hint[] = [
 ];
 
 /**
- * Pie del lienzo: una línea discreta con los atajos, que se puede ocultar (se recuerda) y, con varias
- * notas seleccionadas, la píldora de selección. Oculta, solo queda un botón pequeño en la esquina.
+ * Canvas footer: a discreet line with the shortcuts, which can be hidden (it is remembered) and, with
+ * several notes selected, the selection pill. When hidden, only a small button remains in the corner.
  */
 @Component({
   selector: 'app-notes-hints',
   styles: `
-    /* Sin caja propia: la barra es hija directa de la pantalla (alineada con el lienzo) y se pega al borde inferior. */
+    /* No box of its own: the bar is a direct child of the page (aligned with the canvas) and sticks to the bottom edge. */
     :host {
       display: contents;
     }
@@ -77,7 +77,7 @@ const LOCKED_HINTS: readonly Hint[] = [
       font-weight: 500;
     }
 
-    /* Oculta: solo el botón (y la píldora si hace falta), en la esquina y sin ocupar sitio en el flujo. */
+    /* Hidden: only the button (and the pill if needed), in the corner and taking no space in the flow. */
     .corner {
       position: fixed;
       right: var(--space-4);

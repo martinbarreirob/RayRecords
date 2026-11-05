@@ -2,8 +2,8 @@ import type { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 
 /**
- * Una sección por módulo funcional, cada una con carga diferida: el bundle inicial solo
- * contiene el shell y cada módulo se descarga al entrar en él. Todo menos `/login` exige sesión.
+ * One lazy-loaded section per feature module: the initial bundle only holds the shell and each
+ * module is downloaded on first visit. Everything except `/login` requires a session.
  */
 export const routes: Routes = [
   {

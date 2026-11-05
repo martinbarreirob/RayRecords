@@ -3,12 +3,12 @@ import { Component, ElementRef, effect, inject, input, signal, viewChild } from 
 import { Router } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 
-/** Solo rutas internas: evita que `?volver=` sirva de redirección abierta. */
+/** Internal paths only: keeps `?volver=` from working as an open redirect. */
 export function safeReturnUrl(value: string | undefined): string {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
 }
 
-/** Texto de un fallo de inicio de sesión: dice qué pasó y, si se puede, qué hacer. */
+/** Text for a login failure: says what happened and, if possible, what to do. */
 export function loginErrorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 401) return 'Usuario o contraseña incorrectos.';
@@ -149,7 +149,7 @@ export function loginErrorMessage(error: unknown): string {
       border-color: var(--danger);
     }
 
-    /* Contraseña con botón para verla: el campo deja sitio a la derecha. */
+    /* Password with a show button: the field leaves room on the right. */
     .pass {
       position: relative;
       display: block;
@@ -199,7 +199,7 @@ export class LoginPage {
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
 
-  /** Ruta a la que volver tras entrar (parámetro `?volver=`, enlazado por el router). */
+  /** Path to return to after login (`?volver=` param, bound by the router). */
   readonly volver = input<string>();
 
   protected readonly username = signal('');
@@ -211,7 +211,7 @@ export class LoginPage {
   private readonly passInput = viewChild<ElementRef<HTMLInputElement>>('pass');
 
   constructor() {
-    // El foco inicial va al usuario (el atributo `autofocus` no actúa al navegar dentro de la app).
+    // Initial focus goes to the username (the `autofocus` attribute does not work on in-app navigation).
     effect(() => this.userInput()?.nativeElement.focus());
   }
 
@@ -219,7 +219,7 @@ export class LoginPage {
     event.preventDefault();
     if (this.busy()) return;
 
-    // Se leen los campos tal cual están: un gestor de contraseñas puede rellenarlos sin disparar `input`.
+    // Fields are read as they are: a password manager may fill them without firing `input`.
     const username = (this.userInput()?.nativeElement.value ?? this.username()).trim();
     const password = this.passInput()?.nativeElement.value ?? this.password();
     if (!username || !password) {
@@ -237,7 +237,7 @@ export class LoginPage {
         this.password.set('');
         this.error.set(loginErrorMessage(error));
         this.busy.set(false);
-        // El foco vuelve a la contraseña, ya vacía, para reintentar.
+        // Focus goes back to the now-empty password to retry.
         queueMicrotask(() => {
           const field = this.passInput()?.nativeElement;
           if (field) field.value = '';

@@ -13,18 +13,18 @@ import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { normalizeTime, shiftTime } from './date-time-logic';
 import { prefersNativePickers } from './native-pickers';
 
-/** Texto que ya es una hora completa (`9:30`, `0930`, `17.05`…): se guarda sin esperar a salir del campo. */
+/** Text that is already a full time (`9:30`, `0930`, `17.05`...): saved without waiting for blur. */
 const COMPLETE = /^(\d{1,2}[:.hH]\d{2}|\d{4})$/;
 
 /**
- * Campo de hora. El valor es un texto `HH:mm` (vacío = `''`), el mismo que da un `<input type="time">`.
+ * Time field. The value is a `HH:mm` string (empty = `''`), the same one an `<input type="time">` gives.
  *
- * - Táctil o sin cursor: el `<input type="time">` nativo.
- * - Escritorio: campo de texto con máscara suave. Acepta `930`, `9:30`, `09.30` o `17` y lo deja como
- *   `HH:mm`; ↑/↓ suman o restan 15 minutos (Mayús: 1 hora). Una hora imposible (`25:70`) se marca en
- *   rojo mientras se escribe y, al salir del campo, vuelve al último valor válido.
+ * - Touch or no cursor: the native `<input type="time">`.
+ * - Desktop: text field with a soft mask. Accepts `930`, `9:30`, `09.30` or `17` and leaves it as
+ *   `HH:mm`; up/down add or subtract 15 minutes (Shift: 1 hour). An impossible time (`25:70`) is shown
+ *   in red while typing and, on blur, goes back to the last valid value.
  *
- * Se usa con `[(value)]="señal"` o con `ngModel` / formularios reactivos.
+ * Use it with `[(value)]="signal"` or with `ngModel` / reactive forms.
  */
 @Component({
   selector: 'app-time-field',
@@ -95,7 +95,7 @@ const COMPLETE = /^(\d{1,2}[:.hH]\d{2}|\d{4})$/;
   `,
 })
 export class TimeField implements ControlValueAccessor {
-  /** Hora como `HH:mm`; `''` si no hay. */
+  /** Time as `HH:mm`; `''` if none. */
   readonly value = model('');
   readonly inputId = input<string>();
   readonly ariaLabel = input<string>();
@@ -103,7 +103,7 @@ export class TimeField implements ControlValueAccessor {
 
   protected readonly native = prefersNativePickers();
   protected readonly disabled = signal(false);
-  /** Lo que se ve en el campo de escritorio (puede ir por delante del valor mientras se escribe). */
+  /** What the desktop field shows (can be ahead of the value while typing). */
   protected readonly text = signal('');
   protected readonly invalid = signal(false);
 
@@ -111,7 +111,7 @@ export class TimeField implements ControlValueAccessor {
   private onTouchedFn: () => void = () => undefined;
 
   constructor() {
-    // El valor de fuera (formulario, señal) manda sobre el texto, salvo si es el que acaba de escribirse.
+    // The outside value (form, signal) wins over the text, unless it is the one just typed.
     effect(() => {
       const value = this.value();
       untracked(() => {
@@ -146,10 +146,10 @@ export class TimeField implements ControlValueAccessor {
     this.onChange(value);
   }
 
-  /** Teclea solo cifras y separadores; guarda en cuanto la hora está completa. */
+  /** Accepts only digits and separators; saves as soon as the time is complete. */
   protected onInput(field: HTMLInputElement): void {
     const text = field.value.replace(/[^0-9:.hH]/g, '');
-    // Si no cambia el texto (solo se tecleó algo no permitido) la plantilla no repinta: se limpia a mano.
+    // If the text does not change (a disallowed key was typed) the template does not repaint: clean it by hand.
     if (field.value !== text) field.value = text;
     this.text.set(text);
     const normalized = normalizeTime(text);
@@ -160,7 +160,7 @@ export class TimeField implements ControlValueAccessor {
 
   protected onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
-      // El envío del formulario va después de este evento: se guarda lo escrito antes.
+      // Form submit runs after this event: what was typed is saved first.
       this.settle();
     } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       event.preventDefault();
@@ -178,7 +178,7 @@ export class TimeField implements ControlValueAccessor {
     this.onTouchedFn();
   }
 
-  /** Cierra la edición: hora normalizada si vale; si no, vuelve al último valor bueno. */
+  /** Ends editing: normalized time if valid; otherwise goes back to the last good value. */
   private settle(): void {
     const normalized = normalizeTime(this.text());
     if (normalized === null) {
