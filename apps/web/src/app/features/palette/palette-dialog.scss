@@ -131,8 +131,10 @@
   scrollbar-width: none;
 }
 
+/* Squarer than the global pill chip: the same corner radius as the app's buttons. */
 .filters .chip {
   flex: none;
+  border-radius: var(--radius-sm);
   color: var(--muted);
   cursor: pointer;
 }

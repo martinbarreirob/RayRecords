@@ -19,24 +19,49 @@
   padding: var(--space-2) var(--page-gutter);
 }
 
+/* Left: the brand and the icon buttons. The search sits on the right. */
+.start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-self: start;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  justify-self: start;
   color: var(--text);
   font-size: 15px;
   font-weight: 600;
+
+  // On a phone it is a button (it opens the menu), so it drops the button look.
+  &:is(button) {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
 
   &:hover {
     text-decoration: none;
   }
 
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
+  .logo {
+    flex: none;
+    width: 28px;
+    height: 28px;
+  }
+
+  .caret {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    transition: transform 0.15s;
+  }
+
+  &[aria-expanded='true'] .caret {
+    transform: rotate(180deg);
   }
 }
 
@@ -75,21 +100,21 @@ nav {
 .actions {
   display: flex;
   align-items: center;
-  justify-self: end;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .palette-trigger {
   display: inline-flex;
   align-items: center;
+  justify-self: end;
   gap: var(--space-2);
-  min-height: var(--control-height);
-  padding: 0 var(--space-2) 0 var(--space-3);
+  min-height: 40px;
+  padding: 0 var(--space-2) 0 var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   cursor: pointer;
   transition: border-color 0.15s;
 
@@ -104,6 +129,14 @@ nav {
   .palette-label {
     margin-right: var(--space-4);
   }
+
+  .palette-short {
+    display: none;
+  }
+}
+
+.actions .label {
+  display: none;
 }
 
 .logout:hover {
@@ -114,24 +147,27 @@ main {
   display: block;
 }
 
-// Medium width: the palette shrinks to its icon so the navigation stays centered and complete.
+// Medium width: the palette keeps a short label («Buscar») so the navigation stays centered.
 @media (width <= 1023px) {
   .palette-trigger {
-    justify-content: center;
-    width: var(--control-height);
-    padding: 0;
+    padding: 0 var(--space-4);
 
     .palette-label,
     .kbd {
       display: none;
     }
+
+    .palette-short {
+      display: inline;
+    }
   }
 }
 
 @media (width <= 767px) {
-  // First row: brand left, actions right. Second row: the navigation, which scrolls.
+  // First row: the brand (opens the menu) and the search, which takes all the remaining width.
+  // Second row: the navigation, which scrolls.
   .topbar-inner {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr;
     gap: 0 var(--space-3);
     padding-bottom: 0;
   }
@@ -140,28 +176,72 @@ main {
     min-height: var(--touch-target);
   }
 
-  .actions {
-    gap: var(--space-1);
+  .palette-trigger {
+    justify-self: stretch;
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+
+    .palette-short {
+      flex: 1;
+      text-align: left;
+    }
+
+    .kbd {
+      display: none;
+    }
   }
 
-  .palette-trigger,
-  .actions .btn.icon {
-    width: var(--touch-target);
-    height: var(--touch-target);
+  // The theme toggle and logout become a menu under the brand.
+  .actions {
+    position: absolute;
+    top: calc(var(--space-2) + var(--touch-target));
+    left: var(--page-gutter);
+    z-index: var(--z-nav);
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 220px;
+    padding: var(--space-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+
+    &.open {
+      display: flex;
+    }
+
+    .btn.icon {
+      justify-content: flex-start;
+      gap: var(--space-3);
+      width: auto;
+      height: var(--touch-target);
+      padding: 0 var(--space-3);
+    }
+
+    .label {
+      display: inline;
+      font-size: var(--text-base);
+    }
   }
 
   nav {
     grid-column: 1 / -1;
     grid-row: 2;
-    justify-content: flex-start;
+    justify-content: stretch;
     width: calc(100% + var(--page-gutter) * 2);
     margin: 0 calc(var(--page-gutter) * -1);
-    padding: 0 var(--space-3);
+    padding: 0;
     overflow-x: auto;
     scrollbar-width: none;
 
+    /* The four tabs share the whole width evenly. */
     a {
+      flex: 1 0 auto;
+      justify-content: center;
       min-height: var(--touch-target);
+      padding: 0 var(--space-2);
       border-radius: 0;
 
       &.active {

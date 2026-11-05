@@ -1,46 +1,27 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 
-export type ThemePreference = 'system' | 'light' | 'dark';
-
-const STORAGE_KEY = 'rr-theme';
-const ORDER: readonly ThemePreference[] = ['system', 'light', 'dark'];
-
-function readPreference(): ThemePreference {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === 'light' || stored === 'dark' ? stored : 'system';
-  } catch {
-    return 'system'; // no storage (private mode, blocked data): follow the system
-  }
-}
+export type Theme = 'light' | 'dark';
 
 /**
- * Light/dark theme. The preference is stored in the browser; "system" follows the operating system.
+ * Light/dark theme. Every visit starts with the operating system's theme and follows it while the
+ * user has not chosen; the toggle flips between light and dark for the rest of the visit. The
+ * choice is deliberately not stored: the next visit starts from the system again.
  * It is applied as `data-theme` on <html>, which the tokens (styles/_tokens.scss) and PrimeNG read.
- * The script in index.html applies the same before Angular boots to avoid a flash.
+ * The script in theme-init.js applies the system theme before Angular boots to avoid a flash.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
-  readonly preference = signal<ThemePreference>(readPreference());
   private readonly systemDark = signal(false);
+  /** The theme picked with the toggle, or null while the system's is in use. */
+  private readonly chosen = signal<Theme | null>(null);
 
   /** Theme actually being shown. */
-  readonly resolved = computed<'light' | 'dark'>(() => {
-    const preference = this.preference();
-    if (preference === 'system') return this.systemDark() ? 'dark' : 'light';
-    return preference;
-  });
+  readonly resolved = computed<Theme>(
+    () => this.chosen() ?? (this.systemDark() ? 'dark' : 'light'),
+  );
 
-  readonly label = computed(() => {
-    switch (this.preference()) {
-      case 'light':
-        return 'Claro';
-      case 'dark':
-        return 'Oscuro';
-      default:
-        return 'Sistema';
-    }
-  });
+  /** Name of the theme being shown ("Claro" or "Oscuro"). */
+  readonly label = computed(() => (this.resolved() === 'dark' ? 'Oscuro' : 'Claro'));
 
   constructor() {
     // `matchMedia` does not exist in jsdom (tests); it stays light there.
@@ -53,19 +34,8 @@ export class ThemeService {
     effect(() => document.documentElement.setAttribute('data-theme', this.resolved()));
   }
 
-  set(preference: ThemePreference): void {
-    this.preference.set(preference);
-    try {
-      if (preference === 'system') localStorage.removeItem(STORAGE_KEY);
-      else localStorage.setItem(STORAGE_KEY, preference);
-    } catch {
-      // No storage: the change only lasts for this session.
-    }
-  }
-
-  /** System, light, dark, back to system. */
-  cycle(): void {
-    const next = ORDER[(ORDER.indexOf(this.preference()) + 1) % ORDER.length]!;
-    this.set(next);
+  /** Light becomes dark and dark becomes light. */
+  toggle(): void {
+    this.chosen.set(this.resolved() === 'dark' ? 'light' : 'dark');
   }
 }

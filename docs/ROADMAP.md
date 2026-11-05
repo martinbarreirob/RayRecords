@@ -137,7 +137,7 @@ Goal: import the bank statement, categorize it and see where the money goes.
 Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top navigation, one typeface, one indigo accent, light and dark theme).
 
 - [x] **Decided**: custom CSS with tokens (`apps/web/src/styles/`) + **PrimeNG 22 only for the complex parts** (`p-table`, `p-select`, `p-datepicker`, `p-dialog`, `p-confirmdialog`, `p-checkbox`, `p-toggleswitch`). PrimeNG is styled with the tokens (`styles/_primeng.scss`) and its configuration is declared **in the lists, expenses and accounts routes** (`core/theme/provide-primeng.ts`), not at bootstrap: initial bundle of 358 kB versus 574 kB.
-- [x] Self-hosted Inter typeface, light/dark/system theme (`ThemeService`, no flash on load), responsive design (under 768 px).
+- [x] Self-hosted Inter typeface, light/dark theme that starts from the system on every visit (`ThemeService`, not stored, no flash on load), responsive design (under 768 px).
 - [x] Shell: top bar and command palette (Ctrl+K) with real search, commands, quick capture with "/" (preview of the target list) and Shift+N · L · C · G · U shortcuts (body loaded lazily).
 - [x] Screens: notes (canvas), lists and Kanban (drag with CDK and keyboard), calendar (month/agenda), expenses (category chips, table with in-cell editing and bulk actions, summary, import, rules), accounts and sign-in.
 - [x] Accessibility: visible focus, labels, 44 px touch targets on mobile, keyboard support for everything important.
@@ -165,7 +165,8 @@ Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top na
 - [ ] ESLint with Angular and TypeScript rules.
 - [ ] E2E tests (Playwright) for the capture and import flows.
 - [ ] Dependabot or Renovate for dependencies.
-- [ ] PWA / capture shortcut on mobile.
+- [x] PWA: manifest, icons and a minimal service worker (installable; no offline mode).
+- [ ] Capture shortcut on mobile.
 
 ## Open questions
 

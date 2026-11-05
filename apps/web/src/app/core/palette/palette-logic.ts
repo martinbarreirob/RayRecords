@@ -177,7 +177,7 @@ export function highlightSegments(text: string, query: string): HighlightSegment
 // --- Commands -----------------------------------------------------------------------------------
 
 export interface CommandContext {
-  /** Label of the current theme ("Claro", "Oscuro", "Sistema"). */
+  /** Label of the current theme ("Claro" or "Oscuro"). */
   themeLabel: string;
   username: string;
 }
@@ -219,7 +219,7 @@ const COMMANDS: readonly CommandDef[] = [
   {
     id: 'toggle-theme',
     label: 'Cambiar tema',
-    keywords: 'claro oscuro sistema modo noche dark light apariencia',
+    keywords: 'claro oscuro modo noche dark light apariencia',
     action: { type: 'toggle-theme' },
     hint: (context) => `ahora: ${context.themeLabel}`,
   },

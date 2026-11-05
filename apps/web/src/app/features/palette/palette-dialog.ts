@@ -503,7 +503,7 @@ export class PaletteDialog {
         this.newNote();
         break;
       case 'toggle-theme':
-        this.theme.cycle();
+        this.theme.toggle();
         this.palette.hide();
         break;
       case 'logout':

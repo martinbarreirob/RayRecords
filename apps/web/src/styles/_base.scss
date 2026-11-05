@@ -83,20 +83,6 @@ textarea {
   padding: var(--space-6) var(--page-gutter) var(--space-7);
 }
 
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3) var(--space-5);
-  margin-bottom: var(--space-5);
-}
-
-.page-eyebrow {
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
 .muted {
   color: var(--muted);
 }

@@ -22,7 +22,9 @@ export function loginErrorMessage(error: unknown): string {
   selector: 'app-login-page',
   template: `
     <div class="login">
-      <p class="brand" aria-hidden="true"><span class="dot"></span>RayRecords</p>
+      <p class="brand" aria-hidden="true">
+        <img class="logo" src="logo.svg" alt="" width="40" height="40" />RayRecords
+      </p>
 
       <form class="card" (submit)="submit($event)" novalidate>
         <h1>Iniciar sesión</h1>
@@ -114,11 +116,10 @@ export function loginErrorMessage(error: unknown): string {
       font-weight: 600;
     }
 
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
+    .logo {
+      flex: none;
+      width: 40px;
+      height: 40px;
     }
 
     form {

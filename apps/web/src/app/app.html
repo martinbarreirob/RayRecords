@@ -1,7 +1,58 @@
 @if (auth.user(); as user) {
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" routerLink="/"><span class="dot" aria-hidden="true"></span>RayRecords</a>
+      <div class="start">
+        <ng-template #brandContent
+          ><img class="logo" src="logo.svg" alt="" width="28" height="28" />RayRecords</ng-template
+        >
+        <!-- On a phone the brand is the button that opens the menu; elsewhere it goes home. -->
+        @if (isMobile()) {
+          <button
+            type="button"
+            class="brand"
+            aria-controls="header-menu"
+            [attr.aria-expanded]="menuOpen()"
+            (click)="menuOpen.set(!menuOpen())"
+          >
+            <ng-container [ngTemplateOutlet]="brandContent" />
+            <i class="pi pi-chevron-down caret" aria-hidden="true"></i>
+          </button>
+        } @else {
+          <a class="brand" routerLink="/"><ng-container [ngTemplateOutlet]="brandContent" /></a>
+        }
+        <!-- Icon buttons on desktop; on a phone they are a menu that the brand opens. -->
+        <div class="actions" id="header-menu" [class.open]="menuOpen()">
+          <button
+            type="button"
+            class="btn ghost icon theme-toggle"
+            [attr.aria-label]="
+              'Cambiar a tema ' + (theme.resolved() === 'dark' ? 'claro' : 'oscuro')
+            "
+            [title]="'Tema ' + theme.label().toLowerCase()"
+            (click)="toggleTheme()"
+          >
+            <i
+              class="pi"
+              [class.pi-sun]="theme.resolved() === 'dark'"
+              [class.pi-moon]="theme.resolved() === 'light'"
+              aria-hidden="true"
+            ></i>
+            <span class="label">{{
+              theme.resolved() === 'dark' ? 'Tema claro' : 'Tema oscuro'
+            }}</span>
+          </button>
+          <button
+            type="button"
+            class="btn ghost icon logout"
+            [attr.aria-label]="'Salir (' + user.username + ')'"
+            [title]="'Salir (' + user.username + ')'"
+            (click)="logout()"
+          >
+            <i class="pi pi-sign-out" aria-hidden="true"></i>
+            <span class="label">Salir</span>
+          </button>
+        </div>
+      </div>
 
       <nav aria-label="Principal">
         <a routerLink="/notas" routerLinkActive="active">Notas</a>
@@ -10,38 +61,13 @@
         <a routerLink="/gastos" routerLinkActive="active">Gastos</a>
       </nav>
 
-      <div class="actions">
-        <button type="button" class="palette-trigger" (click)="palette.show()">
-          <i class="pi pi-search" aria-hidden="true"></i>
-          <span class="palette-label">Buscar o ejecutar…</span>
-          <span class="kbd">Ctrl K</span>
-          <span class="sr-only">Abrir la paleta de comandos</span>
-        </button>
-        <button
-          type="button"
-          class="btn ghost icon theme-toggle"
-          [attr.aria-label]="'Tema: ' + theme.label() + '. Cambiar'"
-          [title]="'Tema: ' + theme.label()"
-          (click)="theme.cycle()"
-        >
-          <i
-            class="pi"
-            [class.pi-desktop]="theme.preference() === 'system'"
-            [class.pi-sun]="theme.preference() === 'light'"
-            [class.pi-moon]="theme.preference() === 'dark'"
-            aria-hidden="true"
-          ></i>
-        </button>
-        <button
-          type="button"
-          class="btn ghost icon logout"
-          [attr.aria-label]="'Salir (' + user.username + ')'"
-          [title]="'Salir (' + user.username + ')'"
-          (click)="logout()"
-        >
-          <i class="pi pi-sign-out" aria-hidden="true"></i>
-        </button>
-      </div>
+      <button type="button" class="palette-trigger" (click)="palette.show()">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <span class="palette-label">Buscar o ejecutar…</span>
+        <span class="palette-short">Buscar</span>
+        <span class="kbd">Ctrl K</span>
+        <span class="sr-only">Abrir la paleta de comandos</span>
+      </button>
     </div>
   </header>
 
