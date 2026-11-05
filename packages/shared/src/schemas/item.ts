@@ -50,10 +50,27 @@ export const CreateItemSchema = ItemSchema.pick({
 });
 export type CreateItem = z.infer<typeof CreateItemSchema>;
 
+/** En una edición parcial, `null` quita el valor opcional; en `extra`, una clave a `null` se borra. */
 export const UpdateItemSchema = CreateItemSchema.omit({ listId: true, source: true })
   .partial()
   .extend({
-    order: z.number().optional(),
+    // Sin valor por defecto: un PATCH que no los menciona (p. ej. solo `done`) no debe vaciarlos.
+    tags: z.array(TagSchema).max(30).optional(),
+    extra: ExtraSchema.optional(),
+    text: ItemSchema.shape.text.nullable().optional(),
+    dueDate: DateOnlySchema.nullable().optional(),
+    time: TimeSchema.nullable().optional(),
+    url: HttpUrl.nullable().optional(),
     done: z.boolean().optional(),
   });
 export type UpdateItem = z.infer<typeof UpdateItemSchema>;
+
+/**
+ * Mover o reordenar un elemento: se indica tras qué elemento queda (`afterId`; `null` = al principio)
+ * y, en un tablero, a qué columna va. El servidor calcula el `order`.
+ */
+export const MoveItemSchema = z.object({
+  afterId: ObjectIdString.nullable(),
+  column: FieldKey.optional(),
+});
+export type MoveItem = z.infer<typeof MoveItemSchema>;

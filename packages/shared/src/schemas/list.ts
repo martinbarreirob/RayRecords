@@ -67,6 +67,10 @@ export const CreateListSchema = ListSchema.pick({
 export type CreateList = z.infer<typeof CreateListSchema>;
 
 export const UpdateListSchema = CreateListSchema.partial().extend({
+  /** Sin valor por defecto: un PATCH que no los menciona no debe vaciar los campos de la lista. */
+  fieldDefs: z.array(FieldDef).max(30).optional(),
+  /** `null` quita el alias de captura. */
+  captureAlias: CaptureAlias.nullable().optional(),
   archived: z.boolean().optional(),
   order: z.number().optional(),
 });
