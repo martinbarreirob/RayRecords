@@ -1,174 +1,191 @@
 # Roadmap
 
-Estado a 3 de noviembre de 2026. Este documento es la fuente de verdad de **qué está hecho, qué falta y qué está por decidir**. El [README](../README.md) solo resume; el diseño está en [ARQUITECTURA.md](ARQUITECTURA.md).
+Status as of November 3, 2026. This document is the source of truth for **what is done, what is missing and what is still to be decided**. The [README](../README.md) only summarizes; the design lives in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-Leyenda: `[x]` hecho y verificado · `[ ]` pendiente · **(decisión)** hay algo que resolver antes o durante.
+Legend: `[x]` done and verified · `[ ]` pending · **(decision)** something to resolve before or during.
 
-## Resumen
+## Summary
 
-| Fase | Contenido                                                                                | Estado    |
-| ---- | ---------------------------------------------------------------------------------------- | --------- |
-| 1    | Esqueleto: monorepo, contratos compartidos, parser, despliegue, seeder, shell de Angular | Hecha     |
-| 2    | Autenticación y base de la API                                                           | Por hacer |
-| 3    | Listas, elementos y notas del día, con captura rápida conectada                          | Por hacer |
-| 4    | Gastos y cuentas                                                                         | Por hacer |
-| 5    | Calendario                                                                               | Por hacer |
-| 6    | Estética y sistema de tokens                                                             | Por hacer |
-| 7    | Puesta en producción y operación                                                         | Por hacer |
-| —    | Opcionales (passkeys, demo pública, etc.)                                                | Sin fecha |
+| Phase | Content                                                                                | Status                      |
+| ----- | -------------------------------------------------------------------------------------- | --------------------------- |
+| 1     | Skeleton: monorepo, shared contracts, parser, deployment, seeder, Angular shell        | Done                        |
+| 2     | Authentication and API foundation                                                      | Done, CI still to be pushed |
+| 3     | Lists, items and notes, with quick capture wired up                                    | Done (UI unstyled)          |
+| 3b    | Notes as a free-form canvas: cards, groups, done cards hidden after 24 h               | Done (migration pending)    |
+| 4     | Expenses and accounts                                                                  | Done, real CSV pending      |
+| 5     | Calendar                                                                               | Done (UI unstyled)          |
+| 6     | Aesthetics and token system                                                            | Done (license pending)      |
+| 7     | Production rollout and operations                                                      | To do                       |
+| —     | Optional (passkeys, public demo, etc.)                                                 | No date                     |
 
-El orden importa: **la fase 2 va primero porque hasta que exista login la API no puede exponerse fuera de `localhost`**. La fase 6 (estética) se aplaza a propósito para no decidir tokens antes de tener pantallas reales; las pantallas actuales llevan solo la estructura mínima.
+Phases 3, 4 and 5 are implemented end to end (API with integration tests and working screens). What remains of them is **the design and interaction layer** (phase 6: styles, drag and drop, charts, markdown preview) and validating the real bank CSV. Order matters: **phase 2 comes first because the API cannot be exposed beyond `localhost` until login exists**. Phase 6 (aesthetics) is already applied to all screens.
 
-## Estado del repositorio
+## Repository status
 
-- `main` en `martinbarreirob/RayRecords` (privado), un commit inicial más los de documentación.
-- `.github/workflows/ci.yml` **existe en local pero no está versionado ni subido**: GitHub rechaza el push de workflows con el token de la cuenta personal porque no tiene el permiso `workflow`. Hasta entonces **no hay CI ni se publican imágenes en GHCR**. Ver [la tarea en la fase 2](#fase-2--autenticación-y-base-de-la-api).
-- 129 tests pasando (90 `shared`, 31 `api`, 8 `web`), typecheck limpio y los dos builds correctos.
-- Las dos imágenes Docker se construyeron y se ejecutaron en local con el compose de producción: nginx usó 12 MiB de 64 y la API 35 MiB de 256.
-- Sin probar nunca: CI en GitHub, el servidor real (Hetzner), Tailscale y el Mongo existente.
+- `main` in `martinbarreirob/RayRecords` (private). The app is served at https://rayrecords.nonchoperdas.com through a Cloudflare Tunnel.
+- `.github/workflows/ci.yml` runs the checks on every push, publishes the images to GHCR and deploys them to the server over SSH. It was pushed over SSH, which does not need the `workflow` token scope.
+- 666 tests passing (124 `shared`, 162 `api`, 380 `web`), clean typecheck and a successful build.
+- Both Docker images were built and run locally with the production compose file: nginx used 12 MiB of 64 and the API 35 MiB of 256.
+- Never tested: CI on GitHub, the real server (Hetzner), the Cloudflare Tunnel and the existing Mongo.
 
-## Fase 1 — Esqueleto (hecha)
+## Phase 1 — Skeleton (done)
 
-- [x] Monorepo pnpm (`apps/web`, `apps/api`, `packages/shared`), TypeScript, prettier, `.editorconfig`, `.gitattributes`.
-- [x] Esquemas Zod de listas, elementos, notas del día, cuentas, transacciones, categorías y reglas.
-- [x] Presets de lista (películas/series, compras, tablero, libre) como datos.
-- [x] Parser de captura rápida con 90 tests, incluidos los casos límite.
-- [x] API Fastify: `/api/health` y `/api/lists`, plantilla de módulo, configuración validada.
-- [x] Índices de MongoDB y `ensureIndexes` idempotente.
-- [x] Gastos: normalización de descripciones, hash de deduplicación con n.º de repetición, categorización por reglas, `prepareTransactions`.
-- [x] Seeder determinista con guardas (solo `_dev`/`_demo`, nunca en producción).
-- [x] Docker: compose de producción y de desarrollo con `mem_limit`, Mongo con `wiredTigerCacheSizeGB 0.5`, nginx, Dockerfiles multi-etapa.
-- [x] Angular: rutas lazy por módulo, shell, captura rápida con vista previa y atajo (`Ctrl/Cmd+K` o `/`), `ApiClient` abstracto, pantallas esqueleto.
-- [x] Documentación inicial y guía de despliegue.
+- [x] pnpm monorepo (`apps/web`, `apps/api`, `packages/shared`), TypeScript, prettier, `.editorconfig`, `.gitattributes`.
+- [x] Zod schemas for lists, items, daily notes, accounts, transactions, categories and rules.
+- [x] List presets (movies/series, shopping, board, free-form) as data.
+- [x] Quick capture parser with 90 tests, including edge cases.
+- [x] Fastify API: `/api/health` and `/api/lists`, module template, validated configuration.
+- [x] MongoDB indexes and idempotent `ensureIndexes`.
+- [x] Expenses: description normalization, deduplication hash with repetition number, rule-based categorization, `prepareTransactions`.
+- [x] Deterministic seeder with guards (only `_dev`/`_demo`, never in production).
+- [x] Docker: production and development compose files with `mem_limit`, Mongo with `wiredTigerCacheSizeGB 0.5`, nginx, multi-stage Dockerfiles.
+- [x] Angular: lazy routes per module, shell, quick capture with preview and shortcut (`Ctrl/Cmd+K` or `/`), abstract `ApiClient`, skeleton screens.
+- [x] Initial documentation and deployment guide.
 
-## Fase 2 — Autenticación y base de la API
+## Phase 2 — Authentication and API foundation
 
-Objetivo: poder abrir la app desde mis dispositivos con sesión persistente y que todo `/api` quede protegido.
+Goal (met except for CI): be able to open the app from my devices with a persistent session, with all of `/api` protected.
 
-- [ ] Colecciones `users`, `sessions` (índice TTL sobre `expiresAt`) y `credentials` (passkeys, vacía de momento) con sus índices.
-- [ ] Hash de contraseña con argon2.
-- [ ] Alta del usuario único por CLI (`pnpm --filter @rayrecords/api create-user`), sin pantalla de registro.
-- [ ] `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
-- [ ] Cookie `httpOnly; Secure; SameSite=Strict`, 30 días con renovación deslizante, sesión en Mongo (revocable).
-- [ ] Hook global que exige sesión en todo `/api` salvo `health` y `login`.
-- [ ] Limitación de intentos de login (rate limit) y comprobación de `Origin`.
-- [ ] Formato uniforme de errores de la API (código, mensaje, detalles de validación).
-- [ ] Angular: pantalla de login, guard de rutas e interceptor que redirige al login en 401.
-- [ ] **(decisión)** Estrategia de tests de integración de la API: `mongodb-memory-server` frente a un servicio Mongo en CI. Hoy solo hay tests unitarios.
-- [ ] Subir `ci.yml`: renovar el permiso `workflow` del token personal (ver [DESARROLLO.md](DESARROLLO.md#cuenta-personal-de-github)) y hacer `git add .github` + push.
-- [ ] Una vez haya CI: comprobar que las imágenes se publican en GHCR y que el compose del servidor las descarga.
+- [x] `users`, `sessions` (TTL index on `expiresAt`) and `credentials` (passkeys, empty for now) collections with their indexes.
+- [x] Password hashing with scrypt from `node:crypto` (instead of argon2: no native dependency on Alpine; the hash stores its parameters and can be migrated).
+- [x] Single-user creation via CLI (`pnpm --filter @rayrecords/api create-user`), no sign-up screen.
+- [x] `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
+- [x] `httpOnly; Secure; SameSite=Strict` cookie, 30 days with sliding renewal, session stored in Mongo (revocable).
+- [x] Global hook requiring a session on all of `/api` except `health` and `login`.
+- [x] Login attempt limiting (rate limit) and `Origin` check.
+- [x] Uniform API error format (code, message, validation details).
+- [x] Angular: login screen, route guard and an interceptor that redirects to login on 401.
+- [x] API integration tests against a real Mongo (temporary database; skipped if there is no Mongo). Decided: a Mongo service in CI instead of `mongodb-memory-server`, which downloads a ~100 MB binary and is fragile on Windows.
+- [x] Push `ci.yml` (done over SSH; it includes a Mongo service for the integration tests).
+- [ ] Once CI exists: check that the images are published to GHCR and that the server's compose file pulls them.
 
-## Fase 3 — Listas, elementos y notas del día
+## Phase 3 — Lists, items and daily notes (done, with minimal functional UI)
 
-Objetivo: usar la app a diario para capturar y consultar. Es la fase donde la captura rápida deja de ser una vista previa.
+Goal: use the app daily to capture and look things up. The API is complete and tested; the screens are functional and already carry the phase 6 design.
 
-**Listas**
+**Lists**
 
-- [ ] `POST /api/lists` a partir de un preset (crear una lista nueva en pocos segundos, sin código), `PATCH` y archivado.
-- [ ] Error claro si el alias de captura ya lo usa otra lista (el índice único parcial lo garantiza; falta el mensaje).
-- [ ] Angular: formulario mínimo de nueva lista con selector de plantilla y edición de campos.
+- [x] `POST /api/lists` (from a preset), `PATCH` (rename, fields, columns, aliases —`null` removes it—, archive) and `GET ?archived=`.
+- [x] Clear error (`409 alias_in_use`) with the name of the list already using the alias.
+- [x] Angular: new list form with template selector and alias; archive.
+- [ ] Angular: edit the fields (`fieldDefs`) and columns of an existing list (the API already allows it).
 
-**Elementos**
+**Items**
 
-- [ ] `GET /api/lists/:id/items`, `POST`, `PATCH`, `DELETE` de `/api/items`.
-- [ ] Validación **flexible** de `extra` contra `list.fieldDefs`: tipo correcto en los campos definidos y claves libres permitidas.
-- [ ] Filtros por tag y búsqueda de texto (ya existe el índice).
-- [ ] Angular: vista de lista (tabla/tarjetas según los campos) y edición en línea.
-- [ ] Tablero Kanban: mover entre columnas y reordenar. **(decisión)** Orden: hoy el seeder usa `order` numérico con huecos de 1000; alternativa, rangos fraccionarios (lexorank). Elegir antes de implementar el arrastrar y soltar con CDK.
+- [x] `GET /api/lists/:id/items` (filters `tag`, `q`, `done`), `POST`, `PATCH`, `DELETE` of `/api/items`.
+- [x] **Flexible** validation of `extra` against `list.fieldDefs`: correct type on defined fields, free keys allowed, `null` deletes the field.
+- [x] Angular: table with the list's fields, whole-row editing, mark done, delete, search and tag filter.
+- [x] Board: move between columns and reorder with `POST /api/items/:id/move`. **Decided**: numeric `order` with the midpoint between neighbors and renumbering of the column when the gap runs out (lexorank rejected: with a single user renumbering is cheap and the model does not change). The tests force it with 40 consecutive moves.
+- [ ] Angular: drag and drop with CDK on the board and in the table (today they are ↑ ↓ ← → buttons). This is interaction work for the design phase.
 
-**Notas del día**
+**Daily notes (replaced by phase 3b)**
 
-- [ ] `GET /api/notes/:date` y `PUT /api/notes/:date` (upsert), `POST /api/notes/:date/append`.
-- [ ] Angular: editor markdown, navegación entre días, vista previa.
-- [ ] **(decisión)** Formato de lo que se añade desde la captura sin prefijo: línea sin más (hoy) o con hora (`- 14:32 texto`).
+- [x] `GET/PUT /api/notes/:date`, `POST /api/notes/:date/append` and `GET /api/notes?month=` remain in the API as legacy; the web app no longer uses them.
 
-**Captura rápida conectada**
+**Phase 3b — Notes as a free-form canvas (done)**
 
-- [ ] `POST /api/capture`: ejecuta `parseQuickCapture` **en el servidor** con los alias de la BD (una sola fuente de verdad; el cliente solo la usa para la vista previa).
-- [ ] Resolver el alias a su lista y mapear: `priceCents` → `extra.precio`, `category` → `extra.categoria`, `url`, `tags`, `dueDate`.
-- [ ] **(decisión)** Si la lista destino no define los campos `precio` o `categoria`: ignorar el dato, guardarlo igualmente en `extra` o añadir el texto al título.
-- [ ] **(decisión)** Si no existe ninguna lista con alias `tarea` (destino de `hoy:` / `mañana:`): crearla automáticamente o caer a la nota del día. La regla "capturar nunca falla" apunta a lo segundo con aviso.
-- [ ] Angular: enviar desde la barra, confirmación con deshacer, y recargar los datos afectados.
-- [ ] **(decisión)** Zona horaria del usuario: hoy es la constante `Europe/Madrid`; valorar hacerla configurable.
+Chosen design: the "Folio" direction (top navigation, capture at the top, cards below). The other two were discarded.
 
-## Fase 4 — Gastos y cuentas
+- [x] `note_cards` and `note_groups` collections; `/api/note-cards` and `/api/note-groups` API (see [API.md](API.md)); 16 integration tests.
+- [x] Geometry and time as pure functions in `shared` (`nextFreePosition`, coordinate conversion, group under a point, `isVisible`) with tests.
+- [x] Desktop canvas: create (double click or `N`), edit, move (position is saved), multi-select with Shift, group with Ctrl+G, move and resize groups, drop inside and outside a group, dissolve, Alt+arrows.
+- [x] Mark as done (checkbox or `X`): `doneAt` is stored and **after exactly 24 h** the card stops being shown. It stays in the DB and can be recovered from "Terminadas" (Done).
+- [x] Mobile (< 768 px): list ordered by position, with collapsible groups and a "done" checkbox.
+- [x] Quick capture: anything that does not fit creates a card in the first free slot; "Deshacer" (Undo) deletes it.
+- [x] **Decided**: when a group is dissolved its cards stay loose where they were; a group whose cards are all done stays until it is deleted.
+- [ ] **On deploy**: run `migrate-notes` once to convert the old daily notes (one card per note, starting with the date). Not done: it has not been run against the real data.
+- [ ] Pending from phase 6: aesthetics, mouse selection marquee, alignment guides, zoom and pan.
 
-Objetivo: importar el extracto del banco, categorizarlo y ver en qué se va el dinero. **Bloqueada por la muestra del CSV real.**
+**Quick capture wired up**
 
-- [ ] **(bloqueo)** Cabecera y 3–4 líneas anonimizadas del CSV del banco: columnas, si hay saldo, si el importe va con signo o en cargo/abono separados.
-- [ ] Parser del CSV: separador `;`, decimales con coma, fechas `dd/mm/yyyy`, codificación Windows-1252 (`TextDecoder('windows-1252')`), con tests sobre un fichero de ejemplo.
-- [ ] `POST /api/accounts/:id/imports` (multipart, límite de 5 MB ya puesto en nginx): `prepareTransactions` → `insertMany({ ordered: false })`, contando como omitidas las violaciones del índice único (código 11000), y registro en `import_batches`.
-- [ ] Deshacer una importación completa por `importBatchId`.
-- [ ] `GET /api/transactions` con filtros por cuenta, mes, categoría y texto.
-- [ ] Corrección manual de categoría (`categorySource: manual`, nunca se sobrescribe) con opción de crear una regla a partir de ella.
-- [ ] Reaplicar las reglas a las transacciones sin categoría.
-- [ ] CRUD de reglas y categorías.
-- [ ] `GET /api/expenses/summary`: agregación por mes y categoría (`$group` sobre `{month, category}`).
-- [ ] Angular: importación con vista previa, tabla de movimientos, gestión de reglas y gráficos.
-- [ ] **(decisión)** Librería de gráficos (ECharts, Chart.js u otra), que depende del sistema de diseño de la fase 6.
-- [ ] Cuentas: CRUD y saldo calculado (apertura + suma de movimientos) con resumen básico.
-- [ ] **(decisión)** Qué hacer con los traspasos entre cuentas propias para que no cuenten como gasto ni ingreso.
+- [x] `POST /api/capture`: runs `parseQuickCapture` **on the server** with the aliases from the DB (the client only uses it for the preview).
+- [x] Mapping: `priceCents` → `extra.precio`, `category` → `extra.categoria`, `url`, `tags`, `dueDate`.
+- [x] **Decided**: if the value does not fit the list field's type (e.g. a category outside a `select`'s options) it is dropped with a warning; if the list does not define the field, it is still saved in `extra`.
+- [x] **Decided**: if no list with alias `tarea` exists (target of `hoy:` / `mañana:`; "today" / "tomorrow") the capture falls back to a note card **with a warning**. No list is created automatically.
+- [x] Angular: the bar sends to the API, confirms and offers **Deshacer** (Undo; deletes the item or the card); open screens reload by themselves.
+- [ ] **(decision)** User time zone: still the `Europe/Madrid` constant; consider making it configurable.
 
-## Fase 5 — Calendario
+## Phase 4 — Expenses and accounts (implemented; pending validation with the real CSV)
 
-- [ ] `GET /api/calendar?from=&to=`: elementos con `dueDate` en el rango, de todas las listas.
-- [ ] Angular: vista mensual y agenda, con acceso rápido a crear un evento o tarea en una fecha.
-- [ ] Marcar tareas como hechas desde el calendario y resaltar las vencidas.
-- [ ] **(decisión)** Eventos de varios días: hoy solo existe `dueDate` + `time`. Si hacen falta rangos, añadir `endDate`/`endTime` al esquema de `Item` y un índice.
+Goal: import the bank statement, categorize it and see where the money goes. **Everything works with sample statements; the CSV parser is tolerant because we do not yet have the real sample.**
 
-## Fase 6 — Estética y sistema de tokens
+- [ ] **(partial blocker)** Header and 3–4 anonymized lines of the bank CSV. With them we must check that `HEADER_ALIASES` in `apps/api/src/modules/expenses/csv.ts` recognizes the columns and add a test with that sample. Meanwhile, if the header is not recognized the API responds `400 invalid_csv` with a clear message.
+- [x] CSV parser: auto-detected separator (`;`, `,` or tab), header located by column name (supports a preamble), signed amount or separate debit/credit, comma decimals, `dd/mm/yyyy` dates, UTF-8 or Windows-1252 encoding.
+- [x] `POST /api/accounts/:id/imports` with the CSV as raw body (`Content-Type: text/csv`, no multipart or new dependency; 5 MB limit). `?dryRun=true` returns the **preview** (new, duplicates, uncategorized, first 20 rows). Duplicates are skipped by comparing hashes and, on a race, by the unique index.
+- [x] Undo a whole import (`DELETE /api/imports/:id`) and list previous ones.
+- [x] `GET /api/transactions` with filters by account, month, category (or `none`) and text, paginated (`limit`, `offset`).
+- [x] Manual category correction (`PATCH /api/transactions/:id/category`, `categorySource: manual`, never overwritten) with an option to create a rule (priority 10).
+- [x] Reapply rules to uncategorized transactions (`POST /api/rules/apply`).
+- [x] CRUD for rules (validates category and regular expression) and categories (an in-use one cannot be deleted).
+- [x] `GET /api/expenses/summary`: aggregation by month and category, expenses or income.
+- [x] Accounts: `GET/POST/PATCH /api/accounts` with computed balance (opening + sum of transactions) and transaction count.
+- [x] **Decided**: transfers between own accounts are marked with the `traspaso` category (`TRANSFER_CATEGORY`, included by default) and stay **out of the summaries**. It is assigned with a rule or by hand; they are not detected automatically.
+- [x] Angular: accounts (create, archive, balances and total), transactions (filters, per-row category, pagination), import with mandatory preview before importing, previous imports with undo, monthly summary as a table and rule and category management.
+- [ ] **(decision)** Charting library (ECharts, Chart.js or another): depends on the phase 6 design system. Today the summary is a table.
+- [ ] Detect transfers between own accounts automatically (same amount with opposite sign on nearby dates).
+- [ ] Support for statement formats other than CSV (if the bank offers them).
 
-Aplazada a propósito. Cuando se aborde:
+## Phase 5 — Calendar (done, with minimal functional UI)
 
-- [ ] **(decisión)** Sistema de diseño con tokens. Candidatos: Angular Material M3 (tokens `--mat-sys-*`), Tailwind v4 (`@theme`) con Angular CDK, o CSS propio con variables y CDK sin estilos. Criterios: peso del bundle (hoy 70 kB transferidos), accesibilidad y que sirva como portfolio.
-- [ ] Tokens de color, tipografía, espaciado y radio; tema claro/oscuro.
-- [ ] Diseño adaptable a móvil: se usará desde varios dispositivos.
-- [ ] Accesibilidad: foco visible, etiquetas, contraste, navegación por teclado.
-- [ ] Política CSP en nginx, **cuando la UI esté cerrada** (Angular inyecta estilos y un manejador de carga que obligan a decidir `style-src` y `script-src`).
+- [x] `GET /api/calendar?from=&to=`: items with `dueDate` in the range (max. 400 days) from non-archived lists, with the name and slug of their list.
+- [x] Angular: monthly grid (week starting on Monday), month agenda, quick add of an item on a date (with optional time and list), mark done from the agenda and an **overdue** marker.
+- [ ] **(decision)** Multi-day events: today only `dueDate` + `time` exist. If ranges are needed, add `endDate`/`endTime` to the `Item` schema and an index.
+- [ ] Week view and reminders (optional).
 
-## Fase 7 — Puesta en producción y operación
+## Phase 6 — Aesthetics and token system (done; PrimeNG license still to be decided)
 
-- [ ] Crear en Mongo la base de datos `rayrecords` y su usuario `readWrite` (ver [deploy/README.md](../deploy/README.md)).
-- [ ] `deploy/.env` en el servidor, red del Mongo existente y `docker login ghcr.io`.
-- [ ] `tailscale serve --bg 8080` y comprobar HTTPS, cookie `Secure` y cabecera `X-Forwarded-Proto`.
-- [ ] **(decisión)** Aplicar `wiredTigerCacheSizeGB 0.5` al Mongo compartido: afecta también al otro proyecto.
-- [ ] Copias de seguridad: `mongodump` programado de la base `rayrecords`, con retención y una restauración de prueba.
-- [ ] Rotación de logs de Docker (`json-file` con `max-size` y `max-file`) para no llenar el disco.
-- [ ] Medir el consumo real de memoria con datos reales y ajustar `mem_limit`.
-- [ ] Procedimiento de actualización y de vuelta atrás documentado y probado (`TAG=<sha>`).
+Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top navigation, one typeface, one indigo accent, light and dark theme).
 
-## Opcionales
+- [x] **Decided**: custom CSS with tokens (`apps/web/src/styles/`) + **PrimeNG 22 only for the complex parts** (`p-table`, `p-select`, `p-datepicker`, `p-dialog`, `p-confirmdialog`, `p-checkbox`, `p-toggleswitch`). PrimeNG is styled with the tokens (`styles/_primeng.scss`) and its configuration is declared **in the lists, expenses and accounts routes** (`core/theme/provide-primeng.ts`), not at bootstrap: initial bundle of 358 kB versus 574 kB.
+- [x] Self-hosted Inter typeface, light/dark/system theme (`ThemeService`, no flash on load), responsive design (under 768 px).
+- [x] Shell: top bar and command palette (Ctrl+K) with real search, commands, quick capture with "/" (preview of the target list) and Shift+N · L · C · G · U shortcuts (body loaded lazily).
+- [x] Screens: notes (canvas), lists and Kanban (drag with CDK and keyboard), calendar (month/agenda), expenses (category chips, table with in-cell editing and bulk actions, summary, import, rules), accounts and sign-in.
+- [x] Accessibility: visible focus, labels, 44 px touch targets on mobile, keyboard support for everything important.
+- [ ] **(decision, blocks the production release)** **PrimeNG 22 license**: without a key it shows the red "Invalid PrimeUI License" notice on the screens that use it. Options: free Community key (personal use, yearly renewal, requested by the user at primeui.dev and passed in `providePrimeNG({ license })`), PrimeNG 21 (no official support with Angular 22) or remove PrimeNG.
+- [ ] Expenses: the design called for "mark as paid", delete and add transactions by hand and edit amount/description; the API does not support it (only the category changes). Decide whether to extend it.
+- [ ] Palette search: the server searches by whole word ("re" does not find "Reforma").
+- [ ] CSP policy in nginx, **once the UI is finished** (Angular and PrimeNG inject styles, which forces deciding `style-src` and `script-src`).
 
-- [ ] **Passkeys** (WebAuthn con `@simplewebauthn`): colección `credentials` ya prevista; requiere HTTPS.
-- [ ] **Demo pública para el portfolio**: build estática con un adaptador `ApiClient` en memoria y los datos del seeder, desplegada en GitHub Pages. Es posible porque las pantallas dependen de `ApiClient`, no de `HttpClient`.
-- [ ] Exportar e importar todos los datos en JSON.
-- [ ] ESLint con reglas de Angular y TypeScript.
-- [ ] Tests E2E (Playwright) del flujo de captura y de importación.
-- [ ] Dependabot o Renovate para las dependencias.
-- [ ] PWA / atajo de captura en el móvil.
+## Phase 7 — Production rollout and operations
 
-## Preguntas abiertas
+- [ ] Create the `rayrecords` database and its `readWrite` user in Mongo (see [deploy/README.md](../deploy/README.md)).
+- [ ] `deploy/.env` on the server, the existing Mongo's network and `docker login ghcr.io`.
+- [ ] Open the public URL through the tunnel and check HTTPS, the `Secure` cookie and the `X-Forwarded-Proto` header.
+- [ ] **(decision)** Apply `wiredTigerCacheSizeGB 0.5` to the shared Mongo: it also affects the other project.
+- [ ] Backups: scheduled `mongodump` of the `rayrecords` database, with retention and a test restore.
+- [ ] Docker log rotation (`json-file` with `max-size` and `max-file`) so the disk does not fill up.
+- [ ] Measure real memory use with real data and adjust `mem_limit`.
+- [ ] Documented and tested update and rollback procedure (`TAG=<sha>`).
 
-| Pregunta                                                                                        | Quién   | Bloquea                                      |
-| ----------------------------------------------------------------------------------------------- | ------- | -------------------------------------------- |
-| Muestra anonimizada del CSV del banco                                                           | Usuario | Fase 4                                       |
-| ¿El Mongo del servidor corre en un contenedor (otro compose o red) o está instalado en el host? | Usuario | Fase 7 (define si se usa el override de red) |
-| ¿Se puede aplicar `wiredTigerCacheSizeGB 0.5` al Mongo compartido?                              | Usuario | Fase 7                                       |
-| ¿Quieres la demo pública con datos mock?                                                        | Usuario | Opcional                                     |
-| Sistema de diseño y librería de gráficos                                                        | Usuario | Fase 6 y gráficos de la fase 4               |
-| Renovar el permiso `workflow` del token personal                                                | Usuario | Subir el CI                                  |
+## Optional
 
-## Deuda técnica y riesgos conocidos
+- [ ] **Passkeys** (WebAuthn with `@simplewebauthn`): `credentials` collection already planned; requires HTTPS.
+- [ ] **Public demo for the portfolio**: static build with an in-memory `ApiClient` adapter and the seeder's data, deployed on GitHub Pages. Possible because the screens depend on `ApiClient`, not `HttpClient`.
+- [ ] Export and import all data as JSON.
+- [ ] ESLint with Angular and TypeScript rules.
+- [ ] E2E tests (Playwright) for the capture and import flows.
+- [ ] Dependabot or Renovate for dependencies.
+- [ ] PWA / capture shortcut on mobile.
 
-| Asunto                          | Detalle                                                                                                                                 | Cuándo                        |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| **Sin autenticación**           | Cualquiera con acceso a la red de la API lee y escribe todo. Por eso nginx solo escucha en `127.0.0.1`.                                 | Fase 2                        |
-| Sin CI                          | El workflow existe pero no se ha podido subir.                                                                                          | Fase 2                        |
-| Sin tests de integración        | Las rutas de la API solo se han probado a mano contra Mongo.                                                                            | Fase 2                        |
-| Sin ESLint                      | Solo hay prettier y typecheck.                                                                                                          | Opcional                      |
-| Sin CSP                         | Cabeceras de seguridad básicas en nginx, sin `Content-Security-Policy`.                                                                 | Fase 6                        |
-| Zona horaria fija               | `Europe/Madrid` como constante en `shared`.                                                                                             | Fase 3                        |
-| Moneda fija                     | Solo EUR en el parser y en la presentación.                                                                                             | Si hace falta                 |
-| TypeScript en dos versiones     | `shared` y `api` usan TS 7; `web` usa TS 6 porque lo exige el compilador de Angular. El código de `shared` debe compilar con ambas.     | Revisar al actualizar Angular |
-| El cliente no valida respuestas | Confía en los tipos de `shared`; el servidor sí valida y serializa. Decisión consciente para no enviar Zod al navegador (692 → 257 kB). | —                             |
-| Mongo compartido                | Un fallo de memoria del otro proyecto puede afectar a este.                                                                             | Fase 7                        |
+## Open questions
+
+| Question                                                                                         | Who  | Blocks                                      |
+| ------------------------------------------------------------------------------------------------ | ---- | ------------------------------------------- |
+| Anonymized sample of the bank CSV                                                                | User | Validating the phase 4 parser               |
+| Does the server's Mongo run in a container (another compose file or network) or on the host?     | User | Phase 7 (decides whether the network override is used) |
+| Can `wiredTigerCacheSizeGB 0.5` be applied to the shared Mongo?                                  | User | Phase 7                                     |
+| Do you want the public demo with mock data?                                                      | User | Optional                                    |
+| Design system and charting library                                                               | User | Phase 6 and the phase 4 charts              |
+
+## Technical debt and known risks
+
+| Item                          | Detail                                                                                                                                                                         | When                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| Integration tests             | Cover auth, lists, items, notes, capture, calendar and expenses against a real Mongo; skipped if there is no Mongo. Each new module adds its own with `test/harness.ts`.       | Every phase                  |
+| No ESLint                     | Only prettier and typecheck.                                                                                                                                                   | Optional                     |
+| No CSP                        | Basic security headers in nginx, no `Content-Security-Policy`.                                                                                                                 | Phase 6                      |
+| Fixed time zone               | `Europe/Madrid` as a constant in `shared`.                                                                                                                                     | If needed                    |
+| Fixed currency                | EUR only in the parser and in the presentation.                                                                                                                                | If needed                    |
+| TypeScript in two versions    | `shared` and `api` use TS 7; `web` uses TS 6 because the Angular compiler requires it. The `shared` code must compile with both.                                               | Review when upgrading Angular |
+| The client does not validate responses | It trusts the `shared` types; the server does validate and serialize. A deliberate decision to keep Zod out of the browser (692 → 257 kB).                             | —                            |
+| Shared Mongo                  | A memory failure in the other project can affect this one.                                                                                                                     | Phase 7                      |
