@@ -4,6 +4,7 @@ import type { ObjectId } from 'mongodb';
 import type { TransactionDoc } from '../../db/documents';
 import { categorize, type Rule } from './categorize';
 import { assignOccurrences, transactionHash } from './hash';
+import { merchantKey } from './merchant';
 import { normalizeDescription } from './normalize';
 
 /** Una fila ya interpretada de un extracto (el parseo del CSV del banco vive aparte). */
@@ -45,6 +46,7 @@ export function prepareTransactions(params: {
       amountCents: row.amountCents,
       description: row.description,
       descriptionNorm,
+      merchantKey: merchantKey(row.description),
       ...(row.balanceAfterCents !== undefined && { balanceAfterCents: row.balanceAfterCents }),
       hash: transactionHash({
         accountId: accountId.toHexString(),
