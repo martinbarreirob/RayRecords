@@ -39,8 +39,8 @@ function checkValue(def: FieldDef, value: string | number | boolean): string | n
 }
 
 /**
- * Validación **flexible** de `extra` contra los campos de la lista: los campos definidos deben
- * tener el tipo correcto (`null` los vacía), y las claves no definidas se admiten tal cual.
+ * Lenient validation of `extra` against the list fields: defined fields must have the right type
+ * (`null` clears them) and undefined keys are accepted as they are.
  */
 export function validateExtra(fieldDefs: readonly FieldDef[], extra: Extra): ExtraIssue[] {
   const issues: ExtraIssue[] = [];

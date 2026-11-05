@@ -14,7 +14,7 @@ declare module 'fastify' {
     user: SessionUser | null;
   }
   interface FastifyContextConfig {
-    /** Ruta accesible sin sesión (solo `health` y `login`). */
+    /** Route reachable without a session (only `health` and `login`). */
     public?: boolean;
   }
 }
@@ -28,8 +28,8 @@ export function setSessionCookie(
   reply.setCookie(SESSION_COOKIE, token, {
     path: '/',
     httpOnly: true,
-    // `Secure` solo si la petición llegó por HTTPS (directa o por `X-Forwarded-Proto`): en HTTP plano
-    // de desarrollo el navegador descartaría la cookie.
+    // `Secure` only when the request came over HTTPS (directly or via `X-Forwarded-Proto`): on plain
+    // HTTP in development the browser would drop the cookie.
     secure,
     sameSite: 'strict',
     expires: expiresAt,
@@ -37,9 +37,9 @@ export function setSessionCookie(
 }
 
 /**
- * Se registra directamente en el ámbito de `/api` (sin plugin encapsulado) para que sus hooks
- * alcancen a todas las rutas. Primero comprueba el origen y después exige sesión, salvo en las
- * rutas marcadas `config: { public: true }`.
+ * Registered directly on the `/api` scope (not as an encapsulated plugin) so its hooks reach every
+ * route. It checks the origin first, then requires a session unless the route is marked
+ * `config: { public: true }`.
  */
 export function registerAuthGuard(
   api: FastifyInstance,
@@ -72,7 +72,7 @@ export function registerAuthGuard(
       username: user.username,
       sessionId: resolved.session._id,
     };
-    // Renovación deslizante: si la sesión se ha extendido, la cookie debe reflejarlo.
+    // Sliding renewal: when the session was extended, the cookie must reflect it.
     if (resolved.renewedUntil) {
       setSessionCookie(reply, token, resolved.renewedUntil, request.protocol === 'https');
     }

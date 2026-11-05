@@ -9,19 +9,19 @@ const TODAY = '2026-11-03';
 const generate = (seed = 42) => generateCheckingTransactions(TODAY, createRng(seed));
 
 describe('generateCheckingTransactions', () => {
-  it('es determinista para una misma semilla y distinto para otra', () => {
+  it('is deterministic for a seed and differs for another', () => {
     expect(generate(42)).toEqual(generate(42));
     expect(generate(42)).not.toEqual(generate(7));
   });
 
-  it('ordena por fecha y no genera movimientos futuros', () => {
+  it('sorts by date and generates no future transactions', () => {
     const rows = generate();
     const dates = rows.map((r) => r.date);
     expect(dates).toEqual([...dates].sort());
     expect(dates.every((d) => d <= TODAY)).toBe(true);
   });
 
-  it('cubre seis meses con nómina mensual y solo importes enteros no nulos', () => {
+  it('covers six months with a monthly payroll and only non-zero integer amounts', () => {
     const rows = generate();
     const months = new Set(rows.map((r) => r.date.slice(0, 7)));
     expect(months.size).toBe(6);
@@ -30,7 +30,7 @@ describe('generateCheckingTransactions', () => {
     expect(rows.every((r) => Number.isInteger(r.amountCents) && r.amountCents !== 0)).toBe(true);
   });
 
-  it('incluye dos movimientos idénticos el mismo día', () => {
+  it('includes two identical transactions on the same day', () => {
     const coffees = generate().filter(
       (r) => r.description.includes('CAFETERIA LA ESQUINA') && r.amountCents === -180,
     );
@@ -38,7 +38,7 @@ describe('generateCheckingTransactions', () => {
     expect(coffees[0]!.date).toBe(coffees[1]!.date);
   });
 
-  it('produce hashes únicos tras prepararse, y la categorización cubre la mayoría', () => {
+  it('produces unique hashes once prepared, and categorization covers most rows', () => {
     const rows = withRunningBalance(generate(), 125_000);
     const docs = prepareTransactions({
       accountId: new ObjectId(),
@@ -48,12 +48,12 @@ describe('generateCheckingTransactions', () => {
     expect(new Set(docs.map((d) => d.hash)).size).toBe(docs.length);
     const categorized = docs.filter((d) => d.category !== null).length;
     expect(categorized / docs.length).toBeGreaterThan(0.8);
-    expect(docs.some((d) => d.category === null)).toBe(true); // queda alguno para corregir a mano
+    expect(docs.some((d) => d.category === null)).toBe(true); // some remain to be corrected by hand
   });
 });
 
 describe('withRunningBalance', () => {
-  it('acumula el saldo desde el saldo inicial', () => {
+  it('accumulates the balance from the opening balance', () => {
     const rows = withRunningBalance(
       [
         { date: '2026-10-01', description: 'a', amountCents: -100 },

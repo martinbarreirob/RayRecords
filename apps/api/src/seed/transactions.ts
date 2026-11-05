@@ -2,7 +2,7 @@ import { addDays, type DateOnly } from '@rayrecords/shared';
 import type { RawTransaction } from '../modules/expenses/prepare';
 import type { Rng } from './rng';
 
-// Descripciones con el aspecto de un extracto bancario real (mayúsculas, prefijos, algún acento).
+// Descriptions that look like a real bank statement (uppercase, prefixes, an accent here and there).
 const SUPERMARKETS = [
   'COMPRA TARJ. MERCADONA MADRID',
   'COMPRA TARJ. CARREFOUR EXPRESS',
@@ -20,11 +20,11 @@ const TRANSPORT = [
   'COMPRA TARJ. REPSOL ESTACION',
   'PAGO CABIFY ESPAÑA',
 ];
-// Sin regla en DEFAULT_RULES: quedan sin categorizar y sirven para probar la corrección manual.
+// No rule in DEFAULT_RULES: they stay uncategorized and are used to try the manual correction.
 const OTHER = ['COMPRA TARJ. LIBRERIA CERVANTES', 'COMPRA TARJ. FERRETERIA EL TORNILLO'];
 const LEISURE = ['COMPRA TARJ. CINES YELMO', 'COMPRA TARJ. STEAM GAMES'];
 
-/** Suma meses de calendario a un `YYYY-MM-DD` y devuelve `YYYY-MM`. */
+/** Adds calendar months to a `YYYY-MM-DD` and returns `YYYY-MM`. */
 function shiftMonth(date: DateOnly, delta: number): string {
   const [y, m] = date.split('-').map(Number) as [number, number];
   return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7);
@@ -34,7 +34,7 @@ function pad(day: number): string {
   return String(day).padStart(2, '0');
 }
 
-/** Movimientos de la cuenta corriente de los últimos `months` meses, hasta `today` inclusive. */
+/** Checking account transactions for the last `months` months, up to and including `today`. */
 export function generateCheckingTransactions(
   today: DateOnly,
   rng: Rng,
@@ -68,7 +68,7 @@ export function generateCheckingTransactions(
     add(rng.int(1, 28), 'BIZUM RECIBIDO JUAN PEREZ', rng.int(500, 4_000));
   }
 
-  // Dos cafés idénticos el mismo día: ejercitan el n.º de repetición del hash de deduplicación.
+  // Two identical coffees on the same day: they exercise the occurrence number of the dedup hash.
   const coffeeDay = addDays(today, -3);
   for (let i = 0; i < 2; i++) {
     rows.push({
@@ -78,11 +78,11 @@ export function generateCheckingTransactions(
     });
   }
 
-  // `sort` es estable: los movimientos del mismo día conservan el orden de generación.
+  // `sort` is stable: transactions of the same day keep their generation order.
   return rows.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Añade el saldo tras cada movimiento (como lo traería un extracto con columna de saldo). */
+/** Adds the balance after each transaction (as a statement with a balance column would). */
 export function withRunningBalance(
   rows: readonly RawTransaction[],
   openingBalanceCents: number,

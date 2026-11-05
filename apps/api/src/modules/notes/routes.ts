@@ -14,7 +14,7 @@ const DateParams = z.object({ date: DateOnlySchema });
 export const notesRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
 
-  /** Fechas de un mes que tienen nota, para navegar entre días. */
+  /** Dates of a month that have a note, for navigating between days. */
   app.get(
     '/notes',
     {

@@ -6,14 +6,14 @@ import { SESSION_COOKIE } from '../modules/auth/sessions';
 import { upsertUser } from '../modules/auth/users';
 
 const MONGO_URI = process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017';
-const PASSWORD = 'contraseña de prueba larga';
+const PASSWORD = 'a long test password';
 
 export interface Harness {
   app: FastifyInstance;
   database: Database;
-  /** Cabecera `cookie` de una sesión ya iniciada. */
+  /** `cookie` header of an already signed-in session. */
   cookie: string;
-  /** Petición autenticada. */
+  /** Authenticated request. */
   call: (
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     url: string,
@@ -23,8 +23,8 @@ export interface Harness {
 }
 
 /**
- * Intenta preparar un entorno de integración contra un Mongo real, en una base temporal que se borra
- * al cerrar. Devuelve `null` si no hay Mongo accesible (los tests se omiten con `describe.skipIf`).
+ * Tries to set up an integration environment against a real Mongo, in a temporary database dropped
+ * on close. Returns `null` when no Mongo is reachable (tests are skipped with `describe.skipIf`).
  */
 export async function createHarness(): Promise<Harness | null> {
   const dbName = `rayrecords_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

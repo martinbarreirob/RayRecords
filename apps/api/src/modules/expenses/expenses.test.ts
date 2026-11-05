@@ -4,7 +4,7 @@ import { assignOccurrences, transactionHash } from './hash';
 import { normalizeDescription } from './normalize';
 
 describe('normalizeDescription', () => {
-  it('pasa a minúsculas, quita acentos y colapsa espacios', () => {
+  it('lowercases, strips accents and collapses whitespace', () => {
     expect(normalizeDescription('  FARMACIA   GARCÍA  ')).toBe('farmacia garcia');
   });
 });
@@ -23,7 +23,7 @@ describe('categorize', () => {
     ...extra,
   });
 
-  it('aplica la primera regla que coincide', () => {
+  it('applies the first matching rule', () => {
     const rules = [rule('mercadona', 'supermercado'), rule('netflix', 'suscripciones')];
     expect(categorize(normalizeDescription('COMPRA TARJ. MERCADONA MADRID'), rules)).toBe(
       'supermercado',
@@ -31,11 +31,11 @@ describe('categorize', () => {
     expect(categorize(normalizeDescription('RECIBO NETFLIX.COM'), rules)).toBe('suscripciones');
   });
 
-  it('devuelve null si ninguna regla coincide', () => {
+  it('returns null when no rule matches', () => {
     expect(categorize('bizum recibido juan', [rule('mercadona', 'supermercado')])).toBeNull();
   });
 
-  it('respeta la prioridad y, a igual prioridad, el orden', () => {
+  it('respects priority and, on equal priority, order', () => {
     const rules = [
       rule('amazon', 'ocio'),
       rule('amazon prime', 'suscripciones', { priority: 5 }),
@@ -45,15 +45,15 @@ describe('categorize', () => {
     expect(categorize('amazon marketplace', rules)).toBe('ocio');
   });
 
-  it('ignora las reglas inactivas', () => {
+  it('ignores inactive rules', () => {
     expect(categorize('netflix', [rule('netflix', 'suscripciones', { active: false })])).toBeNull();
   });
 
-  it('compara patrones sin acentos ni mayúsculas', () => {
+  it('compares patterns ignoring accents and case', () => {
     expect(categorize('farmacia garcia', [rule('Farmacia GARCÍA', 'salud')])).toBe('salud');
   });
 
-  it('soporta startsWith y regex', () => {
+  it('supports startsWith and regex', () => {
     const rules = [
       {
         pattern: 'transferencia',
@@ -76,7 +76,7 @@ describe('categorize', () => {
     expect(categorize('diario de viaje', rules)).toBeNull();
   });
 
-  it('una regex inválida no rompe la categorización', () => {
+  it('an invalid regex does not break categorization', () => {
     const rules = [
       {
         pattern: '(',
@@ -100,23 +100,23 @@ describe('transactionHash', () => {
     occurrence: 0,
   };
 
-  it('es determinista', () => {
+  it('is deterministic', () => {
     expect(transactionHash(base)).toBe(transactionHash({ ...base }));
     expect(transactionHash(base)).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it.each([
-    ['la fecha', { date: '2026-10-06' }],
-    ['el importe', { amountCents: -1300 }],
-    ['la descripción', { descriptionNorm: 'recibo spotify' }],
-    ['la cuenta', { accountId: '6650a1b2c3d4e5f607182931' }],
-    ['la repetición', { occurrence: 1 }],
-    ['el saldo posterior', { balanceAfterCents: 100_000 }],
-  ])('cambia si cambia %s', (_label, change) => {
+    ['the date', { date: '2026-10-06' }],
+    ['the amount', { amountCents: -1300 }],
+    ['the description', { descriptionNorm: 'recibo spotify' }],
+    ['the account', { accountId: '6650a1b2c3d4e5f607182931' }],
+    ['the occurrence', { occurrence: 1 }],
+    ['the balance after', { balanceAfterCents: 100_000 }],
+  ])('changes when %s changes', (_label, change) => {
     expect(transactionHash({ ...base, ...change })).not.toBe(transactionHash(base));
   });
 
-  it('no confunde campos contiguos', () => {
+  it('does not confuse adjacent fields', () => {
     const a = transactionHash({ ...base, descriptionNorm: 'x|1', occurrence: 0 });
     const b = transactionHash({ ...base, descriptionNorm: 'x', occurrence: 0 });
     expect(a).not.toBe(b);
@@ -124,13 +124,13 @@ describe('transactionHash', () => {
 });
 
 describe('assignOccurrences', () => {
-  it('numera los movimientos idénticos en orden de aparición', () => {
+  it('numbers identical transactions in order of appearance', () => {
     expect(assignOccurrences(['a', 'b', 'a', 'a', 'b', 'c'])).toEqual([0, 0, 1, 2, 1, 0]);
   });
 
-  it('un extracto solapado produce los mismos números para el tramo común', () => {
+  it('an overlapping statement produces the same numbers for the shared part', () => {
     const march = ['cafe', 'cafe', 'pan'];
-    const marchPlus = ['cafe', 'cafe', 'pan', 'cafe']; // el segundo extracto llega más allá
+    const marchPlus = ['cafe', 'cafe', 'pan', 'cafe']; // the second statement extends further
     expect(assignOccurrences(marchPlus).slice(0, 3)).toEqual(assignOccurrences(march));
   });
 });

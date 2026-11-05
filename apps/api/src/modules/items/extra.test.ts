@@ -14,7 +14,7 @@ const defs: FieldDef[] = [
 ];
 
 describe('validateExtra', () => {
-  it('acepta valores correctos, null y claves libres', () => {
+  it('accepts valid values, null and free keys', () => {
     expect(
       validateExtra(defs, {
         anio: 2024,
@@ -32,7 +32,7 @@ describe('validateExtra', () => {
     expect(validateExtra(defs, { anio: null })).toEqual([]);
   });
 
-  it('rechaza tipos incorrectos con la ruta del campo', () => {
+  it('rejects wrong types with the field path', () => {
     const paths = validateExtra(defs, {
       anio: 'dos mil',
       estado: 'raro',

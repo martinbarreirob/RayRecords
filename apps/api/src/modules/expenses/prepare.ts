@@ -7,20 +7,20 @@ import { assignOccurrences, transactionHash } from './hash';
 import { merchantKey } from './merchant';
 import { normalizeDescription } from './normalize';
 
-/** Una fila ya interpretada de un extracto (el parseo del CSV del banco vive aparte). */
+/** One already parsed statement row (parsing the bank CSV lives elsewhere). */
 export interface RawTransaction {
   date: DateOnly;
   description: string;
-  /** Gastos negativos, ingresos positivos. */
+  /** Expenses are negative, income positive. */
   amountCents: number;
   balanceAfterCents?: number;
 }
 
 /**
- * Convierte las filas de UN extracto en documentos listos para insertar: normaliza la descripción,
- * calcula el hash de deduplicación y aplica las reglas de categorización.
- * Las filas deben venir en el orden del fichero: de él depende el n.º de repetición del hash.
- * Es el paso común al seeder y al importador de CSV.
+ * Turns the rows of ONE statement into documents ready to insert: normalizes the description,
+ * computes the dedup hash and applies the categorization rules.
+ * Rows must come in file order, since the hash's occurrence number depends on it.
+ * Shared by the seeder and the CSV importer.
  */
 export function prepareTransactions(params: {
   accountId: ObjectId;

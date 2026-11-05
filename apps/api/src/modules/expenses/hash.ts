@@ -7,14 +7,15 @@ export interface HashInput {
   amountCents: number;
   descriptionNorm: string;
   balanceAfterCents?: number | null;
-  /** N.º de orden entre movimientos idénticos del mismo extracto (0 para el primero). */
+  /** Position among identical transactions of the same statement (0 for the first). */
   occurrence: number;
 }
 
 /**
- * Huella de una transacción para la deduplicación (índice único `{accountId, hash}`).
- * El `occurrence` evita descartar dos movimientos legítimamente iguales (dos cafés el mismo día),
- * y como depende solo del orden dentro del día, reimportar un extracto solapado produce los mismos hashes.
+ * Fingerprint of a transaction for deduplication (unique index `{accountId, hash}`).
+ * `occurrence` avoids dropping two legitimately identical transactions (two coffees on the same
+ * day), and since it only depends on the order within the day, re-importing an overlapping
+ * statement produces the same hashes.
  */
 export function transactionHash(input: HashInput): string {
   const payload = JSON.stringify([
@@ -28,7 +29,7 @@ export function transactionHash(input: HashInput): string {
   return createHash('sha256').update(payload).digest('hex');
 }
 
-/** Para cada clave, cuántas veces ha aparecido ya antes en la lista (0, 1, 2…). */
+/** For each key, how many times it already appeared earlier in the list (0, 1, 2, and so on). */
 export function assignOccurrences(keys: readonly string[]): number[] {
   const seen = new Map<string, number>();
   return keys.map((key) => {

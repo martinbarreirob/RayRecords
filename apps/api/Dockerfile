@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
-# Se construye en CI con el contexto en la raíz del repo:
+# Built in CI with the build context at the repo root:
 #   docker build -f apps/api/Dockerfile -t rayrecords-api .
 
 FROM node:22-alpine AS build
 RUN npm install -g pnpm@10.34.9
 WORKDIR /repo
 
-# Primero solo los manifiestos: la capa de dependencias se cachea mientras no cambien.
+# Manifests first: the dependency layer stays cached until they change.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
@@ -19,7 +19,7 @@ COPY apps/api apps/api
 RUN pnpm --filter @rayrecords/api build \
  && pnpm --filter @rayrecords/api --prod deploy --legacy /out
 
-# Imagen final: runtime de Node, dependencias de producción y el bundle. Nada de código fuente.
+# Final image: Node runtime, production dependencies and the bundle. No source code.
 FROM node:22-alpine
 ENV NODE_ENV=production
 WORKDIR /app

@@ -2,27 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { isOriginAllowed } from './origin';
 
 describe('isOriginAllowed', () => {
-  it('no comprueba los métodos seguros', () => {
-    expect(isOriginAllowed('GET', 'https://malo.example', 'app.ts.net')).toBe(true);
+  it('skips safe methods', () => {
+    expect(isOriginAllowed('GET', 'https://evil.example', 'app.ts.net')).toBe(true);
   });
 
-  it('acepta peticiones sin Origin (no vienen de un navegador)', () => {
+  it('accepts requests without Origin (not from a browser)', () => {
     expect(isOriginAllowed('POST', undefined, 'app.ts.net')).toBe(true);
   });
 
-  it('acepta el mismo host, con y sin puerto', () => {
+  it('accepts the same host, with and without a port', () => {
     expect(isOriginAllowed('POST', 'https://app.ts.net', 'app.ts.net')).toBe(true);
     expect(isOriginAllowed('POST', 'http://localhost:4300', 'localhost:4300')).toBe(true);
   });
 
-  it('rechaza otro host y orígenes mal formados', () => {
-    expect(isOriginAllowed('POST', 'https://malo.example', 'app.ts.net')).toBe(false);
+  it('rejects other hosts and malformed origins', () => {
+    expect(isOriginAllowed('POST', 'https://evil.example', 'app.ts.net')).toBe(false);
     expect(isOriginAllowed('DELETE', 'null', 'app.ts.net')).toBe(false);
   });
 
-  it('acepta los orígenes de la lista explícita', () => {
+  it('accepts origins from the explicit list', () => {
     expect(
-      isOriginAllowed('PATCH', 'https://otro.example', 'app.ts.net', ['https://otro.example']),
+      isOriginAllowed('PATCH', 'https://other.example', 'app.ts.net', ['https://other.example']),
     ).toBe(true);
   });
 });

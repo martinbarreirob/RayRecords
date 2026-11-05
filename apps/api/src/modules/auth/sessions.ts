@@ -5,10 +5,10 @@ import type { SessionDoc } from '../../db/documents';
 
 export const SESSION_COOKIE = 'rr_session';
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-/** La renovación deslizante solo escribe en Mongo si ha pasado al menos esto desde la última. */
+/** Sliding renewal only writes to Mongo if at least this much time passed since the last one. */
 const RENEW_AFTER_MS = 60 * 60 * 1000;
 
-/** En Mongo solo se guarda el hash del token: una copia de la BD no permite suplantar sesiones. */
+/** Only the token hash is stored, so a copy of the database cannot be used to hijack sessions. */
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -34,11 +34,11 @@ export async function createSession(
 
 export interface ResolvedSession {
   session: SessionDoc;
-  /** Nueva caducidad si se ha renovado (hay que reenviar la cookie), si no `undefined`. */
+  /** New expiry if the session was renewed (the cookie must be resent), otherwise `undefined`. */
   renewedUntil?: Date;
 }
 
-/** Busca la sesión del token (el TTL de Mongo borra con retraso, así que se comprueba `expiresAt`). */
+/** Looks up the token's session. Mongo's TTL cleanup lags, so `expiresAt` is checked here too. */
 export async function resolveSession(
   c: Collections,
   token: string,

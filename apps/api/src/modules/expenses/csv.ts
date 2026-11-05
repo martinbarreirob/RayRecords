@@ -3,13 +3,13 @@ import { normalizeDescription } from './normalize';
 import type { RawTransaction } from './prepare';
 
 /**
- * Lectura de extractos bancarios en CSV. No conocemos todavía el formato exacto del banco, así que el
- * parser es **tolerante**: detecta el separador, localiza la fila de cabecera por el nombre de las
- * columnas (fecha, concepto, importe o cargo/abono, saldo), admite decimales con coma y fechas
- * `dd/mm/yyyy`. Cuando llegue la muestra real se ajusta `HEADER_ALIASES` y se añade un test con ella.
+ * Reads bank statements in CSV. The exact bank format varies, so the parser is lenient: it detects
+ * the delimiter, finds the header row by column name (date, description, amount or debit/credit,
+ * balance), and accepts comma decimals and `dd/mm/yyyy` dates. For a new bank format, extend
+ * `HEADER_ALIASES` and add a test with a sample.
  */
 
-/** UTF-8 si es válido (con o sin BOM); si no, Windows-1252, que es lo habitual en bancos españoles. */
+/** UTF-8 if valid (with or without BOM); otherwise Windows-1252, which Spanish banks commonly use. */
 export function decodeCsv(buffer: Uint8Array): string {
   const bytes =
     buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf ? buffer.subarray(3) : buffer;
@@ -26,7 +26,7 @@ function detectDelimiter(text: string): string {
   return counts.sort((a, b) => b.n - a.n)[0]!.d;
 }
 
-/** CSV → filas de celdas. Admite comillas dobles, comillas escapadas (`""`) y saltos dentro de comillas. */
+/** CSV to rows of cells. Supports double quotes, escaped quotes (`""`) and line breaks inside quotes. */
 export function parseCsv(text: string, delimiter = detectDelimiter(text)): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -60,7 +60,7 @@ export function parseCsv(text: string, delimiter = detectDelimiter(text)): strin
   return rows.filter((r) => r.some((c) => c.trim() !== ''));
 }
 
-/** `12/03/2026`, `12-03-26`, `2026-03-12` → `YYYY-MM-DD` (o `null`). Ignora una hora al final. */
+/** `12/03/2026`, `12-03-26`, `2026-03-12` to `YYYY-MM-DD` (or `null`). A trailing time is ignored. */
 export function parseBankDate(raw: string): string | null {
   const text = raw.trim().split(/[\sT]/)[0] ?? '';
   let match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
@@ -77,8 +77,9 @@ export function parseBankDate(raw: string): string | null {
 }
 
 /**
- * Importe español → céntimos. `1.234,56` → 123456; `-12,5` → -1250; `12.50` → 1250; `(5,00)` → -500.
- * Con un solo separador y tres dígitos detrás (`1.234`) se interpreta como miles.
+ * Spanish-style amount to cents: `1.234,56` gives 123456, `-12,5` gives -1250, `12.50` gives 1250,
+ * `(5,00)` gives -500. A single separator followed by exactly three digits (`1.234`) is read as
+ * thousands.
  */
 export function parseAmountToCents(raw: string): number | null {
   let text = raw.replace(/[€\s ]|EUR/gi, '');
@@ -101,7 +102,7 @@ export function parseAmountToCents(raw: string): number | null {
   const lastComma = text.lastIndexOf(',');
   const lastDot = text.lastIndexOf('.');
   let decimalAt = Math.max(lastComma, lastDot);
-  // Un único separador seguido de exactamente 3 dígitos y sin otro separador: son miles.
+  // A single separator followed by exactly 3 digits, with no other separator, means thousands.
   if (
     decimalAt !== -1 &&
     (text.match(/[.,]/g) ?? []).length === 1 &&
@@ -112,21 +113,21 @@ export function parseAmountToCents(raw: string): number | null {
 
   const integerPart = (decimalAt === -1 ? text : text.slice(0, decimalAt)).replace(/[.,]/g, '');
   const decimalPart = decimalAt === -1 ? '' : text.slice(decimalAt + 1);
-  // Más de dos decimales solo se admite como ruido de coma flotante (`5.7700000000000005`): se redondea.
+  // More than two decimals is only accepted as floating point noise (`5.7700000000000005`): round it.
   if (!/^\d+$/.test(integerPart) || !/^\d*$/.test(decimalPart)) return null;
   if (decimalPart.length > 2 && decimalPart.length < 4) return null;
 
-  const roundUp = decimalPart.length > 2 && decimalPart.charCodeAt(2) >= 53 ? 1 : 0; // dígito ≥ 5
+  const roundUp = decimalPart.length > 2 && decimalPart.charCodeAt(2) >= 53 ? 1 : 0; // digit >= 5
   const cents =
     Number(integerPart) * 100 + Number(decimalPart.slice(0, 2).padEnd(2, '0') || '0') + roundUp;
   if (!Number.isSafeInteger(cents)) return null;
   return negative ? -cents : cents;
 }
 
-/** Nombres de columna reconocidos, ya normalizados (sin acentos ni mayúsculas), de mayor a menor preferencia. */
+/** Recognized column names, already normalized (no accents, lowercase), most preferred first. */
 const HEADER_ALIASES = {
   date: [
-    // «Data» es «fecha» en gallego/catalán: algunos extractos lo usan como cabecera.
+    // "Data" means "date" in Galician/Catalan: some statements use it as a header.
     'data operacion',
     'fecha operacion',
     'fecha de operacion',
@@ -170,7 +171,7 @@ function isHeader(map: ColumnMap): boolean {
 
 export interface ParsedStatement {
   rows: RawTransaction[];
-  /** Líneas ignoradas o con problemas (n.º de línea del fichero + motivo). */
+  /** Skipped or problematic lines (file line number plus reason). */
   warnings: string[];
 }
 
@@ -180,9 +181,9 @@ const DAY_MS = 86_400_000;
 const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / DAY_MS;
 
 /**
- * Algunos extractos traen el año mal en unas pocas filas (finales de diciembre con el año siguiente).
- * En un fichero ordenado de antiguo a nuevo se nota porque la fila queda casi un año por delante de las
- * dos siguientes: se le resta un año y se avisa. No actúa en ficheros desordenados ni en huecos reales.
+ * Some statements have a wrong year on a few rows (late December with the next year). In a file
+ * sorted oldest to newest this shows as a row almost a year ahead of the next two: subtract a year
+ * and warn. It does nothing on unsorted files or on real gaps.
  */
 export function repairYearTypos(rows: RawTransaction[], warnings: string[]): void {
   if (rows.length < 4) return;
@@ -190,7 +191,7 @@ export function repairYearTypos(rows: RawTransaction[], warnings: string[]): voi
   for (let i = 1; i < rows.length; i++) if (rows[i]!.date >= rows[i - 1]!.date) ascending++;
   if (ascending / (rows.length - 1) < 0.9) return;
 
-  // De atrás adelante: una racha de filas con el año mal se corrige empezando por la que enlaza con las buenas.
+  // Walk backwards: a run of wrong-year rows is fixed starting from the one next to the good rows.
   for (let i = rows.length - 3; i >= 0; i--) {
     const row = rows[i]!;
     const gap = (offset: number) => dayNumber(row.date) - dayNumber(rows[i + offset]!.date);
@@ -204,7 +205,7 @@ export function repairYearTypos(rows: RawTransaction[], warnings: string[]): voi
   }
 }
 
-/** Interpreta el texto de un extracto. Lanza `CsvFormatError` si no encuentra una cabecera reconocible. */
+/** Parses statement text. Throws `CsvFormatError` if no recognizable header is found. */
 export function parseBankCsv(text: string): ParsedStatement {
   const table = parseCsv(text);
   const headerIndex = table.slice(0, 20).findIndex((cells) => isHeader(mapHeader(cells)));

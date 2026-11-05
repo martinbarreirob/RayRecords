@@ -4,10 +4,10 @@ import { ensureIndexes } from '../db/indexes';
 import { syncCatalog } from '../modules/expenses/catalog-sync';
 
 /**
- * Añade las categorías y reglas del extracto real y rellena la clave de comercio de los movimientos.
+ * Adds the categories and rules derived from the real statement and fills in the merchant key of transactions.
  *   pnpm --filter @rayrecords/api sync-catalog
  *   docker compose exec api node dist/cli/sync-catalog.js
- * Es idempotente y solo añade: se puede repetir sin miedo.
+ * Idempotent and additive only: safe to run again.
  */
 async function main() {
   const database = await connectDatabase(loadConfig());
@@ -15,8 +15,8 @@ async function main() {
     await ensureIndexes(database.collections);
     const r = await syncCatalog(database.collections);
     console.log(
-      `Categorías nuevas: ${r.categoriesAdded}. Migradas: ${r.migrated}. Reglas nuevas: ${r.rulesAdded}. ` +
-        `Movimientos con comercio calculado: ${r.merchantKeysFilled}. Categorizados por regla: ${r.categorized}.`,
+      `New categories: ${r.categoriesAdded}. Migrated: ${r.migrated}. New rules: ${r.rulesAdded}. ` +
+        `Transactions with merchant key filled: ${r.merchantKeysFilled}. Categorized by rule: ${r.categorized}.`,
     );
   } finally {
     await database.close();

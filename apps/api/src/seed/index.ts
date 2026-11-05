@@ -17,12 +17,12 @@ import { seedUser } from './user';
 import { generateCheckingTransactions, withRunningBalance } from './transactions';
 
 /**
- * Seeder de desarrollo y demo: BORRA la base de datos y la rellena con datos de ejemplo.
- * Se niega a ejecutarse contra cualquier BD cuyo nombre no termine en _dev o _demo, y en producción,
- * para que sea imposible apuntarlo por error a los datos reales.
+ * Development and demo seeder: DROPS the database and fills it with sample data.
+ * It refuses to run against any database whose name does not end in _dev or _demo, and in
+ * production, so it cannot be pointed at real data by mistake.
  */
 function abort(reason: string): never {
-  console.error(`Seeder cancelado: ${reason}.`);
+  console.error(`Seeder aborted: ${reason}.`);
   process.exit(1);
 }
 
@@ -30,7 +30,7 @@ async function main() {
   const config = loadConfig();
   if (config.nodeEnv === 'production') abort('NODE_ENV=production');
   if (!/_(dev|demo)$/.test(config.mongoDb)) {
-    abort(`la base de datos "${config.mongoDb}" no termina en _dev ni _demo`);
+    abort(`database "${config.mongoDb}" does not end in _dev or _demo`);
   }
 
   const database = await connectDatabase(config);
@@ -39,8 +39,8 @@ async function main() {
     const now = new Date();
     const today = todayIn(DEFAULT_TIME_ZONE, now);
 
-    console.log(`Sembrando "${config.mongoDb}"…`);
-    // Las colecciones de acceso se conservan al vaciar y el usuario de desarrollo se recrea después.
+    console.log(`Seeding "${config.mongoDb}"...`);
+    // Auth collections are kept when wiping; the development user is recreated afterwards.
     const keep = new Set(['users', 'sessions', 'credentials']);
     for (const { name } of await database.db.listCollections({}, { nameOnly: true }).toArray()) {
       if (!keep.has(name)) await database.db.dropCollection(name);
@@ -49,20 +49,20 @@ async function main() {
 
     const username = await seedUser(c, process.env);
 
-    // Categorías y reglas
+    // Categories and rules
     await c.categories.insertMany(
       DEFAULT_CATEGORIES.map(({ key, ...rest }) => ({ _id: key, ...rest })),
     );
     await c.rules.insertMany(DEFAULT_RULES.map((rule) => ({ _id: new ObjectId(), ...rule })));
 
-    // Listas, elementos y notas del día
+    // Lists, items and notes
     const catalog = buildCatalog(now, today);
     await c.lists.insertMany(catalog.lists);
     await c.items.insertMany(catalog.items);
     await c.noteGroups.insertMany(catalog.noteGroups);
     await c.noteCards.insertMany(catalog.noteCards);
 
-    // Cuentas y transacciones
+    // Accounts and transactions
     const rng = createRng(42);
     const checkingRows = generateCheckingTransactions(today, rng);
     const openingDate = addDays(checkingRows[0]!.date, -1);
@@ -96,7 +96,7 @@ async function main() {
       importBatchId: batch._id,
     }).map((doc) => ({ _id: new ObjectId(), ...doc }));
 
-    // Una corrección manual de ejemplo: la ferretería no tiene regla y se asigna a mano a "hogar".
+    // A sample manual correction: the hardware store has no rule and is assigned to "hogar" by hand.
     const corrected = checkingDocs.find(
       (t) => t.category === null && t.description.includes('FERRETERIA'),
     );
@@ -109,17 +109,17 @@ async function main() {
 
     console.log(
       [
-        `  categorías:    ${DEFAULT_CATEGORIES.length}`,
-        `  reglas:        ${DEFAULT_RULES.length}`,
-        `  listas:        ${catalog.lists.length}`,
-        `  elementos:     ${catalog.items.length}`,
-        `  notas:         ${catalog.noteCards.length} (en ${catalog.noteGroups.length} grupo)`,
-        `  cuentas:       1`,
-        `  usuario:       ${username}`,
-        `  transacciones: ${checkingDocs.length}`,
+        `  categories:    ${DEFAULT_CATEGORIES.length}`,
+        `  rules:         ${DEFAULT_RULES.length}`,
+        `  lists:         ${catalog.lists.length}`,
+        `  items:         ${catalog.items.length}`,
+        `  notes:         ${catalog.noteCards.length} (in ${catalog.noteGroups.length} group)`,
+        `  accounts:      1`,
+        `  user:          ${username}`,
+        `  transactions:  ${checkingDocs.length}`,
       ].join('\n'),
     );
-    console.log('Listo.');
+    console.log('Done.');
   } finally {
     await database.close();
   }

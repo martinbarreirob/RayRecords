@@ -4,10 +4,10 @@ import { ensureIndexes } from '../db/indexes';
 import { migrateDailyNotes } from '../modules/note-cards/migrate';
 
 /**
- * Convierte las notas del día antiguas en tarjetas del lienzo.
+ * Converts the old daily notes into canvas cards.
  *   pnpm --filter @rayrecords/api migrate-notes [--force]
  *   docker compose exec api node dist/cli/migrate-notes.js [--force]
- * Sin `--force` no hace nada si ya existen tarjetas (así no se duplican al repetirlo).
+ * Without `--force` it does nothing if cards already exist, so running it twice does not duplicate.
  */
 async function main() {
   const force = process.argv.includes('--force');
@@ -17,8 +17,8 @@ async function main() {
     const result = await migrateDailyNotes(database.collections, new Date(), { force });
     console.log(
       result.skippedBecauseNotEmpty
-        ? 'Ya hay tarjetas: no se ha migrado nada (usa --force para migrar igualmente).'
-        : `Notas del día migradas a tarjetas: ${result.migrated}.`,
+        ? 'Cards already exist: nothing migrated (use --force to migrate anyway).'
+        : `Daily notes migrated to cards: ${result.migrated}.`,
     );
   } finally {
     await database.close();

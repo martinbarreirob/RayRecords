@@ -1,8 +1,8 @@
-/** Generador pseudoaleatorio con semilla (mulberry32): el seeder produce siempre los mismos datos. */
+/** Seeded pseudo-random generator (mulberry32): the seeder always produces the same data. */
 export interface Rng {
-  /** Número en [0, 1). */
+  /** Number in [0, 1). */
   next(): number;
-  /** Entero en [min, max], ambos incluidos. */
+  /** Integer in [min, max], both inclusive. */
   int(min: number, max: number): number;
   pick<T>(items: readonly T[]): T;
 }

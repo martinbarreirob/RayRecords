@@ -31,7 +31,8 @@ export interface AppOptions {
 
 export async function buildApp({ config, database }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
-    // Detrás de nginx (y de `tailscale serve`): confiar en X-Forwarded-* para IP y protocolo.
+    // Runs behind a reverse proxy: trust X-Forwarded-* for client IP and protocol. The API port must
+    // not be reachable directly, or clients could spoof their IP and dodge the login rate limit.
     trustProxy: true,
     logger:
       config.nodeEnv === 'development'
@@ -39,21 +40,29 @@ export async function buildApp({ config, database }: AppOptions): Promise<Fastif
         : { level: config.logLevel },
   });
 
-  // Los esquemas Zod de @rayrecords/shared validan las entradas y serializan las salidas.
+  // Zod schemas from @rayrecords/shared validate input and serialize output.
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   registerErrorHandling(app);
 
   app.decorate('db', database);
   await app.register(cookie);
-  // Sin límite global: solo las rutas que declaran `config.rateLimit` (el login).
+
+  // Responses are tied to the session, so they must never be cached. The other security headers
+  // (nosniff, framing, referrer, CSP) are set once, by nginx.
+  app.addHook('onSend', (_request, reply, payload, done) => {
+    reply.header('Cache-Control', 'no-store');
+    done(null, payload);
+  });
+
+  // No global limit: only routes that set `config.rateLimit` (login) are limited.
   await app.register(rateLimit, { global: false });
 
-  // Todos los módulos cuelgan de /api, que es lo que nginx enruta hacia aquí.
+  // Every module lives under /api, the path the proxy forwards here.
   await app.register(
     async (api) => {
-      // Va primero: sus hooks cubren todas las rutas registradas después. Todo /api exige sesión
-      // salvo las rutas marcadas `config.public`.
+      // Registered first so its hooks cover every route added after it. All of /api requires a
+      // session except routes marked `config.public`.
       registerAuthGuard(api, { allowedOrigins: config.allowedOrigins ?? [] });
 
       await api.register(healthRoutes);

@@ -30,7 +30,7 @@ function toAccount(doc: AccountDoc) {
 export const accountsRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
 
-  /** El saldo no se guarda: apertura + suma de los movimientos de la cuenta. */
+  /** The balance is not stored: opening balance plus the sum of the account's transactions. */
   async function summarize(docs: AccountDoc[]): Promise<AccountSummary[]> {
     const sums = await c.transactions
       .aggregate<{ _id: ObjectId; sum: number; count: number }>([

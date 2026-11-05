@@ -7,7 +7,7 @@ const h = await createHarness();
 const HEADER = 'Fecha operación;Concepto;Importe;Saldo';
 const csv = (...lines: string[]) => [HEADER, ...lines].join('\n');
 
-describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', () => {
+describe.skipIf(!h)('accounts, rules, import and summary (integration)', () => {
   const { call } = h ?? ({} as Harness);
   let account: AccountSummary;
 
@@ -61,8 +61,8 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
     await h?.close();
   });
 
-  describe('cuentas', () => {
-    it('crea con saldo de apertura y lo calcula con los movimientos', async () => {
+  describe('accounts', () => {
+    it('creates with an opening balance and computes it with the transactions', async () => {
       expect(account).toMatchObject({
         balanceCents: 100_000,
         transactionCount: 0,
@@ -70,7 +70,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       });
     });
 
-    it('edita y archiva', async () => {
+    it('edits and archives', async () => {
       const { body } = await call('POST', '/accounts', {
         name: 'Vieja',
         type: 'cash',
@@ -82,7 +82,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
         archived: true,
       });
       expect(renamed.body).toMatchObject({ name: 'Efectivo', archived: true });
-      // Un PATCH parcial no reinicia la moneda ni el saldo inicial.
+      // A partial PATCH does not reset the currency or the opening balance.
       const { body: funded } = await call('POST', '/accounts', {
         name: 'Con saldo',
         type: 'checking',
@@ -98,8 +98,8 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
     });
   });
 
-  describe('categorías y reglas', () => {
-    it('rechaza claves repetidas y no deja borrar una categoría en uso', async () => {
+  describe('categories and rules', () => {
+    it('rejects repeated keys and does not allow deleting a category in use', async () => {
       const dup = await call('POST', '/categories', { key: 'ocio', name: 'Otra' });
       expect(dup.status).toBe(409);
       const used = await call('DELETE', '/categories/supermercado');
@@ -109,7 +109,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       expect((await call('DELETE', '/categories/temporal')).status).toBe(404);
     });
 
-    it('valida la categoría y la expresión regular de una regla', async () => {
+    it('validates the category and the regular expression of a rule', async () => {
       const unknown = await call('POST', '/rules', {
         pattern: 'x',
         matchType: 'contains',
@@ -124,7 +124,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       expect(badRegex.status).toBe(400);
     });
 
-    it('edita y borra reglas', async () => {
+    it('edits and deletes rules', async () => {
       const { body: rule } = await call('POST', '/rules', {
         pattern: 'cine',
         matchType: 'contains',
@@ -132,14 +132,14 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       });
       const patched = await call('PATCH', `/rules/${rule.id}`, { active: false, priority: 5 });
       expect(patched.body).toMatchObject({ active: false, priority: 5 });
-      // Editar solo el patrón no reinicia la prioridad ni reactiva la regla.
+      // Editing only the pattern does not reset the priority or reactivate the rule.
       const renamed = await call('PATCH', `/rules/${rule.id}`, { pattern: 'cines' });
       expect(renamed.body).toMatchObject({ pattern: 'cines', active: false, priority: 5 });
       expect((await call('DELETE', `/rules/${rule.id}`)).status).toBe(204);
     });
   });
 
-  describe('importación', () => {
+  describe('import', () => {
     const first = csv(
       '03/11/2026;COMPRA MERCADONA 123;-45,67;1.054,33',
       '02/11/2026;NÓMINA EMPRESA;1.500,00;1.100,00',
@@ -148,7 +148,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
     );
     let batchId: string;
 
-    it('la vista previa no guarda nada', async () => {
+    it('the preview stores nothing', async () => {
       const { status, body } = await importCsv(first, '&dryRun=true');
       expect(status).toBe(200);
       expect(body).toMatchObject({ dryRun: true, parsed: 4, imported: 4, skipped: 0 });
@@ -157,7 +157,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       expect((await transactions()).total).toBe(0);
     });
 
-    it('importa, categoriza con las reglas y actualiza el saldo', async () => {
+    it('imports, categorizes with the rules and updates the balance', async () => {
       const { body } = await importCsv(first);
       expect(body).toMatchObject({ dryRun: false, imported: 4, skipped: 0 });
       batchId = body.batchId;
@@ -176,14 +176,14 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       expect(current.balanceCents).toBe(100_000 - 4567 + 150_000 - 150 - 150);
     });
 
-    it('reimportar el mismo fichero no duplica (y conserva los dos cafés idénticos)', async () => {
+    it('re-importing the same file does not duplicate (and keeps the two identical coffees)', async () => {
       const { body } = await importCsv(first);
       expect(body).toMatchObject({ imported: 0, skipped: 4 });
       expect(body.batchId).toBeUndefined();
       expect((await transactions()).total).toBe(4);
     });
 
-    it('un extracto solapado solo añade lo nuevo', async () => {
+    it('an overlapping statement only adds what is new', async () => {
       const overlapping = csv(
         '04/11/2026;RECIBO LUZ;-60,10;938,23',
         '03/11/2026;COMPRA MERCADONA 123;-45,67;1.054,33',
@@ -194,7 +194,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       expect((await transactions()).total).toBe(5);
     });
 
-    it('lee ficheros en Windows-1252', async () => {
+    it('reads Windows-1252 files', async () => {
       const latin1 = Buffer.from(csv('05/11/2026;CAFÉ ÑANDÚ;-2,00;936,23'), 'latin1');
       const { body } = await importCsv(latin1);
       expect(body.imported).toBe(1);
@@ -202,14 +202,14 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       expect(items[0]!.description).toBe('CAFÉ ÑANDÚ');
     });
 
-    it('rechaza ficheros sin cabecera reconocible y cuentas inexistentes', async () => {
+    it('rejects files without a recognizable header and missing accounts', async () => {
       const bad = await importCsv('uno;dos\n1;2');
       expect(bad.status).toBe(400);
       expect(bad.body.error.code).toBe('invalid_csv');
       expect((await importCsv(first, '', 'a'.repeat(24))).status).toBe(404);
     });
 
-    it('lista las importaciones y deshace una entera', async () => {
+    it('lists imports and undoes a whole one', async () => {
       const batches = (await call('GET', '/imports')).body as { id: string; imported: number }[];
       expect(batches.map((b) => b.id)).toContain(batchId);
 
@@ -221,7 +221,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
     });
   });
 
-  describe('movimientos y resumen', () => {
+  describe('transactions and summary', () => {
     beforeAll(async () => {
       await importCsv(
         csv(
@@ -234,7 +234,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       );
     });
 
-    it('filtra por mes, categoría, texto y pagina', async () => {
+    it('filters by month, category, text and paginates', async () => {
       expect((await transactions('month=2026-10')).total).toBe(5);
       expect((await transactions('month=2026-10&category=supermercado')).total).toBe(1);
       expect((await transactions('month=2026-10&category=none')).total).toBe(3);
@@ -242,10 +242,10 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       const page = await transactions('month=2026-10&limit=2&offset=0');
       expect(page.items).toHaveLength(2);
       expect(page.total).toBe(5);
-      expect(page.items[0]!.date >= page.items[1]!.date).toBe(true); // más recientes primero
+      expect(page.items[0]!.date >= page.items[1]!.date).toBe(true); // newest first
     });
 
-    it('la corrección manual no se sobrescribe y puede crear una regla', async () => {
+    it('a manual correction is not overwritten and can create a rule', async () => {
       const { items } = await transactions('q=tarjeta');
       const tx = items[0]!;
       const set = await call('PATCH', `/transactions/${tx.id}/category`, {
@@ -260,7 +260,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       const rules = (await call('GET', '/rules')).body as { pattern: string; priority: number }[];
       expect(rules.some((r) => r.pattern === 'pago tarjeta raro' && r.priority === 10)).toBe(true);
 
-      // Una regla nueva que también casaría con ese movimiento no lo toca al reaplicar.
+      // A new rule that would also match that transaction does not touch it when re-applied.
       await call('POST', '/rules', {
         pattern: 'tarjeta',
         matchType: 'contains',
@@ -273,7 +273,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       });
     });
 
-    it('reaplicar reglas categoriza las que no tenían categoría', async () => {
+    it('re-applying rules categorizes the ones without a category', async () => {
       await call('POST', '/rules', {
         pattern: 'traspaso',
         matchType: 'startsWith',
@@ -287,7 +287,7 @@ describe.skipIf(!h)('cuentas, reglas, importación y resumen (integración)', ()
       });
     });
 
-    it('el resumen agrupa por mes y categoría y excluye los traspasos', async () => {
+    it('the summary groups by month and category and excludes transfers', async () => {
       const expense = (await call('GET', '/expenses/summary?from=2026-10&to=2026-10')).body;
       expect(expense).toEqual(
         expect.arrayContaining([

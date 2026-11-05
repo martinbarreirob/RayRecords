@@ -1,6 +1,6 @@
 import { MongoServerError } from 'mongodb';
 
-/** ¿Es una violación de índice único? Con `index` se comprueba además cuál (por nombre). */
+/** Whether the error is a unique index violation; with `index`, also checks which one by name. */
 export function isDuplicateKey(error: unknown, index?: string): boolean {
   return (
     error instanceof MongoServerError &&

@@ -6,7 +6,7 @@ import { merchantKey } from './merchant';
 
 const BATCH = 500;
 
-/** Escribe en lotes lo que va devolviendo un recorrido, para no cargar la colección entera en memoria. */
+/** Writes the operations of a cursor walk in batches, to avoid loading the whole collection in memory. */
 async function inBatches(
   c: Collections,
   ops: AsyncIterable<AnyBulkWriteOperation<TransactionDoc>>,
@@ -23,8 +23,8 @@ async function inBatches(
 }
 
 /**
- * Reaplica las reglas activas a los movimientos sin categoría y devuelve cuántos cambiaron.
- * Nunca toca los corregidos a mano.
+ * Re-applies the active rules to uncategorized transactions and returns how many changed.
+ * Never touches the ones corrected by hand.
  */
 export async function applyRulesToUncategorized(c: Collections): Promise<number> {
   const rules = await c.rules.find({ active: true }).toArray();
@@ -46,7 +46,7 @@ export async function applyRulesToUncategorized(c: Collections): Promise<number>
   return updated;
 }
 
-/** Calcula `merchantKey` en los movimientos anteriores a esa columna y devuelve cuántos rellenó. */
+/** Computes `merchantKey` on transactions that predate that column and returns how many it filled. */
 export async function backfillMerchantKeys(c: Collections): Promise<number> {
   let filled = 0;
   async function* ops() {

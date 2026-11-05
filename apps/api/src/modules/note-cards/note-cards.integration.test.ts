@@ -7,7 +7,7 @@ import { migrateDailyNotes } from './migrate';
 
 const h = await createHarness();
 
-describe.skipIf(!h)('notas como tarjetas (integración)', () => {
+describe.skipIf(!h)('notes as cards (integration)', () => {
   const { call } = h ?? ({} as Harness);
   const collections = h?.database.collections;
 
@@ -17,12 +17,12 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
 
   const board = async () => (await call('GET', '/note-cards')).body as NoteBoard;
 
-  describe('tarjetas', () => {
-    it('crea con posición explícita y la guarda', async () => {
-      const created = await call('POST', '/note-cards', { text: 'Llamar', x: 100, y: 200 });
+  describe('cards', () => {
+    it('creates with an explicit position and stores it', async () => {
+      const created = await call('POST', '/note-cards', { text: 'Call', x: 100, y: 200 });
       expect(created.status).toBe(201);
       expect(created.body).toMatchObject({
-        text: 'Llamar',
+        text: 'Call',
         x: 100,
         y: 200,
         groupId: null,
@@ -32,13 +32,13 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(found).toMatchObject({ x: 100, y: 200 });
     });
 
-    it('sin posición elige un hueco libre que no pisa a otra', async () => {
+    it('without a position it picks a free spot that does not overlap another card', async () => {
       const a = (await call('POST', '/note-cards', { text: 'a' })).body as NoteCard;
       const b = (await call('POST', '/note-cards', { text: 'b' })).body as NoteCard;
       expect([a.x, a.y]).not.toEqual([b.x, b.y]);
     });
 
-    it('mover actualiza la posición y la trae al frente', async () => {
+    it('moving updates the position and brings the card to the front', async () => {
       const first = (await call('POST', '/note-cards', { text: 'p', x: 10, y: 10 })).body;
       const second = (await call('POST', '/note-cards', { text: 'q', x: 500, y: 10 })).body;
       const moved = await call('PATCH', `/note-cards/${first.id}`, { x: 40, y: 60 });
@@ -46,23 +46,23 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(moved.body.z).toBeGreaterThan(second.z);
     });
 
-    it('rechaza coordenadas fuera de rango y cuerpos vacíos', async () => {
+    it('rejects out-of-range coordinates and empty bodies', async () => {
       const card = (await call('POST', '/note-cards', { text: 'r', x: 1, y: 1 })).body;
       expect((await call('PATCH', `/note-cards/${card.id}`, { x: -5 })).status).toBe(400);
       expect((await call('PATCH', `/note-cards/${card.id}`, { y: 99_999 })).status).toBe(400);
       expect((await call('PATCH', `/note-cards/${card.id}`, {})).status).toBe(400);
     });
 
-    it('edita el texto y borra; una nota inexistente da 404', async () => {
-      const card = (await call('POST', '/note-cards', { text: 'viejo', x: 1, y: 1 })).body;
-      const edited = await call('PATCH', `/note-cards/${card.id}`, { text: 'nuevo' });
-      expect(edited.body.text).toBe('nuevo');
+    it('edits the text and deletes; a missing note gives 404', async () => {
+      const card = (await call('POST', '/note-cards', { text: 'old', x: 1, y: 1 })).body;
+      const edited = await call('PATCH', `/note-cards/${card.id}`, { text: 'new' });
+      expect(edited.body.text).toBe('new');
       expect((await call('DELETE', `/note-cards/${card.id}`)).status).toBe(204);
       expect((await call('DELETE', `/note-cards/${card.id}`)).status).toBe(404);
       expect((await call('PATCH', `/note-cards/${card.id}`, { text: 'x' })).status).toBe(404);
     });
 
-    it('mueve varias a la vez, y no toca nada si alguna no existe', async () => {
+    it('moves several at once, and changes nothing if one does not exist', async () => {
       const a = (await call('POST', '/note-cards', { text: 'm1', x: 1, y: 1 })).body;
       const b = (await call('POST', '/note-cards', { text: 'm2', x: 2, y: 2 })).body;
       const ok = await call('PATCH', '/note-cards', {
@@ -87,9 +87,9 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
     });
   });
 
-  describe('hechas y ocultas a las 24 h', () => {
-    it('marcar como hecha guarda la fecha; volver a marcar no la mueve; desmarcar la borra', async () => {
-      const card = (await call('POST', '/note-cards', { text: 'tarea', x: 5, y: 5 })).body;
+  describe('done cards and the 24 h hiding', () => {
+    it('marking done stores the date; marking again keeps it; unmarking clears it', async () => {
+      const card = (await call('POST', '/note-cards', { text: 'task', x: 5, y: 5 })).body;
       const done = await call('PATCH', `/note-cards/${card.id}`, { done: true });
       expect(done.body.doneAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
@@ -100,8 +100,8 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(undone.body.doneAt).toBeNull();
     });
 
-    it('una hecha se ve hasta justo antes de las 24 h y se oculta exactamente a las 24 h', async () => {
-      const card = (await call('POST', '/note-cards', { text: 'caduca', x: 7, y: 7 })).body;
+    it('a done card is visible until just before 24 h and hidden exactly at 24 h', async () => {
+      const card = (await call('POST', '/note-cards', { text: 'expires', x: 7, y: 7 })).body;
       const doneAt = new Date('2026-11-04T10:00:00.000Z');
       await collections!.noteCards.updateOne({ _id: new ObjectId(card.id) }, { $set: { doneAt } });
 
@@ -114,13 +114,13 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       const visibleAt = (await listBoard(collections!, atLimit)).cards;
       expect(visibleAt.some((c) => c._id.toHexString() === card.id)).toBe(false);
 
-      // No se pierde: aparece en «terminadas» y se puede recuperar.
+      // It is not lost: it shows up in the done list and can be recovered.
       const done = await listDone(collections!, atLimit);
       expect(done.some((c) => c._id.toHexString() === card.id)).toBe(true);
     });
 
-    it('GET /note-cards/done lista las hechas hace más de 24 h y recuperarlas las devuelve al lienzo', async () => {
-      const card = (await call('POST', '/note-cards', { text: 'vieja', x: 8, y: 8 })).body;
+    it('GET /note-cards/done lists cards done over 24 h ago and recovering one puts it back on the canvas', async () => {
+      const card = (await call('POST', '/note-cards', { text: 'older', x: 8, y: 8 })).body;
       await collections!.noteCards.updateOne(
         { _id: new ObjectId(card.id) },
         { $set: { doneAt: new Date(Date.now() - 3 * DONE_VISIBLE_MS) } },
@@ -134,13 +134,13 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
     });
   });
 
-  describe('grupos', () => {
-    it('crea un grupo y mete y saca tarjetas con coordenadas relativas', async () => {
-      const group = (await call('POST', '/note-groups', { title: 'Reforma', x: 50, y: 50 }))
+  describe('groups', () => {
+    it('creates a group and moves cards in and out using relative coordinates', async () => {
+      const group = (await call('POST', '/note-groups', { title: 'Renovation', x: 50, y: 50 }))
         .body as NoteGroup;
-      expect(group).toMatchObject({ title: 'Reforma', x: 50, y: 50, w: 420, h: 300 });
+      expect(group).toMatchObject({ title: 'Renovation', x: 50, y: 50, w: 420, h: 300 });
 
-      const card = (await call('POST', '/note-cards', { text: 'dentro', x: 0, y: 0 })).body;
+      const card = (await call('POST', '/note-cards', { text: 'inside', x: 0, y: 0 })).body;
       const inside = await call('PATCH', `/note-cards/${card.id}`, {
         groupId: group.id,
         x: 16,
@@ -152,7 +152,7 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(out.body.groupId).toBeNull();
     });
 
-    it('una tarjeta no puede apuntar a un grupo que no existe', async () => {
+    it('a card cannot point to a group that does not exist', async () => {
       const card = (await call('POST', '/note-cards', { text: 'x', x: 0, y: 0 })).body;
       const response = await call('PATCH', `/note-cards/${card.id}`, {
         groupId: new ObjectId().toHexString(),
@@ -160,17 +160,17 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(response.status).toBe(404);
     });
 
-    it('mover el grupo no cambia las coordenadas de sus tarjetas', async () => {
+    it('moving the group does not change its cards coordinates', async () => {
       const group = (await call('POST', '/note-groups', { x: 10, y: 10 })).body;
       const card = (
-        await call('POST', '/note-cards', { text: 'hija', x: 30, y: 70, groupId: group.id })
+        await call('POST', '/note-cards', { text: 'child', x: 30, y: 70, groupId: group.id })
       ).body;
       await call('PATCH', `/note-groups/${group.id}`, { x: 600, y: 400 });
       const after = (await board()).cards.find((c) => c.id === card.id);
       expect(after).toMatchObject({ x: 30, y: 70, groupId: group.id });
     });
 
-    it('agrupar una selección: mover varias tarjetas al grupo de una vez', async () => {
+    it('grouping a selection: move several cards into the group at once', async () => {
       const group = (await call('POST', '/note-groups', { x: 100, y: 100 })).body;
       const a = (await call('POST', '/note-cards', { text: 'g1', x: 120, y: 140 })).body;
       const b = (await call('POST', '/note-cards', { text: 'g2', x: 160, y: 260 })).body;
@@ -184,10 +184,10 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(cards.map((c) => c.id).sort()).toEqual([a.id, b.id].sort());
     });
 
-    it('disolver un grupo deja sus tarjetas sueltas en el mismo sitio del lienzo', async () => {
+    it('dissolving a group leaves its cards loose at the same canvas spot', async () => {
       const group = (await call('POST', '/note-groups', { x: 200, y: 300 })).body;
       const card = (
-        await call('POST', '/note-cards', { text: 'suelta', x: 16, y: 56, groupId: group.id })
+        await call('POST', '/note-cards', { text: 'loose', x: 16, y: 56, groupId: group.id })
       ).body;
       const dissolved = await call('DELETE', `/note-groups/${group.id}`);
       expect(dissolved.status).toBe(200);
@@ -196,20 +196,20 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect((await call('DELETE', `/note-groups/${group.id}`)).status).toBe(404);
     });
 
-    it('valida el tamaño del grupo', async () => {
+    it('validates the group size', async () => {
       expect((await call('POST', '/note-groups', { w: 10 })).status).toBe(400);
     });
   });
 
-  describe('migración de las notas del día', () => {
-    it('convierte cada nota con texto en una tarjeta y no se repite', async () => {
+  describe('daily notes migration', () => {
+    it('turns each non-empty note into a card and does not repeat', async () => {
       const now = new Date('2026-11-04T09:00:00.000Z');
       await collections!.noteCards.deleteMany({});
       await collections!.dailyNotes.insertMany([
         {
           _id: new ObjectId(),
           date: '2026-11-03',
-          content: 'Llamar al dentista',
+          content: 'Call the dentist',
           createdAt: now,
           updatedAt: now,
         },
@@ -220,7 +220,7 @@ describe.skipIf(!h)('notas como tarjetas (integración)', () => {
       expect(first).toEqual({ migrated: 1, skippedBecauseNotEmpty: false });
       const cards = (await board()).cards;
       expect(cards).toHaveLength(1);
-      expect(cards[0]!.text).toBe('2026-11-03\nLlamar al dentista');
+      expect(cards[0]!.text).toBe('2026-11-03\nCall the dentist');
 
       const second = await migrateDailyNotes(collections!, now);
       expect(second).toEqual({ migrated: 0, skippedBecauseNotEmpty: true });

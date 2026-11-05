@@ -19,12 +19,12 @@ import type { Collections } from '../../db/client';
 import type { NoteCardDoc, NoteGroupDoc } from '../../db/documents';
 import { ApiError } from '../../http/errors';
 
-/** Posición por defecto dentro de un grupo (bajo su título). */
+/** Default position inside a group (below its title). */
 const IN_GROUP_DEFAULT = { x: 16, y: 56 };
 
 /**
- * Tarjetas que se muestran: las pendientes y las hechas hace menos de 24 h. Se filtra al leer, sin
- * ningún proceso que borre u oculte nada; la tarjeta hecha sigue en la base de datos.
+ * Cards that are shown: pending ones and those done less than 24 h ago. Filtered on read, with no
+ * background job deleting or hiding anything; a done card stays in the database.
  */
 function visibleFilter(now: Date): Filter<NoteCardDoc> {
   return {
@@ -40,7 +40,7 @@ export async function listBoard(c: Collections, now = new Date()) {
   return { cards, groups };
 }
 
-/** Hechas hace más de 24 h: ya no están en el lienzo, pero se pueden consultar y recuperar. */
+/** Done more than 24 h ago: no longer on the canvas, but still listable and recoverable. */
 export async function listDone(c: Collections, now = new Date()): Promise<NoteCardDoc[]> {
   return c.noteCards
     .find({ doneAt: { $lte: new Date(now.getTime() - DONE_VISIBLE_MS) } })
@@ -54,7 +54,7 @@ async function nextZ(c: Collections): Promise<number> {
   return (top?.z ?? -1) + 1;
 }
 
-/** Rectángulos ocupados del lienzo (tarjetas sueltas visibles y grupos) para buscar un hueco. */
+/** Occupied canvas rectangles (visible loose cards and groups), used to find a free spot. */
 async function occupiedRects(c: Collections, now: Date): Promise<Rect[]> {
   const { cards, groups } = await listBoard(c, now);
   return [
@@ -112,12 +112,12 @@ export async function updateCard(
   if (patch.w !== undefined) $set.w = patch.w;
   if (patch.x !== undefined) $set.x = patch.x;
   if (patch.y !== undefined) $set.y = patch.y;
-  // Moverla la trae al frente.
+  // Moving a card brings it to the front.
   if (patch.x !== undefined || patch.y !== undefined) $set.z = await nextZ(c);
   if (patch.groupId !== undefined) {
     $set.groupId = patch.groupId === null ? null : (await requireGroup(c, patch.groupId))._id;
   }
-  // Marcar como hecha de nuevo no mueve la fecha: el plazo de 24 h cuenta desde la primera vez.
+  // Marking it done again keeps the date: the 24 h window counts from the first time.
   if (patch.done === true) $set.doneAt = current.doneAt ?? now;
   if (patch.done === false) $set.doneAt = null;
 
@@ -130,7 +130,7 @@ export async function updateCard(
   return updated;
 }
 
-/** Mueve varias tarjetas a la vez (todas o ninguna si alguna no existe). */
+/** Moves several cards at once (all or none if one does not exist). */
 export async function moveCards(
   c: Collections,
   { moves }: MoveNoteCards,
@@ -215,8 +215,8 @@ export async function updateGroup(
 }
 
 /**
- * Disolver un grupo: sus tarjetas no se pierden, quedan sueltas en el mismo sitio del lienzo
- * (sus coordenadas pasan de relativas a absolutas). Devuelve las tarjetas liberadas.
+ * Dissolves a group: its cards are kept and stay at the same place on the canvas (coordinates go
+ * from relative to absolute). Returns the released cards.
  */
 export async function dissolveGroup(
   c: Collections,

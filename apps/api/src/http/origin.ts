@@ -1,7 +1,7 @@
 /**
- * Defensa CSRF adicional a `SameSite=Strict`: en las peticiones que modifican datos, si el navegador
- * envía `Origin`, su host debe ser el de la propia aplicación (o estar en `ALLOWED_ORIGINS`).
- * Sin `Origin` (curl, herramientas) se permite: esas peticiones no llevan la cookie del navegador.
+ * CSRF defense on top of `SameSite=Strict`: on state-changing requests, if the browser sends
+ * `Origin`, its host must be the app's own host (or be listed in `ALLOWED_ORIGINS`).
+ * Requests without `Origin` (curl, scripts) are allowed: they do not carry the browser cookie.
  */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 

@@ -6,7 +6,7 @@ import { ApiError } from '../../http/errors';
 import { validateExtra } from './extra';
 import { ORDER_STEP } from './ordering';
 
-/** Filtro de "la columna" de un elemento: el tablero la usa; en listas sin tablero no hay columna. */
+/** Filter for an item's column: boards use it; lists without a board have no column. */
 export function groupFilter(listId: ObjectId, column: string | undefined) {
   return { listId, column: column === undefined ? { $exists: false } : column };
 }
@@ -16,7 +16,7 @@ export function assertValidExtra(list: ListDoc, extra: Extra): void {
   if (issues.length) throw new ApiError(400, 'validation_error', 'Datos inválidos', issues);
 }
 
-/** Columna a usar: la indicada (validada contra el tablero) o, por defecto, la primera. */
+/** Column to use: the requested one (validated against the board) or the first by default. */
 export function resolveColumn(list: ListDoc, requested: string | undefined): string | undefined {
   if (!list.board) {
     if (requested) throw new ApiError(400, 'validation_error', 'La lista no es un tablero');
@@ -39,7 +39,7 @@ export async function nextOrder(c: Collections, listId: ObjectId, column: string
   return (last?.order ?? 0) + ORDER_STEP;
 }
 
-/** Crea un elemento ya validado en su lista. Lo usan `POST /items` y la captura rápida. */
+/** Creates a validated item in its list. Used by `POST /items` and quick capture. */
 export async function createItem(
   c: Collections,
   list: ListDoc,

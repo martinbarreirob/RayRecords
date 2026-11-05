@@ -1,4 +1,4 @@
-/** Minúsculas, sin acentos y con espacios colapsados: base de las reglas y del hash. */
+/** Lowercase, accent-free, whitespace collapsed: the basis for rules and the hash. */
 export function normalizeDescription(description: string): string {
   return description
     .normalize('NFD')

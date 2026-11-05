@@ -22,7 +22,7 @@ describe('parseAmountToCents', () => {
     ['0,07', 7],
     ['12-', -1200],
     ['100', 10000],
-    // Ruido de coma flotante del banco: se redondea a céntimos.
+    // Floating point noise from the bank: rounded to cents.
     ['-5.7700000000000005 €', -577],
     ['338.16999999999996 €', 33817],
     ['-0.99 €', -99],
@@ -30,13 +30,13 @@ describe('parseAmountToCents', () => {
     expect(parseAmountToCents(raw)).toBe(expected);
   });
 
-  it.each(['', 'abc', '1,2,3x', '12a,50'])('rechaza «%s»', (raw) => {
+  it.each(['', 'abc', '1,2,3x', '12a,50'])('rejects "%s"', (raw) => {
     expect(parseAmountToCents(raw)).toBeNull();
   });
 });
 
 describe('parseBankDate', () => {
-  it('admite varios formatos y descarta fechas imposibles', () => {
+  it('accepts several formats and rejects impossible dates', () => {
     expect(parseBankDate('05/03/2026')).toBe('2026-03-05');
     expect(parseBankDate('5-3-26')).toBe('2026-03-05');
     expect(parseBankDate('2026-03-05 10:30')).toBe('2026-03-05');
@@ -46,7 +46,7 @@ describe('parseBankDate', () => {
 });
 
 describe('parseCsv', () => {
-  it('detecta el separador y respeta comillas', () => {
+  it('detects the delimiter and honors quotes', () => {
     expect(parseCsv('a;b;c\n1;"x;y";3\n')).toEqual([
       ['a', 'b', 'c'],
       ['1', 'x;y', '3'],
@@ -59,15 +59,15 @@ describe('parseCsv', () => {
 });
 
 describe('decodeCsv', () => {
-  it('quita el BOM y cae a Windows-1252 si no es UTF-8', () => {
+  it('strips the BOM and falls back to Windows-1252 when not UTF-8', () => {
     expect(decodeCsv(Uint8Array.from([0xef, 0xbb, 0xbf, 0x61]))).toBe('a');
-    expect(decodeCsv(Uint8Array.from([0x63, 0x61, 0x66, 0xe9]))).toBe('café'); // é en 1252
+    expect(decodeCsv(Uint8Array.from([0x63, 0x61, 0x66, 0xe9]))).toBe('café'); // e-acute in 1252
     expect(decodeCsv(new TextEncoder().encode('ñandú'))).toBe('ñandú');
   });
 });
 
 describe('parseBankCsv', () => {
-  it('importe con signo, saldo y filas de preámbulo antes de la cabecera', () => {
+  it('signed amount, balance and preamble rows before the header', () => {
     const csv = [
       'Extracto de movimientos;;;',
       'Cuenta: ES00 0000;;;',
@@ -94,7 +94,7 @@ describe('parseBankCsv', () => {
     ]);
   });
 
-  it('cargo y abono en columnas separadas', () => {
+  it('debit and credit in separate columns', () => {
     const { rows } = parseBankCsv(
       [
         'Fecha;Descripción;Cargo;Abono',
@@ -105,7 +105,7 @@ describe('parseBankCsv', () => {
     expect(rows.map((r) => r.amountCents)).toEqual([-6010, 2500]);
   });
 
-  it('avisa de las líneas inválidas sin descartar el resto', () => {
+  it('warns about invalid lines without discarding the rest', () => {
     const { rows, warnings } = parseBankCsv(
       [
         'Fecha;Concepto;Importe',
@@ -120,23 +120,23 @@ describe('parseBankCsv', () => {
     expect(warnings[0]).toContain('Línea 3');
   });
 
-  it('si no hay cabecera reconocible lanza un error claro', () => {
+  it('throws a clear error when no header is recognizable', () => {
     expect(() => parseBankCsv('uno;dos\n1;2')).toThrow(CsvFormatError);
   });
 
-  it('formato real del banco: cabecera «Data», importes con € y ruido decimal, fecha de operación', () => {
+  it('real bank format: "Data" header, amounts with the euro sign and decimal noise, operation date', () => {
     const csv = [
       'Data,Concepto,Saldo,Importe,Data operación,Data valor',
-      '02-09-2024,CHIRINGO O POR\\CANGAS DO MO\\ES2408310324,1668.28 €,-7.0 €,31-08-2024,31-08-2024',
+      '02-09-2024,BEACH BAR\SOME TOWN\ES0000000000,1668.28 €,-7.0 €,31-08-2024,31-08-2024',
       '29-08-2024,Amazon Prime*QR8CL7U55 amazon.es/prm 445,338.16999999999996 €,-49.9 €,29-08-2024,26-08-2024',
-      '30-08-2024,"MAROSA VAT, S.L.U",1686.67 €,1402.95 €,30-08-2024,30-08-2024',
+      '30-08-2024,"ACME PAYROLL, S.L.",1800.00 €,1500.00 €,30-08-2024,30-08-2024',
     ].join('\n');
     const { rows, warnings } = parseBankCsv(csv);
     expect(warnings).toEqual([]);
     expect(rows).toEqual([
       {
         date: '2024-08-31',
-        description: 'CHIRINGO O POR\\CANGAS DO MO\\ES2408310324',
+        description: 'BEACH BAR\SOME TOWN\ES0000000000',
         amountCents: -700,
         balanceAfterCents: 166828,
       },
@@ -148,9 +148,9 @@ describe('parseBankCsv', () => {
       },
       {
         date: '2024-08-30',
-        description: 'MAROSA VAT, S.L.U',
-        amountCents: 140295,
-        balanceAfterCents: 168667,
+        description: 'ACME PAYROLL, S.L.',
+        amountCents: 150000,
+        balanceAfterCents: 180000,
       },
     ]);
   });
@@ -159,7 +159,7 @@ describe('parseBankCsv', () => {
 describe('repairYearTypos', () => {
   const row = (date: string) => ({ date, description: 'x', amountCents: -100 });
 
-  it('corrige las filas con el año adelantado en un fichero ordenado', () => {
+  it('fixes rows with the year too far ahead in a sorted file', () => {
     const rows = [
       ...Array.from({ length: 20 }, (_, i) => row(`2025-11-${String(i + 1).padStart(2, '0')}`)),
       row('2025-12-20'),
@@ -180,7 +180,7 @@ describe('repairYearTypos', () => {
     expect(warnings).toHaveLength(2);
   });
 
-  it('no toca ficheros ordenados de nuevo a antiguo ni huecos reales', () => {
+  it('leaves newest-first files and real gaps alone', () => {
     const descending = [row('2026-12-01'), row('2026-03-01'), row('2026-02-01'), row('2026-01-01')];
     repairYearTypos(descending, []);
     expect(descending[0]!.date).toBe('2026-12-01');

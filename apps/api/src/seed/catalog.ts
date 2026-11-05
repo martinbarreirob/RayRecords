@@ -64,7 +64,7 @@ function toItems(list: ListDoc, seeds: ItemSeed[], now: Date): ItemDoc[] {
   }));
 }
 
-/** Listas, elementos y notas de ejemplo. Las fechas son relativas a hoy para que el calendario siempre tenga datos. */
+/** Sample lists, items and notes. Dates are relative to today so the calendar always has data. */
 export function buildCatalog(now: Date, today: DateOnly) {
   const films = makeList(LIST_PRESETS.media, 1000, now);
   const series = makeList(LIST_PRESETS.media, 2000, now, {
@@ -275,8 +275,8 @@ export function buildCatalog(now: Date, today: DateOnly) {
     ),
   ];
 
-  // Notas: un grupo con tres tarjetas (una hecha hace 3 h) y varias sueltas en el lienzo. Una más
-  // se marcó hecha hace 30 h: ya no se ve en el lienzo, pero aparece en «Terminadas».
+  // Notes: one group with three cards (one done 3 h ago) and several loose cards on the canvas.
+  // One more was marked done 30 h ago: it no longer shows on the canvas but appears in the done list.
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
   const group: NoteGroupDoc = {
     _id: new ObjectId(),

@@ -17,7 +17,7 @@ import { toList } from './mapper';
 
 const IdParams = z.object({ id: ObjectIdString });
 
-/** Slug único a partir del nombre: `peliculas`, `peliculas-2`… */
+/** Unique slug from the name: `peliculas`, `peliculas-2`, and so on. */
 async function uniqueSlug(c: Collections, name: string): Promise<string> {
   const base = slugify(name) || 'lista';
   for (let n = 1; ; n++) {
@@ -26,7 +26,7 @@ async function uniqueSlug(c: Collections, name: string): Promise<string> {
   }
 }
 
-/** Traduce la violación del índice único de alias en un 409 con el nombre de la lista que lo usa. */
+/** Turns the unique alias index violation into a 409 naming the list that uses it. */
 async function aliasConflict(c: Collections, alias: string | undefined): Promise<ApiError> {
   const owner = alias ? await c.lists.findOne({ captureAlias: alias }) : null;
   return new ApiError(

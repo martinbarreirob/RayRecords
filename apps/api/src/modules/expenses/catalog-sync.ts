@@ -5,7 +5,7 @@ import { applyRulesToUncategorized, backfillMerchantKeys } from './apply-rules';
 
 export interface CatalogSyncResult {
   categoriesAdded: number;
-  /** Movimientos y reglas pasados de una categoría antigua a su sustituta (o a revisión). */
+  /** Transactions and rules moved from an old category to its replacement (or back to review). */
   migrated: number;
   rulesAdded: number;
   merchantKeysFilled: number;
@@ -13,9 +13,9 @@ export interface CatalogSyncResult {
 }
 
 /**
- * Deja la base al día con el catálogo del extracto real. Es idempotente y solo AÑADE:
- * categorías y reglas que faltan (no recrea una regla que ya existe), `merchantKey` en movimientos
- * anteriores y categoría por regla a los que siguen sin ella. Nunca toca lo corregido a mano.
+ * Brings the database up to date with the catalog. Idempotent and additive only: missing
+ * categories and rules (an existing rule is not recreated), `merchantKey` on older transactions, and
+ * a rule-based category for those still without one. Never touches what was corrected by hand.
  */
 export async function syncCatalog(c: Collections): Promise<CatalogSyncResult> {
   const categories = await c.categories.bulkWrite(
@@ -46,9 +46,9 @@ export async function syncCatalog(c: Collections): Promise<CatalogSyncResult> {
 }
 
 /**
- * Pasa lo que use una categoría de versiones anteriores a su sustituta y borra la categoría antigua.
- * Si no tiene sustituta (`null`) los movimientos vuelven a pendientes y sus reglas se borran.
- * Las categorías creadas por el usuario no están en el mapa y no se tocan.
+ * Moves whatever uses a category from earlier versions to its replacement and deletes the old
+ * category. With no replacement (`null`) transactions go back to pending and their rules are deleted.
+ * User-created categories are not in the map and are left alone.
  */
 async function migrateLegacyCategories(c: Collections): Promise<number> {
   let migrated = 0;

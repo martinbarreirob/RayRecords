@@ -2,8 +2,8 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
 /**
- * Liveness: siempre responde 200 si el proceso está vivo. `db` informa del estado de Mongo
- * sin hacer fallar el healthcheck de Docker, para que una caída de la BD no impida arrancar nginx.
+ * Liveness: always answers 200 while the process is alive. `db` reports Mongo's state without
+ * failing the Docker healthcheck, so a database outage does not stop nginx from starting.
  */
 export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(

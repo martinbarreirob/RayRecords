@@ -1,11 +1,11 @@
-/** Separación entre elementos al asignar orden de cero y tras renumerar. */
+/** Spacing between items when assigning order from scratch and after renumbering. */
 export const ORDER_STEP = 1000;
-/** Por debajo de este hueco entre vecinos ya no se puede subdividir con fiabilidad: hay que renumerar. */
+/** Below this gap between neighbours it can no longer be split reliably: renumber instead. */
 const MIN_GAP = 1e-3;
 
 /**
- * Orden para colocar un elemento entre `prev` y `next` (vecinos ya ordenados; `undefined` = extremo).
- * Devuelve `null` si no queda hueco suficiente y la columna debe renumerarse antes.
+ * Order for placing an item between `prev` and `next` (sorted neighbours; `undefined` = edge).
+ * Returns `null` when there is not enough gap and the column must be renumbered first.
  */
 export function orderBetween(prev: number | undefined, next: number | undefined): number | null {
   if (prev === undefined && next === undefined) return ORDER_STEP;
@@ -15,7 +15,7 @@ export function orderBetween(prev: number | undefined, next: number | undefined)
   return (prev + next) / 2;
 }
 
-/** Órdenes nuevos y equiespaciados para `count` elementos (renumeración). */
+/** New evenly spaced orders for `count` items (renumbering). */
 export function renumber(count: number): number[] {
   return Array.from({ length: count }, (_, i) => (i + 1) * ORDER_STEP);
 }

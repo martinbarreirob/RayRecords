@@ -47,7 +47,7 @@ export async function connectDatabase(
   config: Pick<Config, 'mongoUri' | 'mongoDb'>,
 ): Promise<Database> {
   const client = new MongoClient(config.mongoUri, {
-    // Un solo usuario: un pool pequeño ahorra memoria en el servidor de 4 GB.
+    // Single user: a small pool saves memory on the 4 GB server.
     maxPoolSize: 5,
     serverSelectionTimeoutMS: 5_000,
   });

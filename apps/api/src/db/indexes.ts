@@ -1,14 +1,14 @@
 import type { Collections } from './client';
 
 /**
- * Índices de todas las colecciones. Es idempotente: se ejecuta en cada arranque y solo crea
- * lo que falta. Con un único usuario no merece la pena un sistema de migraciones.
+ * Indexes for every collection. Idempotent: runs on each start and only creates what is missing.
+ * With a single user a migration system is not worth it.
  */
 export async function ensureIndexes(c: Collections): Promise<void> {
   await Promise.all([
     c.lists.createIndexes([
       { key: { slug: 1 }, unique: true, name: 'slug_unique' },
-      // Único solo entre las listas que tienen alias (índice parcial): las demás no chocan entre sí.
+      // Unique only among lists that have an alias (partial index), so the rest do not collide.
       {
         key: { captureAlias: 1 },
         unique: true,
@@ -19,10 +19,10 @@ export async function ensureIndexes(c: Collections): Promise<void> {
     ]),
 
     c.items.createIndexes([
-      { key: { listId: 1, order: 1 }, name: 'list_order' }, // vista de lista y tablero
+      { key: { listId: 1, order: 1 }, name: 'list_order' }, // list and board views
       { key: { listId: 1, createdAt: -1 }, name: 'list_created' },
       { key: { tags: 1 }, name: 'tags' }, // multikey
-      // Calendario: solo indexa los elementos que tienen fecha.
+      // Calendar: only indexes items that have a date.
       {
         key: { dueDate: 1 },
         partialFilterExpression: { dueDate: { $exists: true } },
@@ -39,25 +39,25 @@ export async function ensureIndexes(c: Collections): Promise<void> {
     c.dailyNotes.createIndexes([{ key: { date: 1 }, unique: true, name: 'date_unique' }]),
 
     c.noteCards.createIndexes([
-      { key: { groupId: 1 }, name: 'group' }, // tarjetas de un grupo; liberarlas al borrarlo
-      { key: { doneAt: 1 }, name: 'doneAt' }, // filtro de las 24 h y vista de terminadas
+      { key: { groupId: 1 }, name: 'group' }, // cards of a group; releasing them when it is deleted
+      { key: { doneAt: 1 }, name: 'doneAt' }, // 24 h filter and done view
     ]),
 
     c.accounts.createIndexes([{ key: { archived: 1, name: 1 }, name: 'archived_name' }]),
 
     c.transactions.createIndexes([
-      // Deduplicación: reimportar un CSV solapado no crea duplicados.
+      // Dedup: re-importing an overlapping CSV does not create duplicates.
       { key: { accountId: 1, hash: 1 }, unique: true, name: 'account_hash_unique' },
       { key: { accountId: 1, date: -1 }, name: 'account_date' },
-      { key: { month: 1, category: 1 }, name: 'month_category' }, // agregaciones de gráficos
+      { key: { month: 1, category: 1 }, name: 'month_category' }, // chart aggregations
       {
-        // Cola de revisión: solo indexa lo pendiente, así que sigue pequeño aunque haya miles de movimientos.
+        // Review queue: indexes only pending rows, so it stays small with thousands of transactions.
         key: { merchantKey: 1, date: -1 },
         partialFilterExpression: { categorySource: 'none' },
         name: 'pending_merchant_partial',
       },
       {
-        // Historial por comercio para sugerir categoría.
+        // Per-merchant history used to suggest a category.
         key: { merchantKey: 1, category: 1 },
         partialFilterExpression: { category: { $type: 'string' } },
         name: 'merchant_category_partial',
@@ -65,7 +65,7 @@ export async function ensureIndexes(c: Collections): Promise<void> {
       {
         key: { importBatchId: 1 },
         partialFilterExpression: { importBatchId: { $exists: true } },
-        name: 'importBatch_partial', // deshacer una importación
+        name: 'importBatch_partial', // undoing an import
       },
     ]),
 
@@ -76,9 +76,9 @@ export async function ensureIndexes(c: Collections): Promise<void> {
     c.users.createIndexes([{ key: { username: 1 }, unique: true, name: 'username_unique' }]),
 
     c.sessions.createIndexes([
-      // TTL: Mongo elimina la sesión en cuanto `expiresAt` queda atrás (con un retraso de hasta ~1 min).
+      // TTL: Mongo removes the session once `expiresAt` has passed (up to about a minute late).
       { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'expires_ttl' },
-      { key: { userId: 1 }, name: 'user' }, // revocar todas las sesiones de un usuario
+      { key: { userId: 1 }, name: 'user' }, // revoke all sessions of a user
     ]),
 
     c.credentials.createIndexes([

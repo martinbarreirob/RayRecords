@@ -25,9 +25,9 @@ export async function putNote(
 }
 
 /**
- * Añade una línea al final de la nota (`\n` de separación si hace falta). Es una sola operación
- * atómica en Mongo, así dos capturas seguidas no pisan la línea de la otra. Devuelve el contenido
- * anterior para poder deshacer.
+ * Appends a line to the end of the note (with a `\n` separator if needed). It is a single atomic
+ * Mongo operation, so two quick captures cannot overwrite each other's line. Returns the previous
+ * content so the change can be undone.
  */
 export async function appendToNote(
   c: Collections,

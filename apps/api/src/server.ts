@@ -9,10 +9,10 @@ await ensureIndexes(database.collections);
 
 const app = await buildApp({ config, database });
 
-// `docker stop` envía SIGTERM: cerrar con orden para no cortar peticiones ni conexiones a Mongo.
+// `docker stop` sends SIGTERM: shut down cleanly so in-flight requests and Mongo connections finish.
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, async () => {
-    app.log.info(`${signal} recibido, cerrando`);
+    app.log.info(`${signal} received, shutting down`);
     await app.close();
     await database.close();
     process.exit(0);

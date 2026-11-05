@@ -10,8 +10,8 @@ export const calendarRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
 
   /**
-   * Elementos con fecha (`dueDate`) entre `from` y `to`, ambas incluidas, de las listas no archivadas.
-   * Ordenados por fecha y hora; los elementos sin hora van antes que los de ese día con hora.
+   * Items with a `dueDate` between `from` and `to` (both inclusive) from non-archived lists.
+   * Sorted by date and time; items without a time come before timed items of the same day.
    */
   app.get(
     '/calendar',

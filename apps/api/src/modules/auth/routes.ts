@@ -6,7 +6,7 @@ import { setSessionCookie } from './guard';
 import { DUMMY_HASH, verifyPassword } from './password';
 import { SESSION_COOKIE, createSession, deleteSession } from './sessions';
 
-/** 10 intentos por IP cada 15 minutos: suficiente para uso legítimo, inútil para fuerza bruta. */
+/** 10 attempts per IP every 15 minutes: enough for real use, useless for brute force. */
 const LOGIN_RATE_LIMIT = { max: 10, timeWindow: '15 minutes' };
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -20,8 +20,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       const { username, password } = request.body;
       const user = await app.db.collections.users.findOne({ username });
 
-      // Se verifica siempre (contra un hash de relleno si el usuario no existe) y se responde igual:
-      // ni el mensaje ni el tiempo delatan si el usuario existe.
+      // Always verify (against a filler hash if the user does not exist) and answer the same way,
+      // so neither the message nor the timing reveals whether the user exists.
       const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
       if (!user || !valid) {
         throw new ApiError(401, 'invalid_credentials', 'Usuario o contraseña incorrectos');

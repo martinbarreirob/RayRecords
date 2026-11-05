@@ -2,7 +2,7 @@ import type { ApiErrorBody } from '@rayrecords/shared';
 import type { FastifyInstance } from 'fastify';
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 
-/** Error esperado con código estable para el cliente. */
+/** Expected error with a stable code for the client. */
 export class ApiError extends Error {
   constructor(
     readonly statusCode: number,
@@ -24,7 +24,7 @@ const STATUS_CODES: Record<number, string> = {
   429: 'too_many_requests',
 };
 
-/** Todos los errores (validación, 404, límite de peticiones, imprevistos) salen con el mismo formato. */
+/** Every error (validation, 404, rate limit, unexpected) is returned in the same shape. */
 export function registerErrorHandling(app: FastifyInstance): void {
   app.setErrorHandler((error, request, reply) => {
     let status = 500;

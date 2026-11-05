@@ -8,9 +8,9 @@ export type Rule = Pick<
 >;
 
 /**
- * `contains` también se prueba contra la clave de comercio: las reglas que crea la revisión usan esa
- * clave como patrón, y la clave no siempre es una subcadena literal de la descripción
- * (`froiz - cangas 2` → `froiz cangas 2`).
+ * `contains` is also tested against the merchant key: rules created from the review queue use that
+ * key as the pattern, and the key is not always a literal substring of the description
+ * (`acme - town 2` becomes `acme town 2`).
  */
 function matches(descriptionNorm: string, key: string, rule: Rule): boolean {
   switch (rule.matchType) {
@@ -22,17 +22,17 @@ function matches(descriptionNorm: string, key: string, rule: Rule): boolean {
       return descriptionNorm.startsWith(normalizeDescription(rule.pattern));
     case 'regex':
       try {
-        // La descripción ya está normalizada, así que el patrón se escribe sin acentos ni mayúsculas.
+        // The description is already normalized, so patterns are written without accents or capitals.
         return new RegExp(rule.pattern, 'i').test(descriptionNorm);
       } catch {
-        return false; // una regex inválida no debe romper la importación entera
+        return false; // one invalid regex must not break the whole import
       }
   }
 }
 
 /**
- * Devuelve la categoría de la primera regla activa que coincide, de mayor a menor prioridad
- * (a igual prioridad, gana la que va antes), o `null` si ninguna aplica.
+ * Returns the category of the first matching active rule, highest priority first (on equal
+ * priority the earlier one wins), or `null` if none applies.
  */
 export function categorize(descriptionNorm: string, rules: readonly Rule[]): string | null {
   const key = merchantKey(descriptionNorm) ?? '';

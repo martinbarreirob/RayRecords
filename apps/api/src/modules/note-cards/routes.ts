@@ -26,7 +26,7 @@ import {
 
 const IdParams = z.object({ id: ObjectIdString });
 
-/** Notas como tarjetas en un lienzo, con grupos. Ver docs/ARCHITECTURE.md. */
+/** Notes as cards on a canvas, with groups. See docs/ARCHITECTURE.md. */
 export const noteCardsRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
 
@@ -35,7 +35,7 @@ export const noteCardsRoutes: FastifyPluginAsyncZod = async (app) => {
     return { cards: cards.map(toNoteCard), groups: groups.map(toNoteGroup) };
   });
 
-  /** Hechas hace más de 24 h (ocultas del lienzo). */
+  /** Cards done more than 24 h ago (hidden from the canvas). */
   app.get(
     '/note-cards/done',
     { schema: { response: { 200: z.array(NoteCardSchema) } } },
@@ -86,7 +86,7 @@ export const noteCardsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => toNoteGroup(await updateGroup(c, request.params.id, request.body)),
   );
 
-  /** Disuelve el grupo: sus tarjetas quedan sueltas y se devuelven ya liberadas. */
+  /** Dissolves the group: its cards become loose and are returned already released. */
   app.delete(
     '/note-groups/:id',
     { schema: { params: IdParams, response: { 200: z.array(NoteCardSchema) } } },

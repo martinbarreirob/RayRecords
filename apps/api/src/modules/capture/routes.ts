@@ -12,7 +12,7 @@ import { createItem } from '../items/service';
 import { toNoteCard } from '../note-cards/mapper';
 import { createCard } from '../note-cards/service';
 
-/** Un elemento capturado → campos de la lista. Los datos sin campo definido se guardan igualmente en `extra`. */
+/** Maps a captured item to list fields. Data without a matching field is still kept in `extra`. */
 function captureExtra(item: CaptureItem): Extra {
   return {
     ...(item.priceCents !== undefined && { precio: item.priceCents }),
@@ -21,9 +21,9 @@ function captureExtra(item: CaptureItem): Extra {
 }
 
 /**
- * Captura rápida. El parser se ejecuta aquí, con los alias reales de las listas: es la única fuente
- * de verdad (el cliente solo lo usa para la vista previa). Capturar nunca falla por el contenido:
- * lo que no encaja acaba como tarjeta de nota, en el primer hueco libre del lienzo.
+ * Quick capture. The parser runs here with the real list aliases: this is the single source of
+ * truth (the client only uses it for the preview). Capturing never fails because of its content:
+ * anything that does not fit ends up as a note card in the first free spot of the canvas.
  */
 export const captureRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
@@ -38,7 +38,7 @@ export const captureRoutes: FastifyPluginAsyncZod = async (app) => {
 
       if (result.kind === 'empty') return { kind: 'empty' as const };
 
-      // El parser lo llama `daily_note` (texto sin destino); aquí pasa a ser una tarjeta.
+      // The parser calls it `daily_note` (text with no destination); here it becomes a card.
       if (result.kind === 'daily_note') {
         const card = await createCard(c, { text: result.text });
         return { kind: 'note_card' as const, card: toNoteCard(card) };
@@ -46,7 +46,7 @@ export const captureRoutes: FastifyPluginAsyncZod = async (app) => {
 
       const list = lists.find((l) => l.captureAlias === result.list);
       if (!list) {
-        // Hay intención clara (`hoy:`) pero no existe la lista de tareas: no se pierde, va a una nota.
+        // The intent is clear (`hoy:`) but the task list does not exist: keep it as a note.
         const text = `${result.title}${result.dueDate ? ` (para el ${result.dueDate})` : ''}`;
         const card = await createCard(c, { text });
         return {
@@ -56,7 +56,7 @@ export const captureRoutes: FastifyPluginAsyncZod = async (app) => {
         };
       }
 
-      // Un dato que no encaja con el tipo del campo de la lista no debe impedir guardar: se descarta con aviso.
+      // A value that does not fit the list field type must not block saving: drop it and warn.
       const extra = captureExtra(result);
       const issues = validateExtra(list.fieldDefs, extra);
       for (const issue of issues) delete extra[issue.path.replace('extra.', '')];

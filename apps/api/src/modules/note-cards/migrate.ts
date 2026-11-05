@@ -2,9 +2,9 @@ import type { Collections } from '../../db/client';
 import { createCard } from './service';
 
 /**
- * Convierte las notas del día antiguas (una por fecha) en tarjetas del lienzo: una tarjeta por nota
- * con texto, cuyo contenido empieza por la fecha. Si ya hay tarjetas no hace nada, así que ejecutarlo
- * dos veces no duplica; con `force` se salta esa comprobación.
+ * Converts the old daily notes (one per date) into canvas cards: one card per non-empty note, with
+ * its content starting with the date. If cards already exist it does nothing, so running it twice
+ * does not duplicate; `force` skips that check.
  */
 export async function migrateDailyNotes(
   c: Collections,

@@ -12,9 +12,9 @@ import type {
 } from '@rayrecords/shared';
 
 /**
- * Forma de los documentos en Mongo. Se derivan de los DTO de `@rayrecords/shared` cambiando solo lo
- * que difiere: `id` → `_id: ObjectId`, referencias como ObjectId y fechas como `Date`.
- * Las fechas "de calendario" (`dueDate`, `date` de nota) siguen siendo `YYYY-MM-DD`.
+ * Document shapes in Mongo. They derive from the `@rayrecords/shared` DTOs and change only what
+ * differs: `id` becomes `_id: ObjectId`, references are ObjectIds and timestamps are `Date`.
+ * Calendar dates (`dueDate`, a note's `date`) stay as `YYYY-MM-DD` strings.
  */
 type Timestamps = { createdAt: Date; updatedAt: Date };
 
@@ -26,7 +26,7 @@ export type ItemDoc = Omit<Item, 'id' | 'listId' | 'doneAt' | 'createdAt' | 'upd
 export type DailyNoteDoc = Omit<DailyNote, 'id' | 'createdAt' | 'updatedAt'> &
   Timestamps & { _id: ObjectId };
 
-/** `groupId` y `doneAt` se guardan siempre (a `null`), para poder filtrar por ellos con índice. */
+/** `groupId` and `doneAt` are always stored (as `null`) so they can be filtered with an index. */
 export type NoteCardDoc = Omit<NoteCard, 'id' | 'groupId' | 'doneAt' | 'createdAt' | 'updatedAt'> &
   Timestamps & { _id: ObjectId; groupId: ObjectId | null; doneAt: Date | null };
 
@@ -35,20 +35,20 @@ export type NoteGroupDoc = Omit<NoteGroup, 'id' | 'createdAt' | 'updatedAt'> &
 
 export type AccountDoc = Omit<Account, 'id' | 'createdAt'> & { _id: ObjectId; createdAt: Date };
 
-/** `date` es medianoche UTC (permite rangos y `$dateTrunc`); `month` está desnormalizado para agrupar. */
+/** `date` is UTC midnight (works with ranges and `$dateTrunc`); `month` is denormalized for grouping. */
 export type TransactionDoc = Omit<Transaction, 'id' | 'accountId' | 'date' | 'importBatchId'> & {
   _id: ObjectId;
   accountId: ObjectId;
   date: Date;
   descriptionNorm: string;
-  /** Clave del comercio (ver `merchantKey`); `null` si no hay. Ausente en datos anteriores al backfill. */
+  /** Merchant key (see `merchantKey`); `null` when there is none. Missing on pre-backfill data. */
   merchantKey?: string | null;
-  /** sha256 de la transacción; con `accountId` forma el índice único de deduplicación. */
+  /** sha256 of the transaction; with `accountId` it forms the unique dedup index. */
   hash: string;
   importBatchId?: ObjectId;
 };
 
-/** La clave de la categoría es su `_id`: es única sin necesitar un índice aparte. */
+/** The category key is its `_id`, so it is unique without a separate index. */
 export type CategoryDoc = Omit<Category, 'key'> & { _id: string };
 
 export type RuleDoc = Omit<CategorizationRule, 'id'> & { _id: ObjectId };
@@ -69,18 +69,18 @@ export interface UserDoc {
   createdAt: Date;
 }
 
-/** `_id` es el sha256 del token de la cookie: el token en claro nunca se guarda. */
+/** `_id` is the sha256 of the cookie token: the raw token is never stored. */
 export interface SessionDoc {
   _id: string;
   userId: ObjectId;
   createdAt: Date;
   lastSeenAt: Date;
-  /** Índice TTL: Mongo borra la sesión cuando pasa esta fecha. */
+  /** TTL index: Mongo deletes the session once this date has passed. */
   expiresAt: Date;
   userAgent?: string;
 }
 
-/** Passkeys (WebAuthn). Colección prevista pero sin uso todavía. */
+/** Passkeys (WebAuthn). Collection reserved for later; not used yet. */
 export interface CredentialDoc {
   _id: ObjectId;
   userId: ObjectId;

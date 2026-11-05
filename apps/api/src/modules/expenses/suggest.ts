@@ -1,7 +1,7 @@
 import type { Suggestion } from '@rayrecords/shared';
 import { categorize, type Rule } from './categorize';
 
-/** Palabras que delatan la categoría de un comercio nuevo. Débiles: van detrás del historial y las reglas. */
+/** Words that hint at a new merchant's category. Weak: they rank after history and rules. */
 const HINTS: readonly [RegExp, string][] = [
   [
     /(cafe|cafeteria|coffee|panader|pasteler|churrer|helad|pizz|burger|burguer|kebab|doner|restaur|taberna|ristorante|sushi|grill|tapas|asador|glovo)/,
@@ -9,7 +9,7 @@ const HINTS: readonly [RegExp, string][] = [
   ],
   [/(farmacia|clinic|clin\.|dental|medic|optic|fisio|psicolog)/, 'salud'],
   [
-    /(supermerc|froiz|eroski|mercadona|lidl|carrefour|alcampo|hiper|alquiler|naturgy|iberdrola|telefonica)/,
+    /(supermerc|acme|eroski|mercadona|lidl|carrefour|alcampo|hiper|alquiler|naturgy|iberdrola|telefonica)/,
     'hogar',
   ],
   [/(gasolin|repsol|cepsa|parking|taller|itv|peaje|seguro|autoescuela|motor)/, 'coche'],
@@ -29,19 +29,19 @@ export interface SuggestInput {
   merchantKey: string | null;
   descriptionNorm: string;
   totalCents: number;
-  /** Historial del comercio: categoría → nº de movimientos ya categorizados. */
+  /** Merchant history: category to number of already categorized transactions. */
   history: ReadonlyMap<string, number>;
   rules: readonly Rule[];
-  /** Categorías más usadas en general, de más a menos. */
+  /** Most used categories overall, most used first. */
   popular: readonly string[];
-  /** Claves de categorías que existen. */
+  /** Keys of categories that exist. */
   known: ReadonlySet<string>;
 }
 
 /**
- * Hasta `limit` categorías para un grupo pendiente, de más a menos fiable:
- * historial del comercio (la más repetida primero) → regla que coincide → heurística → más usadas.
- * Nunca repite categoría ni devuelve claves que no existen.
+ * Up to `limit` categories for a pending group, most reliable first: merchant history (most
+ * repeated first), then a matching rule, then the hints, then the most used.
+ * Never repeats a category or returns keys that do not exist.
  */
 export function suggest(input: SuggestInput, limit = 4): Suggestion[] {
   const out: Suggestion[] = [];

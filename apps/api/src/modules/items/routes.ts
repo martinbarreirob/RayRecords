@@ -88,7 +88,7 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
 
       if (extra) {
         assertValidExtra(list, extra);
-        // Mezcla por clave (las claves de `extra` solo admiten [a-z][A-Za-z0-9_]): `null` borra.
+        // Merge per key (`extra` keys only allow [a-z][A-Za-z0-9_], so no `$` or `.` reaches Mongo): `null` deletes.
         for (const [key, value] of Object.entries(extra)) apply(`extra.${key}`, value);
       }
 
@@ -142,7 +142,7 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
       let { prev, next } = position(group);
       let order = orderBetween(prev, next);
       if (order === null) {
-        // Sin hueco entre vecinos: se renumera la columna entera y se recalcula.
+        // No gap between neighbours: renumber the whole column and recompute.
         const orders = renumber(group.length);
         await c.items.bulkWrite(
           group.map((s, i) => ({

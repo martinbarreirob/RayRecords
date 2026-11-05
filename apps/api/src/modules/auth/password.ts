@@ -1,8 +1,8 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
 /**
- * Hash de contraseñas con scrypt de `node:crypto`: sin dependencias nativas, así la imagen Alpine
- * se construye igual en cualquier arquitectura. Formato: `scrypt$N$r$p$salt$hash` (base64).
+ * Password hashing with scrypt from `node:crypto`: no native dependencies, so the Alpine image
+ * builds the same on any architecture. Format: `scrypt$N$r$p$salt$hash` (base64).
  */
 const N = 2 ** 15;
 const R = 8;
@@ -42,5 +42,5 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-/** Hash de relleno: se verifica contra él cuando el usuario no existe, para no delatarlo por el tiempo. */
+/** Filler hash: verified against when the user does not exist, so timing does not reveal it. */
 export const DUMMY_HASH = await hashPassword(randomBytes(16).toString('hex'));

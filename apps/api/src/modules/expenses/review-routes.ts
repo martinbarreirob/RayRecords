@@ -15,10 +15,10 @@ import { toDateOnly } from './mapper';
 import { suggest } from './suggest';
 
 const MAX_GROUP_IDS = 500;
-/** Un comercio con importes tan dispersos (máx/mín) mezcla cosas distintas: no merece regla automática. */
+/** A merchant with amounts this spread out (max/min) mixes different things: no automatic rule. */
 const MAX_AMOUNT_SPREAD = 5;
 
-/** Por qué NO conviene crear una regla automática para este grupo, o `null` si es seguro. */
+/** Why an automatic rule should NOT be created for this group, or `null` when it is safe. */
 function ruleBlockReason(amounts: readonly number[], merchantKey: string | null): string | null {
   if (!merchantKey) return 'El movimiento no tiene un comercio identificable';
   if (amounts.length < 2) return 'Un solo movimiento: aún no hay patrón';
@@ -45,8 +45,9 @@ interface GroupRow {
 }
 
 /**
- * Cola de revisión: los movimientos sin categoría agrupados por comercio y ordenados por impacto (|€|).
- * Lo pendiente es simplemente lo que no tiene categoría, así que sobrevive entre sesiones sin estado aparte.
+ * Review queue: uncategorized transactions grouped by merchant and sorted by impact (absolute
+ * amount). "Pending" simply means having no category, so it survives between sessions without
+ * separate state.
  */
 export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
@@ -60,7 +61,7 @@ export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
         categorySource: 'none',
         ...(accountId && { accountId: new ObjectId(accountId) }),
       };
-      // Sin clave de comercio, cada movimiento es su propio grupo.
+      // Without a merchant key, each transaction is its own group.
       const groupKey = { $ifNull: ['$merchantKey', '$_id'] };
 
       const [rows, counts, categories, rules, popularRows] = await Promise.all([
@@ -172,7 +173,7 @@ export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  /** Solo el contador de pendientes (barato: un `count` sobre el índice parcial), para la pestaña. */
+  /** Only the pending counter (cheap: a `count` on the partial index), for the tab badge. */
   app.get(
     '/review/pending',
     { schema: { response: { 200: z.object({ pendingTransactions: z.number().int() }) } } },
@@ -181,7 +182,7 @@ export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
     }),
   );
 
-  /** Asigna una categoría a los movimientos pendientes indicados y, si es seguro, crea la regla del comercio. */
+  /** Assigns a category to the given pending transactions and, when safe, creates the merchant rule. */
   app.post(
     '/review/apply',
     { schema: { body: ReviewApplySchema, response: { 200: ReviewApplyResultSchema } } },
@@ -206,7 +207,7 @@ export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
         { $set: { category, categorySource: 'manual' } },
       );
 
-      // La clave la calcula el servidor: solo hay regla si todos los movimientos comparten comercio.
+      // The server computes the key: a rule is only created when all transactions share a merchant.
       const keys = new Set(docs.map((d) => d.merchantKey ?? null));
       const merchantKey = keys.size === 1 ? ([...keys][0] ?? null) : null;
 
@@ -227,7 +228,7 @@ export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
               pattern: merchantKey,
               matchType: 'contains',
               categoryKey: category,
-              priority: 10, // por encima de las reglas por defecto: lo que decides tú gana
+              priority: 10, // above the default rules: the user's decision wins
               active: true,
             });
           }
@@ -237,7 +238,7 @@ export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  /** Deshace una decisión: los movimientos vuelven a pendientes y se borra la regla que creó. */
+  /** Undoes a decision: transactions go back to pending and the rule it created is deleted. */
   app.post(
     '/review/undo',
     {

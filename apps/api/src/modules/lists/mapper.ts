@@ -1,7 +1,7 @@
 import type { List } from '@rayrecords/shared';
 import type { ListDoc } from '../../db/documents';
 
-/** Documento de Mongo → DTO que viaja al cliente. */
+/** Mongo document to the DTO sent to the client. */
 export function toList(doc: ListDoc): List {
   return {
     id: doc._id.toHexString(),

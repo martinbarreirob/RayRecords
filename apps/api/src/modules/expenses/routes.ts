@@ -50,7 +50,7 @@ function assertRegex(matchType: string | undefined, pattern: string | undefined)
   }
 }
 
-/** Categorías, reglas, movimientos, importación de extractos y resumen mensual. */
+/** Categories, rules, transactions, statement import and the monthly summary. */
 export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.db.collections;
 
@@ -60,7 +60,7 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     }
   }
 
-  // ───────────────────────── categorías ─────────────────────────
+  // Categories
 
   app.get('/categories', { schema: { response: { 200: z.array(CategorySchema) } } }, async () => {
     const docs = await c.categories.find().sort({ name: 1 }).toArray();
@@ -123,7 +123,7 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // ───────────────────────── reglas ─────────────────────────
+  // Rules
 
   app.get(
     '/rules',
@@ -180,14 +180,14 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  /** Reaplica las reglas a los movimientos sin categoría. Nunca toca los corregidos a mano. */
+  /** Re-applies the rules to uncategorized transactions. Never touches the ones corrected by hand. */
   app.post(
     '/rules/apply',
     { schema: { response: { 200: z.object({ updated: z.number().int() }) } } },
     async () => ({ updated: await applyRulesToUncategorized(c) }),
   );
 
-  // ───────────────────────── movimientos ─────────────────────────
+  // Transactions
 
   app.get(
     '/transactions',
@@ -210,7 +210,7 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  /** Corrección manual: queda como `manual` y las reglas nunca la sobrescriben. */
+  /** Manual correction: stored as `manual`, and rules never overwrite it. */
   app.patch(
     '/transactions/:id/category',
     {
@@ -237,7 +237,7 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
           pattern: doc.descriptionNorm.slice(0, 200),
           matchType: 'contains',
           categoryKey: category,
-          priority: 10, // por encima de las reglas por defecto: la corrección del usuario gana
+          priority: 10, // above the default rules: the user's correction wins
           active: true,
         });
       }
@@ -245,9 +245,9 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // ───────────────────────── importación ─────────────────────────
+  // Import
 
-  // El extracto llega como cuerpo en bruto (`text/csv`), sin multipart: no hace falta otra dependencia.
+  // The statement arrives as a raw `text/csv` body, not multipart, to avoid another dependency.
   app.addContentTypeParser(
     ['text/csv', 'application/octet-stream'],
     { parseAs: 'buffer', bodyLimit: MAX_CSV_BYTES },
@@ -255,8 +255,9 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   /**
-   * Importa un extracto CSV en una cuenta. Con `dryRun=true` solo devuelve la vista previa
-   * (qué se importaría y qué es duplicado). Reimportar un extracto solapado no duplica movimientos.
+   * Imports a CSV statement into an account. With `dryRun=true` it only returns the preview (what
+   * would be imported and what is a duplicate). Re-importing an overlapping statement does not
+   * duplicate transactions.
    */
   app.post(
     '/accounts/:id/imports',
@@ -324,7 +325,7 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
             { ordered: false },
           );
         } catch (error) {
-          // Carrera con otra importación simultánea: los duplicados saltan por el índice único.
+          // Race with a concurrent import: duplicates are rejected by the unique index.
           if (!(error instanceof MongoBulkWriteError)) throw error;
           imported = error.insertedCount;
         }
@@ -373,7 +374,7 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     }));
   });
 
-  /** Deshacer una importación completa: borra todos sus movimientos (también los recategorizados a mano). */
+  /** Undoes a whole import: deletes all its transactions (including hand-recategorized ones). */
   app.delete(
     '/imports/:id',
     {
@@ -391,9 +392,9 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // ───────────────────────── resumen ─────────────────────────
+  // Summary
 
-  /** Gasto (o ingreso) por mes y categoría. Los traspasos entre cuentas propias no cuentan. */
+  /** Expense (or income) per month and category. Transfers between own accounts do not count. */
   app.get(
     '/expenses/summary',
     {

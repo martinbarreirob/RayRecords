@@ -6,7 +6,7 @@ const EnvSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   MONGO_URI: z.string().min(1).optional(),
   MONGO_DB: z.string().min(1).optional(),
-  // Orígenes extra aceptados en peticiones que modifican datos (separados por comas). Normalmente vacío.
+  // Extra origins accepted on state-changing requests (comma-separated). Usually empty.
   ALLOWED_ORIGINS: z.string().default(''),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
@@ -21,7 +21,7 @@ export interface Config {
   allowedOrigins: string[];
 }
 
-/** Valida el entorno. En producción la conexión a Mongo es obligatoria: no hay valores por defecto. */
+/** Validates the environment. In production the Mongo connection has no defaults and is required. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = EnvSchema.parse(env);
   const isProd = parsed.NODE_ENV === 'production';
@@ -29,7 +29,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const mongoUri = parsed.MONGO_URI ?? (isProd ? undefined : 'mongodb://127.0.0.1:27017');
   const mongoDb = parsed.MONGO_DB ?? (isProd ? undefined : 'rayrecords_dev');
   if (!mongoUri || !mongoDb) {
-    throw new Error('MONGO_URI y MONGO_DB son obligatorios en producción');
+    throw new Error('MONGO_URI and MONGO_DB are required in production');
   }
 
   return {

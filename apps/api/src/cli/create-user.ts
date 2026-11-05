@@ -4,17 +4,17 @@ import { ensureIndexes } from '../db/indexes';
 import { upsertUser } from '../modules/auth/users';
 
 /**
- * Crea el usuario único o cambia su contraseña.
- *   pnpm --filter @rayrecords/api create-user <usuario>
- *   docker compose exec api node dist/cli/create-user.js <usuario>
- * La contraseña se pide por terminal sin eco; sin terminal (scripts) se lee de RR_PASSWORD.
+ * Creates the single user or changes its password.
+ *   pnpm --filter @rayrecords/api create-user <username>
+ *   docker compose exec api node dist/cli/create-user.js <username>
+ * The password is read from the terminal without echo; without a terminal it comes from RR_PASSWORD.
  */
 async function readPassword(): Promise<string> {
   const fromEnv = process.env.RR_PASSWORD;
   if (fromEnv) return fromEnv;
-  if (!process.stdin.isTTY) throw new Error('Sin terminal: define la variable RR_PASSWORD');
+  if (!process.stdin.isTTY) throw new Error('No terminal: set the RR_PASSWORD variable');
 
-  process.stdout.write('Contraseña: ');
+  process.stdout.write('Password: ');
   process.stdin.setRawMode(true);
   process.stdin.resume();
   try {
@@ -27,7 +27,7 @@ async function readPassword(): Promise<string> {
             process.stdout.write('\n');
             return resolve(value);
           }
-          if (char === '\u0003') return reject(new Error('Cancelado'));
+          if (char === '\u0003') return reject(new Error('Cancelled'));
           if (char === '\u007f' || char === '\b') value = value.slice(0, -1);
           else value += char;
         }
@@ -41,7 +41,7 @@ async function readPassword(): Promise<string> {
 
 async function main() {
   const username = process.argv[2]?.trim();
-  if (!username) throw new Error('Uso: create-user <usuario>');
+  if (!username) throw new Error('Usage: create-user <username>');
   const password = await readPassword();
 
   const database = await connectDatabase(loadConfig());
@@ -50,8 +50,8 @@ async function main() {
     const result = await upsertUser(database.collections, username, password);
     console.log(
       result === 'created'
-        ? `Usuario "${username}" creado.`
-        : `Contraseña de "${username}" actualizada y sesiones cerradas.`,
+        ? `User "${username}" created.`
+        : `Password for "${username}" updated and sessions closed.`,
     );
   } finally {
     await database.close();
