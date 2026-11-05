@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # Mongo for the API integration tests (they would be skipped without it).
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+    env:
+      MONGO_URI: mongodb://127.0.0.1:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # takes the version from "packageManager" in the root package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  # Images are built here, not on the server (4 GB of RAM).
+  images:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rayrecords-${{ matrix.app }}:latest
+            ghcr.io/${{ github.repository_owner }}/rayrecords-${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  # Deploy: copies the compose files to the server and starts exactly the image built for this commit.
+  # Needs the secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS (see docs/DEVELOPMENT.md).
+  deploy:
+    needs: images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    env:
+      REMOTE: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+      SSH_OPTS: -i ~/.ssh/deploy_key -o BatchMode=yes
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Upload deploy files
+        run: |
+          ssh $SSH_OPTS "$REMOTE" 'mkdir -p ~/rayrecords/deploy'
+          scp $SSH_OPTS deploy/docker-compose.yml deploy/docker-compose.mongo-network.yml "$REMOTE":rayrecords/deploy/
+      - name: Update containers
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Short-lived token: the images are private, so log in on the server on every deploy.
+          printf %s "$GHCR_TOKEN" | ssh $SSH_OPTS "$REMOTE" "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          ssh $SSH_OPTS "$REMOTE" \
+            "cd ~/rayrecords/deploy && TAG=${{ github.sha }} docker compose pull && TAG=${{ github.sha }} docker compose up -d --remove-orphans && docker image prune -f"
