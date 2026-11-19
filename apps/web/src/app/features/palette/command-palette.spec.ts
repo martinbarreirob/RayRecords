@@ -16,6 +16,8 @@ describe('CommandPalette (shell)', () => {
       noteBoard: () => of({ cards: [], groups: [] }),
       items: () => of([]),
       transactions: () => of({ items: [], total: 0 }),
+      products: () => of([]),
+      tickets: () => of([]),
     };
     await TestBed.configureTestingModule({
       imports: [CommandPalette],

@@ -18,6 +18,8 @@ import {
   type CaptureResponse,
   type List,
   type NoteCard,
+  type Product,
+  type Ticket,
 } from '@rayrecords/shared';
 import {
   catchError,
@@ -29,6 +31,7 @@ import {
   of,
   switchMap,
   type Observable,
+  type Subscription,
 } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
@@ -46,6 +49,8 @@ import {
   searchCommands,
   searchLists,
   searchNotes,
+  searchProducts,
+  searchTickets,
   type HighlightSegment,
   type PaletteFilter,
   type PaletteResult,
@@ -73,11 +78,20 @@ import {
   type RemoteState,
 } from './palette-search';
 import { Icon } from '../../core/ui/icon';
+import { TICKETS_LIMIT } from '../management/tickets/tickets-logic';
 
 interface PaletteData {
   lists: List[];
   cards: NoteCard[];
 }
+
+/** Management: the stock and the latest tickets (empty until loaded, or if a request fails). */
+interface ManagementData {
+  products: Product[];
+  tickets: Ticket[];
+}
+
+const NO_MANAGEMENT: ManagementData = { products: [], tickets: [] };
 
 /** "Buscar y ejecutar" (Ctrl+K) or "escribir una nota o tarea" (with "/"). */
 type PaletteMode = 'search' | 'capture';
@@ -120,6 +134,9 @@ export class PaletteDialog {
   protected readonly filter = signal<PaletteFilter>('all');
   private readonly selected = signal(0);
   private readonly data = signal<PaletteData | null>(null);
+  /** Loaded apart from `data`: the lists and notes never wait for the stock and the tickets. */
+  private readonly management = signal<ManagementData>(NO_MANAGEMENT);
+  private loads: Subscription | undefined;
   private readonly remote = signal<RemoteState>(EMPTY_REMOTE);
   protected readonly mode = signal<PaletteMode>('search');
   /** Saving what was typed in capture mode (the field is read-only until the API answers). */
@@ -181,6 +198,7 @@ export class PaletteDialog {
   protected readonly groups = computed(() => {
     const query = this.trimmedQuery();
     const data = this.data();
+    const management = this.management();
     const remote = this.remote();
     const lists = data?.lists ?? [];
     const results: PaletteResult[] = [];
@@ -192,6 +210,8 @@ export class PaletteDialog {
         ...itemResults(query, remote.items, lists, trusted),
         ...searchNotes(query, data?.cards ?? []),
         ...expenseResults(query, remote.transactions, trusted),
+        ...searchProducts(query, management.products),
+        ...searchTickets(query, management.tickets),
       );
     }
     results.push(
@@ -303,16 +323,25 @@ export class PaletteDialog {
     // Opened with "/" it enters write-a-note-or-task mode directly.
     this.mode.set(this.palette.takeCaptureRequest() ? 'capture' : 'search');
     this.data.set(null);
+    this.management.set(NO_MANAGEMENT);
 
-    forkJoin({
+    // An earlier opening's answers are dropped, not just ignored when they arrive.
+    this.loads?.unsubscribe();
+    this.loads = forkJoin({
       lists: this.api.lists().pipe(catchError(() => of([] as List[]))),
       cards: this.api.noteBoard().pipe(
         map((board) => board.cards),
         catchError(() => of([] as NoteCard[])),
       ),
-    }).subscribe((data) => {
-      if (this.palette.isOpen()) this.data.set(data);
-    });
+    }).subscribe((data) => this.data.set(data));
+    this.loads.add(
+      forkJoin({
+        products: this.api.products().pipe(catchError(() => of([] as Product[]))),
+        tickets: this.api
+          .tickets({ limit: TICKETS_LIMIT })
+          .pipe(catchError(() => of([] as Ticket[]))),
+      }).subscribe((data) => this.management.set(data)),
+    );
   }
 
   // --- Interaction ---------------------------------------------------------------------------

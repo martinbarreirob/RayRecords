@@ -1,4 +1,4 @@
-import type { Item, List, NoteCard, Transaction } from '@rayrecords/shared';
+import type { Item, List, NoteCard, Product, Ticket, Transaction } from '@rayrecords/shared';
 import {
   captureResult,
   cycleFilter,
@@ -16,6 +16,8 @@ import {
   searchCommands,
   searchLists,
   searchNotes,
+  searchProducts,
+  searchTickets,
   sortByScore,
   type PaletteResult,
 } from './palette-logic';
@@ -234,6 +236,135 @@ describe('data search', () => {
   });
 });
 
+function product(overrides: Partial<Product> = {}): Product {
+  return {
+    id: 'p'.repeat(24),
+    name: 'Café molido',
+    categoryId: null,
+    quantity: 20,
+    minQuantity: 0,
+    priceCents: 1290,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
+function ticket(overrides: Partial<Ticket> = {}): Ticket {
+  return {
+    id: 't'.repeat(24),
+    number: 12,
+    lines: [],
+    totalCents: 3450,
+    createdAt: '2026-11-04T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+describe('management results', () => {
+  it('products: match by name, reference and notes, best first', () => {
+    const products = [
+      product({ id: '1'.repeat(24), name: 'Filtro', notes: 'para café' }),
+      product({ id: '2'.repeat(24), name: 'Café molido' }),
+      product({ id: '3'.repeat(24), name: 'Pilas', sku: 'CAFE-01' }),
+      product({ id: '4'.repeat(24), name: 'Agua' }),
+    ];
+    const results = searchProducts('cafe', products);
+
+    expect(results.map((r) => r.label)).toEqual(['Café molido', 'Pilas', 'Filtro']);
+    expect(results.every((r) => r.kind === 'product' && r.area === 'management')).toBe(true);
+    expect(searchProducts('zzz', products)).toEqual([]);
+  });
+
+  it('products: the hint shows price and stock, or "Agotado"', () => {
+    const [full] = searchProducts('cafe', [product()]);
+    expect(full?.hint).toContain('12,90');
+    expect(full?.hint).toContain('20 uds.');
+    expect(searchProducts('cafe', [product({ quantity: 1 })])[0]?.hint).toContain('1 ud.');
+    expect(searchProducts('cafe', [product({ quantity: 0 })])[0]?.hint).toContain('Agotado');
+  });
+
+  it('products: the action goes to the stock with the name to search', () => {
+    const [result] = searchProducts('cafe', [product({ name: 'Café & té' })]);
+    expect(result?.action).toEqual({
+      type: 'go',
+      url: `/gestion/stock?buscar=${encodeURIComponent('Café & té')}`,
+    });
+  });
+
+  it('tickets: found by number as "12", "#12" or "ticket 12", with date and total', () => {
+    const tickets = [ticket(), ticket({ id: 'u'.repeat(24), number: 13 })];
+    for (const query of ['12', '#12', 'ticket 12', 'Ticket#12']) {
+      const results = searchTickets(query, tickets);
+      expect(results.map((r) => r.label)).toEqual(['Ticket n.º 12']);
+    }
+    const [result] = searchTickets('ticket 12', tickets);
+    expect(result?.hint).toContain('04/11/2026');
+    expect(result?.hint).toContain('34,50');
+    expect(result?.action).toEqual({
+      type: 'go',
+      url: `/gestion/tickets?ticket=${'t'.repeat(24)}`,
+    });
+    expect(searchTickets('#12', tickets)[0]?.score).toBeGreaterThan(
+      searchTickets('12', tickets)[0]!.score,
+    );
+  });
+
+  it('tickets: the date is the one of the app time zone, not the UTC one', () => {
+    // 23:30 UTC on the 4th is already the 5th in Madrid.
+    const late = ticket({ createdAt: '2026-11-04T23:30:00.000Z' });
+    expect(searchTickets('12', [late])[0]?.hint).toContain('05/11/2026');
+  });
+
+  it('tickets: only a typed number matches', () => {
+    const tickets = [ticket()];
+    expect(searchTickets('cafe', tickets)).toEqual([]);
+    expect(searchTickets('ticket', tickets)).toEqual([]);
+    expect(searchTickets('99', tickets)).toEqual([]);
+    expect(searchTickets('12 uds', tickets)).toEqual([]);
+  });
+
+  it('the management commands carry the area, the personal ones do not', () => {
+    const context = { themeLabel: 'Claro', username: 'martin' };
+    const area = (label: string) =>
+      searchCommands(label, context).find((r) => r.label === label)?.area;
+    expect(area('Nuevo producto')).toBe('management');
+    expect(area('Buscar en el stock')).toBe('management');
+    expect(area('Ir a Notas')).toBeUndefined();
+  });
+
+  it('the "Gestión" filter keeps products, tickets and management commands only', () => {
+    const context = { themeLabel: 'Claro', username: 'martin' };
+    const results = [
+      ...searchProducts('cafe', [product()]),
+      ...searchTickets('12', [ticket()]),
+      ...searchCommands('', context),
+      fake('note', 'Café'),
+    ];
+    const rows = flattenGroups(groupResults(results, 'management'));
+
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.every((r) => r.area === 'management')).toBe(true);
+    expect(rows.map((r) => r.kind)).toContain('product');
+    expect(rows.map((r) => r.kind)).toContain('ticket');
+    expect(rows.map((r) => r.label)).toContain('Nuevo producto');
+    expect(rows.map((r) => r.label)).not.toContain('Ir a Notas');
+  });
+
+  it('groups products and tickets before the commands, with their own titles and limits', () => {
+    const many = [
+      ...Array.from({ length: 10 }, (_, i) => fake('product', `p${i}`)),
+      fake('ticket', 'Ticket n.º 1'),
+      fake('command', 'Ir a Notas'),
+      fake('list', 'Reforma'),
+    ];
+    const groups = groupResults(many, 'all');
+
+    expect(groups.map((g) => g.label)).toEqual(['Listas', 'Productos', 'Tickets', 'Comandos']);
+    expect(groups[1]?.rows).toHaveLength(6);
+  });
+});
+
 describe('groupResults', () => {
   const results: PaletteResult[] = [
     fake('command', 'Ir a Notas'),
@@ -323,10 +454,11 @@ describe('keyboard navigation', () => {
     expect(moveSelection(0, 1, 0)).toBe(0);
   });
 
-  it('cycleFilter walks Todo, Listas, Notas, Gastos, Comandos in both directions', () => {
+  it('cycleFilter walks Todo, Listas, Notas, Gastos, Gestión, Comandos in both directions', () => {
     expect(cycleFilter('all', 1)).toBe('lists');
     expect(cycleFilter('lists', 1)).toBe('notes');
-    expect(cycleFilter('expenses', 1)).toBe('commands');
+    expect(cycleFilter('expenses', 1)).toBe('management');
+    expect(cycleFilter('management', 1)).toBe('commands');
     expect(cycleFilter('commands', 1)).toBe('all');
     expect(cycleFilter('all', -1)).toBe('commands');
   });

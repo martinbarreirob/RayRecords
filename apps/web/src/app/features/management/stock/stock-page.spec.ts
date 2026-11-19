@@ -1,4 +1,4 @@
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { Product, StockCategory } from '@rayrecords/shared';
 import { NEVER, of, throwError } from 'rxjs';
@@ -92,6 +92,29 @@ describe('StockPage', () => {
     expect(el(fixture).querySelector('.shown span')?.textContent?.trim()).toBe('1 de 3 productos');
   });
 
+  it('applies ?buscar from the palette to the search box and clears the param', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        providePrimeNgTheme(),
+        {
+          provide: ApiClient,
+          useValue: { products: () => of(products), stockCategories: () => of(categories) },
+        },
+      ],
+    });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/?buscar=Caf%C3%A9');
+    const fixture = TestBed.createComponent(StockPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector<HTMLInputElement>('.search input')!.value).toBe('Café');
+    expect(names(fixture)).toEqual(['Café molido']);
+    expect(router.url).not.toContain('buscar');
+  });
+
   it('keeps the filters folded until asked for', () => {
     const fixture = loaded();
     const panel = el(fixture).querySelector<HTMLElement>('#stock-filters')!;
@@ -130,6 +153,8 @@ describe('StockPage', () => {
 
   it('has one navigation, centered under the card, and the totals at the top right', () => {
     const fixture = loaded();
+    // The navigation is just the buttons: no "1–10 of 37" next to them.
+    expect(el(fixture).querySelector('.pager .p-paginator-current')).toBeNull();
     expect(el(fixture).querySelectorAll('.pager p-paginator')).toHaveLength(1);
     expect(el(fixture).querySelector('.pager')?.closest('.table-card')).toBeNull();
     expect(el(fixture).querySelector('.toolbar .totals')?.textContent).toContain('€');

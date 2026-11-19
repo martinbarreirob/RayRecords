@@ -1,6 +1,6 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import type { CaptureResponse, List, NoteCard } from '@rayrecords/shared';
+import type { CaptureResponse, List, NoteCard, Product, Ticket } from '@rayrecords/shared';
 import { Observable, of, throwError } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -40,6 +40,25 @@ const CARD: NoteCard = {
   updatedAt: NOW,
 };
 
+const PRODUCT: Product = {
+  id: 'p'.repeat(24),
+  name: 'Café molido',
+  sku: 'CAF-01',
+  categoryId: null,
+  quantity: 20,
+  minQuantity: 0,
+  priceCents: 1290,
+  createdAt: NOW,
+  updatedAt: NOW,
+};
+const TICKET: Ticket = {
+  id: 't'.repeat(24),
+  number: 12,
+  lines: [],
+  totalCents: 3450,
+  createdAt: NOW,
+};
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('PaletteDialog', () => {
@@ -65,6 +84,8 @@ describe('PaletteDialog', () => {
       noteBoard: vi.fn(() => of({ cards: [CARD], groups: [] })),
       items: vi.fn(() => of([])),
       transactions: vi.fn(() => of({ items: [], total: 0 })),
+      products: vi.fn(() => of([PRODUCT])),
+      tickets: vi.fn(() => of([TICKET])),
       capture: vi.fn(() =>
         of({
           kind: 'item',
@@ -151,6 +172,60 @@ describe('PaletteDialog', () => {
     expect(titles).toEqual(['Listas', 'Notas']);
     expect(labels()[0]).toContain('Reforma del baño');
     expect(labels()[1]).toContain('Llamar al fontanero del baño');
+  });
+
+  it('finds stock products by name or reference and goes to the stock with the search', async () => {
+    await open();
+    await type('cafe');
+
+    const titles = [...el().querySelectorAll('.group-title')].map((t) => t.textContent?.trim());
+    expect(titles).toEqual(['Productos']);
+    expect(labels()[0]).toContain('Café molido');
+    expect(el().querySelector('.row .hint')?.textContent).toContain('12,90');
+    expect(el().querySelector('.row .hint')?.textContent).toContain('20 uds.');
+
+    await type('caf-01');
+    expect(labels()[0]).toContain('Café molido');
+
+    press('Enter');
+    await fixture.whenStable();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      `/gestion/stock?buscar=${encodeURIComponent('Café molido')}`,
+    );
+    expect(palette.isOpen()).toBe(false);
+  });
+
+  it('finds a ticket by its number and opens it in the tickets screen', async () => {
+    await open();
+    await type('#12');
+
+    const titles = [...el().querySelectorAll('.group-title')].map((t) => t.textContent?.trim());
+    expect(titles).toEqual(['Tickets']);
+    expect(labels()[0]).toContain('Ticket n.º 12');
+
+    press('Enter');
+    await fixture.whenStable();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(`/gestion/tickets?ticket=${TICKET.id}`);
+  });
+
+  it('the "Gestión" chip keeps products and management commands', async () => {
+    await open();
+    await type('cafe');
+    [...el().querySelectorAll<HTMLButtonElement>('.filters .chip')]
+      .find((chip) => chip.textContent?.includes('Gestión'))!
+      .click();
+    await fixture.whenStable();
+
+    expect(labels()).toEqual([expect.stringContaining('Café molido')]);
+  });
+
+  it('keeps working when the stock or the tickets cannot be loaded', async () => {
+    api['products']!.mockReturnValue(throwError(() => new Error('caído')));
+    api['tickets']!.mockReturnValue(throwError(() => new Error('caído')));
+    await open();
+    await type('baño');
+
+    expect(labels()[0]).toContain('Reforma del baño');
   });
 
   it('after a delay it searches cards and expenses on the server', async () => {

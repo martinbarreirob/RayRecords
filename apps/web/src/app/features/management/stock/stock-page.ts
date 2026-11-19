@@ -297,8 +297,6 @@ const UNITS = new Intl.NumberFormat('es-ES');
         [first]="first()"
         [rows]="pageSize()"
         [totalRecords]="visible().length"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="{first}–{last} de {totalRecords}"
         (onPageChange)="onPage($event)"
       />
     </div>
@@ -417,10 +415,13 @@ export class StockPage {
     });
     // "Añadir un producto al stock" from the stock search arrives as ?nuevo=1: open the form once.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      if (!params.has('nuevo')) return;
-      this.openCreate();
+      const search = params.get('buscar');
+      if (!params.has('nuevo') && search === null) return;
+      if (params.has('nuevo')) this.openCreate();
+      // A product picked in the command palette arrives as ?buscar=<name>: fill the search box.
+      if (search !== null) this.setQuery(search);
       void this.router.navigate([], {
-        queryParams: { nuevo: null },
+        queryParams: { nuevo: null, buscar: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       });

@@ -1,4 +1,12 @@
-import type { Item, List, NoteCard, Transaction } from '@rayrecords/shared';
+import {
+  DEFAULT_TIME_ZONE,
+  type Item,
+  type List,
+  type NoteCard,
+  type Product,
+  type Ticket,
+  type Transaction,
+} from '@rayrecords/shared';
 import { formatCents } from '../format';
 import { MANAGEMENT_SECTIONS } from '../nav/areas';
 import { GO_TARGETS, shortcutLabel, type GoKey } from './go-shortcuts';
@@ -9,16 +17,18 @@ import { GO_TARGETS, shortcutLabel, type GoKey } from './go-shortcuts';
  * it to the mouse, the keyboard and the requests.
  */
 
-export type PaletteKind = 'list' | 'item' | 'note' | 'expense' | 'command' | 'capture';
+export type PaletteKind =
+  'list' | 'item' | 'note' | 'expense' | 'product' | 'ticket' | 'command' | 'capture';
 
 /** Type filter chips (Tab and Shift+Tab cycle through them). */
-export type PaletteFilter = 'all' | 'lists' | 'notes' | 'expenses' | 'commands';
+export type PaletteFilter = 'all' | 'lists' | 'notes' | 'expenses' | 'management' | 'commands';
 
 export const PALETTE_FILTERS: readonly { id: PaletteFilter; label: string }[] = [
   { id: 'all', label: 'Todo' },
   { id: 'lists', label: 'Listas' },
   { id: 'notes', label: 'Notas' },
   { id: 'expenses', label: 'Gastos' },
+  { id: 'management', label: 'Gestión' },
   { id: 'commands', label: 'Comandos' },
 ];
 
@@ -43,9 +53,11 @@ export interface PaletteResult {
   shortcut?: readonly string[];
   score: number;
   action: PaletteAction;
+  /** Set on the results that belong to the management area (the "Gestión" filter keeps them). */
+  area?: 'management';
 }
 
-export type PaletteGroupId = 'lists' | 'cards' | 'notes' | 'commands';
+export type PaletteGroupId = 'lists' | 'cards' | 'notes' | 'products' | 'tickets' | 'commands';
 
 export interface PaletteRow extends PaletteResult {
   /** Position in the flat list: the one the keyboard moves. */
@@ -64,6 +76,8 @@ const KIND_LIMIT: Record<PaletteKind, number> = {
   item: 6,
   note: 5,
   expense: 5,
+  product: 6,
+  ticket: 4,
   command: 8,
   capture: 1,
 };
@@ -190,6 +204,7 @@ interface CommandDef {
   keywords: string;
   shortcut?: readonly string[];
   action: PaletteAction;
+  area?: 'management';
   hint?: (context: CommandContext) => string;
 }
 
@@ -224,6 +239,7 @@ const COMMANDS: readonly CommandDef[] = [
     label: `Ir a ${section.label}`,
     keywords: `gestion negocio tienda ${section.label} abrir ir`,
     hint: () => 'gestión',
+    area: 'management',
     action: { type: 'go', url: section.url },
   })),
   {
@@ -231,6 +247,7 @@ const COMMANDS: readonly CommandDef[] = [
     label: 'Buscar en el stock',
     keywords: 'gestion producto productos inventario existencias referencia vender venta',
     action: { type: 'stock-search' },
+    area: 'management',
     hint: () => 'gestión',
   },
   {
@@ -238,6 +255,7 @@ const COMMANDS: readonly CommandDef[] = [
     label: 'Nuevo producto',
     keywords: 'gestion anadir crear producto stock inventario',
     action: { type: 'go', url: '/gestion/stock?nuevo=1' },
+    area: 'management',
     hint: () => 'en el stock',
   },
   {
@@ -270,6 +288,7 @@ export function searchCommands(query: string, context: CommandContext): PaletteR
       shortcut: command.shortcut,
       score,
       action: command.action,
+      ...(command.area ? { area: command.area } : {}),
     });
   }
   return query.trim() ? sortByScore(results) : results;
@@ -393,6 +412,71 @@ export function expenseResults(
   return sortByScore(results);
 }
 
+// --- Management ----------------------------------------------------------------------------------
+
+/** "12,90 € · 20 uds." or "12,90 € · Agotado". */
+function productHint(product: Product): string {
+  const stock =
+    product.quantity === 0
+      ? 'Agotado'
+      : `${product.quantity} ${product.quantity === 1 ? 'ud.' : 'uds.'}`;
+  return `${formatCents(product.priceCents)} · ${stock}`;
+}
+
+/** Stock products matching by name, reference (sku) or notes; the stock screen shows the chosen one. */
+export function searchProducts(query: string, products: readonly Product[]): PaletteResult[] {
+  const results: PaletteResult[] = [];
+  for (const product of products) {
+    const score = scoreAny(query, [product.name, product.sku ?? '', product.notes ?? '']);
+    if (score === 0) continue;
+    results.push({
+      id: `product:${product.id}`,
+      kind: 'product',
+      label: product.name,
+      hint: productHint(product),
+      score,
+      action: { type: 'go', url: `/gestion/stock?buscar=${encodeURIComponent(product.name)}` },
+      area: 'management',
+    });
+  }
+  return sortByScore(results);
+}
+
+const DAY_IN_ZONE = new Intl.DateTimeFormat('en-CA', { timeZone: DEFAULT_TIME_ZONE });
+
+/** The calendar day (`YYYY-MM-DD`) of an instant in the app's time zone, not in UTC. */
+function dayInZone(iso: string): string {
+  return DAY_IN_ZONE.format(new Date(iso));
+}
+
+/** "ticket 12", "tkt #12", "#12" or just "12": the ticket number typed, or `null`. */
+function ticketNumber(query: string): { number: number; explicit: boolean } | null {
+  const match = /^(ticket|tkt)?\s*(#)?\s*(\d{1,9})$/i.exec(query.trim());
+  if (!match) return null;
+  return { number: Number(match[3]), explicit: Boolean(match[1] || match[2]) };
+}
+
+/** Sales tickets whose number was typed (a bare number or "ticket 12" / "#12"). */
+export function searchTickets(query: string, tickets: readonly Ticket[]): PaletteResult[] {
+  const typed = ticketNumber(query);
+  if (!typed) return [];
+  const results: PaletteResult[] = [];
+  for (const ticket of tickets) {
+    if (ticket.number !== typed.number) continue;
+    results.push({
+      id: `ticket:${ticket.id}`,
+      kind: 'ticket',
+      label: `Ticket n.º ${ticket.number}`,
+      hint: `${formatShortDate(dayInZone(ticket.createdAt))} · ${formatCents(ticket.totalCents)}`,
+      // An explicit "ticket 12" outranks a bare number, which might be anything.
+      score: typed.explicit ? 100 : 40,
+      action: { type: 'go', url: `/gestion/tickets?ticket=${ticket.id}` },
+      area: 'management',
+    });
+  }
+  return results;
+}
+
 /** Sorts from highest to lowest score without changing the order of ties. */
 export function sortByScore<T extends { score: number }>(results: readonly T[]): T[] {
   return results
@@ -408,12 +492,19 @@ const FILTER_KINDS: Record<PaletteFilter, readonly PaletteKind[] | null> = {
   lists: ['list', 'item'],
   notes: ['note'],
   expenses: ['expense'],
+  management: ['product', 'ticket'],
   commands: ['command', 'capture'],
 };
 
 export function matchesFilter(kind: PaletteKind, filter: PaletteFilter): boolean {
   const kinds = FILTER_KINDS[filter];
   return kinds === null || kinds.includes(kind);
+}
+
+/** Like `matchesFilter`, but "Gestión" also keeps the management commands (they are commands). */
+function keeps(result: PaletteResult, filter: PaletteFilter): boolean {
+  if (filter === 'management') return result.area === 'management';
+  return matchesFilter(result.kind, filter);
 }
 
 function groupOf(kind: PaletteKind): PaletteGroupId {
@@ -425,12 +516,23 @@ function groupOf(kind: PaletteKind): PaletteGroupId {
     case 'note':
     case 'expense':
       return 'notes';
+    case 'product':
+      return 'products';
+    case 'ticket':
+      return 'tickets';
     default:
       return 'commands';
   }
 }
 
-const GROUP_ORDER: readonly PaletteGroupId[] = ['lists', 'cards', 'notes', 'commands'];
+const GROUP_ORDER: readonly PaletteGroupId[] = [
+  'lists',
+  'cards',
+  'notes',
+  'products',
+  'tickets',
+  'commands',
+];
 
 function groupLabel(id: PaletteGroupId, rows: readonly PaletteResult[]): string {
   switch (id) {
@@ -438,6 +540,10 @@ function groupLabel(id: PaletteGroupId, rows: readonly PaletteResult[]): string 
       return 'Listas';
     case 'cards':
       return 'Tarjetas';
+    case 'products':
+      return 'Productos';
+    case 'tickets':
+      return 'Tickets';
     case 'commands':
       return 'Comandos';
     default: {
@@ -451,7 +557,7 @@ function groupLabel(id: PaletteGroupId, rows: readonly PaletteResult[]): string 
 }
 
 /**
- * Filters by type, groups in the fixed order Lists, Cards, Notes and expenses, Commands, trims
+ * Filters by type, groups in the fixed order Lists, Cards, Notes and expenses, Products, Tickets, Commands, trims
  * each type and numbers the rows continuously so the up/down keys walk them top to bottom.
  */
 export function groupResults(
@@ -460,7 +566,7 @@ export function groupResults(
 ): PaletteGroup[] {
   const buckets = new Map<PaletteGroupId, PaletteResult[]>();
   for (const result of results) {
-    if (!matchesFilter(result.kind, filter)) continue;
+    if (!keeps(result, filter)) continue;
     const id = groupOf(result.kind);
     const bucket = buckets.get(id) ?? [];
     bucket.push(result);
