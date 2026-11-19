@@ -6,7 +6,7 @@
 .github
 **/.env
 **/.env.*
-**/*.generated.ts
+**/primeng-license.generated.ts
 *.pem
 *.key
 *.md
