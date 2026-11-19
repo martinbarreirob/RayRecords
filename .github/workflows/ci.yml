@@ -59,6 +59,9 @@ jobs:
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
           push: true
+          # Only the web Dockerfile declares this argument; the API build ignores it.
+          build-args: |
+            PRIMEUI_LICENSE=${{ secrets.PRIMEUI_LICENSE }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/rayrecords-${{ matrix.app }}:latest
             ghcr.io/${{ github.repository_owner }}/rayrecords-${{ matrix.app }}:${{ github.sha }}
