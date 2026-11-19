@@ -29,6 +29,7 @@ import { formatNoteDate } from '../notes/note-board.logic';
 import { aliasError, cleanAlias, movedMessage, stepIndex } from './lists-logic';
 import { ListsSkeleton } from './lists-skeleton';
 import { ListsStore } from './lists.store';
+import { Icon } from '../../core/ui/icon';
 
 const PRESET_KINDS = Object.keys(LIST_PRESETS) as ListKind[];
 const KIND_LABELS: Record<ListKind, string> = {
@@ -41,6 +42,7 @@ const KIND_LABELS: Record<ListKind, string> = {
 @Component({
   selector: 'app-lists-page',
   imports: [
+    Icon,
     AddButton,
     PageHeader,
     RouterLink,
@@ -182,7 +184,7 @@ const KIND_LABELS: Record<ListKind, string> = {
                       title="Arrastra, o usa las flechas con el asa enfocada"
                       (keydown)="handleKey($event, list)"
                     >
-                      <i class="pi pi-bars" aria-hidden="true"></i>
+                      <app-icon name="grip-vertical" />
                     </button>
                   }
                   <button
@@ -194,8 +196,8 @@ const KIND_LABELS: Record<ListKind, string> = {
                     title="Mover antes"
                     (click)="moveBy(list, -1, 'before')"
                   >
-                    <i class="pi pi-arrow-left ico-h" aria-hidden="true"></i>
-                    <i class="pi pi-arrow-up ico-v" aria-hidden="true"></i>
+                    <app-icon name="arrow-left" class="ico-h" />
+                    <app-icon name="arrow-up" class="ico-v" />
                   </button>
                   <button
                     type="button"
@@ -206,8 +208,8 @@ const KIND_LABELS: Record<ListKind, string> = {
                     title="Mover después"
                     (click)="moveBy(list, 1, 'after')"
                   >
-                    <i class="pi pi-arrow-right ico-h" aria-hidden="true"></i>
-                    <i class="pi pi-arrow-down ico-v" aria-hidden="true"></i>
+                    <app-icon name="arrow-right" class="ico-h" />
+                    <app-icon name="arrow-down" class="ico-v" />
                   </button>
                 </div>
 

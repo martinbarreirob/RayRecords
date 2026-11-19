@@ -1,8 +1,8 @@
 /*
  * On desktop the screen uses the .page column as is (same max width and margins as the global
- * header and the capture bar) and only keeps the height: a minimum height equal to what is left of
- * the window under the header and the capture. --notes-top is what everything above takes up (it is
- * measured in the page); if the notes go lower, the page grows.
+ * header and the capture bar) and only fixes the height: exactly what is left of the window under
+ * the header and the capture. --notes-top is what everything above takes up (it is measured in the
+ * page); if the notes go lower, the canvas scrolls inside its box and the page does not grow.
  */
 /* A custom element is inline by default, which drops the side padding of .page on a phone. */
 :host(.page) {
@@ -13,7 +13,7 @@
   :host(.page) {
     display: flex;
     flex-direction: column;
-    min-height: calc(100dvh - var(--notes-top, 0px));
+    height: calc(100dvh - var(--notes-top, 0px));
     padding-bottom: var(--space-3);
   }
 }
@@ -55,36 +55,55 @@ app-page-header {
 }
 
 /* Icons of the header buttons (Ordenar has icon and text; the lock, icon only). */
-.actions .btn .pi {
+.actions .btn app-icon {
   font-size: var(--text-sm);
 }
 
 /* Locked is the safe default state; unlocked is highlighted so it does not go unnoticed. */
-.actions .btn.icon[aria-pressed='false'] .pi {
+.actions .btn.icon[aria-pressed='false'] app-icon {
   color: var(--accent);
 }
 
 /*
  * The area where notes can be placed. It scrolls with a finger on the background (cards and
- * group headers capture the gesture) and has its own horizontal scroll if there are cards past the
- * right edge. It grows with its content (min-height) and, if there is spare window, fills it (flex).
+ * group headers capture the gesture) and has its own scroll, both ways, if there are cards past the
+ * right or the bottom edge. It takes the height its box has left (flex), never more.
  */
 .board {
   position: relative;
   isolation: isolate;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-height: 0;
+  overflow: auto;
   touch-action: pan-x pan-y;
   user-select: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   /* Bounded, subtle box. The border is an inner shadow, not border: so the cards' origin (left/top) matches x/y. */
   box-shadow: inset 0 0 0 1px var(--line);
   /* The outline always exists, transparent: only its colour is animated (the style is not). */
   outline: 1.5px dashed transparent;
   outline-offset: -1px;
   transition: outline-color 0.12s ease-out;
+}
+
+/*
+ * The notes box: the canvas and, below it, the shortcut bar, inside one outline. The bar is a
+ * sibling of the canvas, so it never covers a note and does not scroll sideways with them.
+ */
+.frame {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  /* Never less than a few notes tall: on a very short window the page scrolls instead. */
+  min-height: 240px;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.frame .board {
+  box-shadow: none;
 }
 
 /* First load: the canvas box with the skeleton inside; nothing is placed or scrolled. */
@@ -98,11 +117,11 @@ app-page-header {
   outline-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
-/* A bit of canvas beyond the farthest item (--board-right): it can be scrolled up to there. */
+/* A bit of canvas beyond the farthest and the lowest item: it can be scrolled up to there. */
 .board::after {
   content: '';
   position: absolute;
-  top: 0;
+  top: var(--board-bottom, 0);
   left: var(--board-right, 0);
   width: 1px;
   height: 1px;
@@ -120,7 +139,7 @@ app-page-header {
 
 .marquee {
   position: absolute;
-  z-index: 9500;
+  z-index: var(--z-drag);
   /* Translucent with a thin border: lets the cards being selected show through. */
   border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
   border-radius: 4px;
@@ -230,7 +249,7 @@ app-page-header {
 
   .undo {
     min-height: 56px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
   }
 
   .undo button {

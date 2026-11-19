@@ -30,6 +30,7 @@ import { PaletteService } from '../../core/palette/palette.service';
 import { RefreshBus } from '../../core/refresh';
 import { AddButton } from '../../core/ui/add-button';
 import { PageHeader } from '../../core/ui/page-header';
+import { pageScrollTop } from '../../core/ui/page-scroll';
 import {
   arrangeItems,
   arrowMove,
@@ -59,11 +60,12 @@ import { NotesHints } from './notes-hints';
 import { NotesMobileList } from './notes-mobile-list';
 import { NotesSkeleton } from './notes-skeleton';
 import { readLayoutLocked, writeLayoutLocked } from './notes-prefs';
+import { Icon } from '../../core/ui/icon';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 const MARQUEE_THRESHOLD = 4;
-/** Canvas left beyond the farthest item, so cards can keep being placed to the right. */
-const RIGHT_SPARE = 24;
+/** Canvas left beyond the farthest and the lowest item, so there is room to scroll past them. */
+const SPARE = 24;
 /** Time the dropped card takes to settle (must match the note-card transition). */
 const LAND_MS = 180;
 /** How long the «Disposición bloqueada» notice stays if not closed. */
@@ -121,6 +123,7 @@ function isControl(target: EventTarget | null): boolean {
 @Component({
   selector: 'app-notes-page',
   imports: [
+    Icon,
     AddButton,
     NgTemplateOutlet,
     NoteCardComponent,
@@ -140,11 +143,18 @@ function isControl(target: EventTarget | null): boolean {
   styleUrl: './notes-page.scss',
   template: `
     <app-page-header title="Notas" [eyebrow]="today">
-      @if (!compact()) {
-        <app-add-button label="Nueva nota" (pressed)="newCard()" />
-      }
       <div class="actions">
         @if (!compact()) {
+          <button
+            type="button"
+            class="btn icon"
+            aria-label="Bloquear la disposición"
+            [attr.aria-pressed]="locked()"
+            [attr.title]="lockTitle()"
+            (click)="toggleLock()"
+          >
+            <app-icon [name]="locked() ? 'lock' : 'lock-open'" />
+          </button>
           <button
             type="button"
             class="btn"
@@ -152,7 +162,7 @@ function isControl(target: EventTarget | null): boolean {
             title="Ordenar: coloca las notas en una rejilla limpia (se puede deshacer)"
             (click)="arrange()"
           >
-            <i class="pi pi-th-large" aria-hidden="true"></i>
+            <app-icon name="layout-grid" />
             Ordenar
           </button>
         }
@@ -170,24 +180,10 @@ function isControl(target: EventTarget | null): boolean {
         <span id="notes-finished-help" class="sr-only">
           Las notas hechas se ocultan del lienzo a las 24 horas; en este panel se recuperan.
         </span>
-        @if (!compact()) {
-          <button
-            type="button"
-            class="btn icon"
-            aria-label="Bloquear la disposición"
-            [attr.aria-pressed]="locked()"
-            [attr.title]="lockTitle()"
-            (click)="toggleLock()"
-          >
-            <i
-              class="pi"
-              [class.pi-lock]="locked()"
-              [class.pi-lock-open]="!locked()"
-              aria-hidden="true"
-            ></i>
-          </button>
-        }
       </div>
+      @if (!compact()) {
+        <app-add-button label="Nueva nota" (pressed)="newCard()" />
+      }
     </app-page-header>
 
     @if (store.error(); as message) {
@@ -205,7 +201,7 @@ function isControl(target: EventTarget | null): boolean {
       @if (compact()) {
         <app-notes-skeleton compact />
       } @else {
-        <div class="board loading" aria-busy="true" [style.min-height.px]="boardHeight()">
+        <div class="board loading" aria-busy="true">
           <app-notes-skeleton />
         </div>
       }
@@ -221,74 +217,76 @@ function isControl(target: EventTarget | null): boolean {
         (dissolved)="dissolve($event)"
       />
     } @else {
-      <div
-        #board
-        class="board"
-        role="application"
-        aria-label="Lienzo de notas"
-        [class.active]="zoneVisible()"
-        [style.min-height.px]="boardHeight()"
-        [style.--board-right]="boardRight() + 'px'"
-        (pointerdown)="onBoardPointerDown($event, board)"
-        (dblclick)="onBoardDblClick($event, board)"
-      >
-        @if (isEmpty()) {
-          <p class="empty board-empty">
-            Un folio en blanco.<br />Escribe arriba o haz doble clic para crear la primera nota.
-          </p>
-        }
+      <div class="frame">
+        <div
+          #board
+          class="board"
+          role="application"
+          aria-label="Lienzo de notas"
+          [class.active]="zoneVisible()"
+          [style.--board-bottom]="boardBottom() + 'px'"
+          [style.--board-right]="boardRight() + 'px'"
+          (pointerdown)="onBoardPointerDown($event, board)"
+          (dblclick)="onBoardDblClick($event, board)"
+        >
+          @if (isEmpty()) {
+            <p class="empty board-empty">
+              Un folio en blanco.<br />Escribe arriba o haz doble clic para crear la primera nota.
+            </p>
+          }
 
-        @for (group of layoutGroups(); track group.id) {
-          <app-note-group
-            [group]="group"
-            [box]="groupBox(group)"
-            [count]="cardsIn(group.id).length"
-            [dropTarget]="drag()?.over === group.id"
-            [moving]="isMoving(group.id)"
-            [locked]="locked()"
-            (pointerdown)="onGroupPointerDown($event)"
-            (headerPressed)="startGroupDrag($event, group)"
-            (resizePressed)="startResize($event, group)"
-            (renamed)="store.patchGroup(group.id, { title: $event })"
-            (dissolved)="dissolve(group)"
-            (dblclick)="onGroupDblClick($event, group)"
-          >
-            @for (card of cardsIn(group.id); track card.id) {
-              <ng-container
-                [ngTemplateOutlet]="cardTpl"
-                [ngTemplateOutletContext]="{ $implicit: card, stacked: true }"
-              />
-            }
-          </app-note-group>
-        }
+          @for (group of layoutGroups(); track group.id) {
+            <app-note-group
+              [group]="group"
+              [box]="groupBox(group)"
+              [count]="cardsIn(group.id).length"
+              [dropTarget]="drag()?.over === group.id"
+              [moving]="isMoving(group.id)"
+              [locked]="locked()"
+              (pointerdown)="onGroupPointerDown($event)"
+              (headerPressed)="startGroupDrag($event, group)"
+              (resizePressed)="startResize($event, group)"
+              (renamed)="store.patchGroup(group.id, { title: $event })"
+              (dissolved)="dissolve(group)"
+              (dblclick)="onGroupDblClick($event, group)"
+            >
+              @for (card of cardsIn(group.id); track card.id) {
+                <ng-container
+                  [ngTemplateOutlet]="cardTpl"
+                  [ngTemplateOutletContext]="{ $implicit: card, stacked: true }"
+                />
+              }
+            </app-note-group>
+          }
 
-        @for (card of store.looseCards(); track card.id) {
-          <ng-container
-            [ngTemplateOutlet]="cardTpl"
-            [ngTemplateOutletContext]="{ $implicit: card }"
-          />
-        }
+          @for (card of store.looseCards(); track card.id) {
+            <ng-container
+              [ngTemplateOutlet]="cardTpl"
+              [ngTemplateOutletContext]="{ $implicit: card }"
+            />
+          }
 
-        @for (g of ghosts(); track g.card.id) {
-          <app-note-card ghost [card]="g.card" [landing]="g.landing" />
-        }
+          @for (g of ghosts(); track g.card.id) {
+            <app-note-card ghost [card]="g.card" [landing]="g.landing" />
+          }
 
-        @if (marquee(); as m) {
-          <div
-            class="marquee"
-            [style.left.px]="m.x"
-            [style.top.px]="m.y"
-            [style.width.px]="m.w"
-            [style.height.px]="m.h"
-          ></div>
-        }
+          @if (marquee(); as m) {
+            <div
+              class="marquee"
+              [style.left.px]="m.x"
+              [style.top.px]="m.y"
+              [style.width.px]="m.w"
+              [style.height.px]="m.h"
+            ></div>
+          }
+        </div>
+
+        <app-notes-hints [selectedCount]="selectionCount()" [locked]="locked()" />
       </div>
 
       @if (drag()?.moved) {
         <div class="drag-shield" [class.resize]="drag()?.kind === 'resize'"></div>
       }
-
-      <app-notes-hints [selectedCount]="selectionCount()" [locked]="locked()" />
     }
 
     @if (lockNotice() || store.undoNotice()) {
@@ -411,18 +409,19 @@ export class NotesPage {
     () => new Map(this.store.groups().map((group) => [group.id, group.h])),
   );
 
-  protected readonly boardHeight = computed(() => {
+  /** Canvas height: the lowest item plus a margin. The box fits the window and scrolls up to here. */
+  protected readonly boardBottom = computed(() => {
     const bottoms = [
       ...this.store.looseCards().map((card) => card.y + CARD_ESTIMATED_HEIGHT),
       ...this.layoutGroups().map((group) => group.y + group.h),
       this.measuredBottom(),
     ];
-    return Math.max(240, ...bottoms) + 160;
+    return Math.max(0, ...bottoms) + SPARE;
   });
 
   /** Canvas width: the farthest item plus a margin. */
   protected readonly boardRight = computed(
-    () => rightEdge(this.store.looseCards(), this.layoutGroups()) + RIGHT_SPARE,
+    () => rightEdge(this.store.looseCards(), this.layoutGroups()) + SPARE,
   );
 
   /** The zone outline only shows while something is dragged or resized, or the marquee is drawn. */
@@ -582,12 +581,12 @@ export class NotesPage {
   }
 
   private measureTop(): void {
-    const top = Math.max(0, Math.round(this.hostEl.getBoundingClientRect().top + window.scrollY));
+    const top = Math.max(0, Math.round(this.hostEl.getBoundingClientRect().top + pageScrollTop()));
     if (top !== this.top()) this.top.set(top);
   }
 
   private measureBoard(board: HTMLElement): void {
-    const top = board.getBoundingClientRect().top;
+    const top = board.getBoundingClientRect().top - board.scrollTop;
     let bottom = 0;
     for (const el of board.querySelectorAll<HTMLElement>('[data-card-id]')) {
       bottom = Math.max(bottom, el.getBoundingClientRect().bottom - top);
@@ -679,7 +678,7 @@ export class NotesPage {
     const rect = board.getBoundingClientRect();
     this.newCard({
       x: clampCoord(event.clientX - rect.left + board.scrollLeft),
-      y: clampCoord(event.clientY - rect.top),
+      y: clampCoord(event.clientY - rect.top + board.scrollTop),
     });
   }
 
@@ -778,7 +777,7 @@ export class NotesPage {
       const bounds = board.getBoundingClientRect();
       this.marquee.set({
         x: frame.x - bounds.left + board.scrollLeft,
-        y: frame.y - bounds.top,
+        y: frame.y - bounds.top + board.scrollTop,
         w: frame.w,
         h: frame.h,
       });
@@ -836,7 +835,10 @@ export class NotesPage {
    */
   private pointerOf(event: { clientX: number; clientY: number }): Point {
     const board = this.boardRef()?.nativeElement;
-    return { x: event.clientX + (board?.scrollLeft ?? 0), y: event.clientY + window.scrollY };
+    return {
+      x: event.clientX + (board?.scrollLeft ?? 0),
+      y: event.clientY + pageScrollTop() + (board?.scrollTop ?? 0),
+    };
   }
 
   /** Where the drag in progress may go; fixed when it starts, so dragging never grows the canvas. */
@@ -977,7 +979,7 @@ export class NotesPage {
     return {
       area: {
         w: Math.max(board.clientWidth, extent.x + extent.w + BOARD_PADDING),
-        h: Math.max(board.clientHeight, extent.y + extent.h + BOARD_PADDING),
+        h: Math.max(board.scrollTop + board.clientHeight, extent.y + extent.h + BOARD_PADDING),
       },
       extent,
     };

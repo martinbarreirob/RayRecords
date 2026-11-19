@@ -2,6 +2,7 @@ import { Component, HostListener, computed, inject, input, output, signal } from
 import { formatDuration, remainingMs, type NoteCard, type NoteGroup } from '@rayrecords/shared';
 import { NoteBoardStore } from './note-board.store';
 import { NoteRow } from './note-row';
+import { Icon } from '../../core/ui/icon';
 
 /**
  * Notes list for narrow screens (< 768 px): groups are collapsible and loose ones go below, all
@@ -10,7 +11,7 @@ import { NoteRow } from './note-row';
  */
 @Component({
   selector: 'app-notes-mobile-list',
-  imports: [NoteRow],
+  imports: [Icon, NoteRow],
   styles: `
     .group {
       margin-bottom: var(--space-2);
@@ -192,12 +193,12 @@ import { NoteRow } from './note-row';
             [attr.aria-label]="'Menú del grupo ' + (group.title || 'sin título')"
             (click)="toggleMenu($event, group.id)"
           >
-            <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+            <app-icon name="dots" />
           </button>
           @if (menuFor() === group.id) {
             <div class="menu" role="menu" (click)="$event.preventDefault()">
               <button type="button" role="menuitem" (click)="dissolve($event, group)">
-                <i class="pi pi-clone" aria-hidden="true"></i>
+                <app-icon name="copy" />
                 Disolver grupo
                 <small>Las notas se quedan sueltas</small>
               </button>

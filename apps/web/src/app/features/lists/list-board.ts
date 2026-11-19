@@ -35,6 +35,7 @@ import {
   todayLocal,
 } from './board-logic';
 import { formatField } from './field-format';
+import { Icon } from '../../core/ui/icon';
 
 /** Move a card: which card and where it ends up. Run (and saved) by whoever uses the board. */
 export interface BoardMove {
@@ -58,6 +59,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
 @Component({
   selector: 'app-list-board',
   imports: [
+    Icon,
     CdkScrollable,
     CdkDrag,
     CdkDragPlaceholder,
@@ -383,7 +385,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
               [attr.aria-label]="'Añadir tarjeta en ' + column.label"
               (click)="startAdd(column.key)"
             >
-              <i class="pi pi-plus" aria-hidden="true"></i>
+              <app-icon name="plus" />
             </button>
           </header>
 
@@ -459,7 +461,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       [disabled]="!canShift(item, -1)"
                       (click)="shift(item, -1)"
                     >
-                      <i class="pi pi-arrow-left" aria-hidden="true"></i>
+                      <app-icon name="arrow-left" />
                     </button>
                     <button
                       type="button"
@@ -469,7 +471,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       [disabled]="!canShift(item, 1)"
                       (click)="shift(item, 1)"
                     >
-                      <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                      <app-icon name="arrow-right" />
                     </button>
                     <button
                       type="button"
@@ -479,7 +481,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       [disabled]="i === 0"
                       (click)="step(item, -1)"
                     >
-                      <i class="pi pi-arrow-up" aria-hidden="true"></i>
+                      <app-icon name="arrow-up" />
                     </button>
                     <button
                       type="button"
@@ -489,7 +491,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       [disabled]="last"
                       (click)="step(item, 1)"
                     >
-                      <i class="pi pi-arrow-down" aria-hidden="true"></i>
+                      <app-icon name="arrow-down" />
                     </button>
                     <span class="spacer"></span>
                     <button
@@ -501,7 +503,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       [title]="item.doneAt ? 'Marcar como pendiente' : 'Marcar como hecha'"
                       (click)="toggleDone.emit({ item, done: !item.doneAt })"
                     >
-                      <i class="pi pi-check" aria-hidden="true"></i>
+                      <app-icon name="check" />
                     </button>
                     <button
                       type="button"
@@ -510,7 +512,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       title="Editar (Espacio)"
                       (click)="open.emit(item)"
                     >
-                      <i class="pi pi-pencil" aria-hidden="true"></i>
+                      <app-icon name="pencil" />
                     </button>
                     <button
                       type="button"
@@ -519,7 +521,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
                       title="Borrar (Supr)"
                       (click)="remove.emit(item)"
                     >
-                      <i class="pi pi-trash" aria-hidden="true"></i>
+                      <app-icon name="trash" />
                     </button>
                     @if (dragOff()) {
                       <p-select

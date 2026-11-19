@@ -108,16 +108,16 @@ describe('NotesPage', () => {
   });
 
   describe('header', () => {
-    it('on desktop: Nueva nota, Ordenar, Terminadas and the lock at the end', () => {
+    it('on desktop: the lock first, then Ordenar and Terminadas, and Nueva nota at the end', () => {
       const { fixture, el } = render();
       board$.next({ cards: [card(1)], groups: [] });
       fixture.detectChanges();
 
       expect(buttons(el)).toEqual([
-        'Nueva nota Alt N',
+        'Bloquear la disposición',
         'Ordenar notas',
         'Terminadas (0)',
-        'Bloquear la disposición',
+        'Nueva nota Alt N',
       ]);
     });
 
@@ -126,7 +126,7 @@ describe('NotesPage', () => {
 
       const arrange = el.querySelector<HTMLElement>('button[aria-label="Ordenar notas"]');
       expect(arrange?.textContent?.trim()).toBe('Ordenar');
-      expect(arrange?.querySelector('.pi-th-large')).not.toBeNull();
+      expect(arrange?.querySelector('app-icon')).not.toBeNull();
     });
 
     it('there are no group or mark-as-done buttons in the header any more', () => {

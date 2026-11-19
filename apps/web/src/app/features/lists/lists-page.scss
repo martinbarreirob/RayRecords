@@ -141,7 +141,7 @@
 
 .preview {
   box-sizing: border-box;
-  z-index: 1000;
+  z-index: var(--z-overlay);
 }
 
 .preview-card {

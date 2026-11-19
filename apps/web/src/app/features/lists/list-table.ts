@@ -5,6 +5,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { TableModule } from 'primeng/table';
 import { formatField } from './field-format';
 import { shortDate, tagHue, todayLocal } from './board-logic';
+import { Icon } from '../../core/ui/icon';
 
 /**
  * List view: one row per item, one column per field of the list. `p-table` is used for column
@@ -13,7 +14,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
  */
 @Component({
   selector: 'app-list-table',
-  imports: [TableModule, CheckboxModule, FormsModule],
+  imports: [Icon, TableModule, CheckboxModule, FormsModule],
   styles: `
     .wrap {
       overflow-x: auto;
@@ -181,7 +182,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
                   [attr.aria-label]="'Abrir el enlace de ' + item.title"
                   [title]="item.url"
                 >
-                  <i class="pi pi-external-link" aria-hidden="true"></i>
+                  <app-icon name="external-link" />
                 </a>
               }
               <span class="mmeta">
@@ -229,7 +230,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
                 [attr.aria-label]="'Editar ' + item.title"
                 (click)="edit.emit(item)"
               >
-                <i class="pi pi-pencil" aria-hidden="true"></i>
+                <app-icon name="pencil" />
               </button>
               <button
                 type="button"
@@ -237,7 +238,7 @@ import { shortDate, tagHue, todayLocal } from './board-logic';
                 [attr.aria-label]="'Borrar ' + item.title"
                 (click)="remove.emit(item)"
               >
-                <i class="pi pi-trash" aria-hidden="true"></i>
+                <app-icon name="trash" />
               </button>
             </td>
           </tr>

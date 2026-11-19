@@ -36,6 +36,7 @@ import {
   sortDayEntries,
   splitVisible,
 } from './calendar-grid';
+import { Icon } from '../../core/ui/icon';
 
 type CalendarView = 'month' | 'agenda';
 
@@ -46,18 +47,18 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
 
 @Component({
   selector: 'app-calendar-page',
-  imports: [AddButton, PageHeader, RouterLink, NgTemplateOutlet, DateField, TimeField],
+  imports: [Icon, AddButton, PageHeader, RouterLink, NgTemplateOutlet, DateField, TimeField],
   template: `
     <div class="page">
       <app-page-header title="Calendario" [eyebrow]="monthLabel()" [split]="true">
         <div class="tools">
           <div class="row nav" role="group" aria-label="Cambiar de mes">
             <button type="button" class="btn icon" aria-label="Mes anterior" (click)="go(-1)">
-              <i class="pi pi-chevron-left" aria-hidden="true"></i>
+              <app-icon name="chevron-left" />
             </button>
             <button type="button" class="btn today" (click)="goToday()">Hoy</button>
             <button type="button" class="btn icon" aria-label="Mes siguiente" (click)="go(1)">
-              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+              <app-icon name="chevron-right" />
             </button>
           </div>
 
@@ -243,7 +244,7 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
               <p class="empty">No hay nada este día.</p>
             }
             <button type="button" class="btn sm add-here" (click)="openAdd(selected())">
-              <i class="pi pi-plus" aria-hidden="true"></i>
+              <app-icon name="plus" />
               Añadir en este día
             </button>
           </aside>
@@ -338,7 +339,7 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
             [attr.aria-label]="'Eliminar: ' + entry.title"
             (click)="removeEvent(entry)"
           >
-            <i class="pi pi-trash" aria-hidden="true"></i>
+            <app-icon name="trash" />
           </button>
         }
       </li>
