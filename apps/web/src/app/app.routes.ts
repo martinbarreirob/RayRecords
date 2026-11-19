@@ -38,6 +38,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/expenses/expenses.routes').then((m) => m.EXPENSES_ROUTES),
       },
+      {
+        path: 'gestion',
+        loadChildren: () =>
+          import('./features/management/management.routes').then((m) => m.MANAGEMENT_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,0 +1,343 @@
+@use '../../../core/ui/skeleton';
+
+/*
+ * Desktop: the screen fills exactly what is left of the window under the header (--sales-top is
+ * measured in the page). The product grid and the cart lines scroll inside their boxes, so the
+ * category bar and the "Generar ticket" button never leave the screen. The cart is only as tall
+ * as what it holds, up to the whole height.
+ */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--sales-top, 0px));
+  min-height: 560px;
+  padding-bottom: var(--space-4);
+}
+
+.alert {
+  margin-bottom: var(--space-3);
+}
+
+.see-ticket {
+  margin-left: var(--space-2);
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Products take three quarters; the cart never gets narrower than it needs. */
+.layout {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+/* Left column: category bar above, bento grid below */
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+}
+
+.tiles {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  /* Room for the focus ring and the lifted card, which the scroll box would clip. */
+  margin: -4px;
+  padding: 4px;
+}
+
+.bento {
+  // One size for the card and for the row it sits in, so they cannot drift apart.
+  --tile-size: 124px;
+  display: grid;
+  /* Narrow columns: more products per row; a normal card comes out close to square. */
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-size), 1fr));
+  grid-auto-rows: var(--tile-size);
+  grid-auto-flow: dense;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s,
+    opacity 0.12s;
+
+  &[draggable='true'] {
+    cursor: grab;
+  }
+
+  &.xl {
+    grid-column: span 2;
+    grid-row: span 2;
+    padding: var(--space-4);
+  }
+
+  &.wide {
+    grid-column: span 2;
+  }
+
+  &.out {
+    border-style: dashed;
+    background: transparent;
+
+    .tile-name,
+    .tile-price {
+      color: var(--muted);
+    }
+  }
+
+  &.dragging {
+    opacity: 0.5;
+  }
+}
+
+@media (hover: hover) {
+  .tile[draggable='true']:hover {
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* Only there when the card has a badge; otherwise the name starts at the top. */
+.tile-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.badge.in-cart {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.tile-name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* A small card with a badge has room for one line of name. */
+.tile:not(.xl, .wide) .tile-top + .tile-name {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.xl .tile-name {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.01em;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.wide .tile-name {
+  font-size: var(--text-lg);
+}
+
+/* Under the name: what is left in stock. */
+.tile-stock {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* Bottom of the card: the price on the left, the add button on the right. */
+.tile-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.tile-price {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xl .tile-price {
+  font-size: var(--text-lg);
+}
+
+.add {
+  flex: none;
+  gap: var(--space-1);
+
+  app-icon {
+    font-size: 12px;
+  }
+
+  /* The square cards have no room for the word: the button is just the plus. */
+  &.icon {
+    width: 28px;
+    padding: 0;
+
+    app-icon {
+      font-size: 14px;
+    }
+  }
+}
+
+/*
+ * Category bar, above the products: square tabs on one row. When they do not all fit the row
+ * scrolls sideways and an arrow appears at each end to move the selection.
+ */
+.categories {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.categories > .btn {
+  flex: none;
+}
+
+.cat-strip {
+  display: flex;
+  flex: 1 1 0;
+  gap: var(--space-2);
+  min-width: 0;
+  /* Room for the focus ring, which the scroll box would clip. */
+  margin: -3px;
+  padding: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cat {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--line-strong);
+    color: var(--text);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Only a tab that starts with a category badge is tighter on the left, so the badge sits
+     close to the edge; a text-only tab ("Todas", "Sin categoría") keeps both sides equal. */
+  &:has(> app-category-badge) {
+    padding-left: 5px;
+  }
+}
+
+/* Loading skeleton: ghost cards in the same grid. */
+.skel-in {
+  @include skeleton.reveal;
+}
+
+.ghost-tile {
+  border-radius: var(--radius-lg);
+
+  &.xl {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  &.wide {
+    grid-column: span 2;
+  }
+}
+
+/* Phone: one column, the page scrolls and the cart comes after the products. */
+@media (width <= 767px) {
+  :host {
+    display: block;
+    height: auto;
+    min-height: 0;
+    padding-bottom: var(--space-6);
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tiles {
+    flex: none;
+    overflow: visible;
+  }
+
+  .bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .cart {
+    align-self: stretch;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .lines {
+    flex: none;
+    overflow: visible;
+  }
+
+  .categories > .btn,
+  .cat,
+  .add,
+  .clear,
+  .cart-foot .btn {
+    min-height: var(--touch-target);
+  }
+
+  .add.icon {
+    width: var(--touch-target);
+  }
+
+  .categories > .btn,
+  .stepper .btn.icon,
+  .line-remove {
+    width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
+  .stepper .input {
+    min-height: var(--touch-target);
+    font-size: max(16px, var(--text-base));
+  }
+}

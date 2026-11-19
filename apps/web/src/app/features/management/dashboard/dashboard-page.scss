@@ -1,0 +1,158 @@
+@use '../../../core/ui/skeleton';
+
+:host {
+  display: block;
+}
+
+.alert {
+  margin-bottom: var(--space-3);
+}
+
+/*
+ * Twelve columns: four headline tiles, then the daily sales (wide) next to the stock, then
+ * three equal cards. Everything stacks to one column on a phone.
+ */
+.board {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
+
+  @include skeleton.refreshing;
+}
+
+.tile,
+.card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* Headline figure: a label, the number and one line of context. */
+.tile {
+  grid-column: span 3;
+  padding: var(--space-4);
+  /* The figure is sized from the tile's own width (see .figure). */
+  container-type: inline-size;
+
+  h2 {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+}
+
+.figure {
+  margin-top: var(--space-1);
+  overflow: hidden;
+  /* Shrinks with a narrow tile, so an amount in the thousands is never cut short. */
+  font-size: clamp(var(--text-base), 13cqi, var(--text-2xl));
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+
+  h3 {
+    margin-top: var(--space-2);
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+}
+
+.daily {
+  grid-column: span 8;
+}
+
+.stock {
+  grid-column: span 4;
+}
+
+.third {
+  grid-column: span 4;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+
+  a,
+  .muted {
+    font-size: var(--text-sm);
+  }
+}
+
+.none {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* Loading skeleton: blocks where the tiles and cards will be. */
+.skel-in {
+  @include skeleton.reveal;
+}
+
+.ghost {
+  border-radius: var(--radius-lg);
+
+  &.tile {
+    height: 104px;
+    padding: 0;
+    border: 0;
+  }
+
+  &.daily,
+  &.stock {
+    height: 300px;
+  }
+
+  &.third {
+    height: 240px;
+  }
+}
+
+@media (width <= 1023px) {
+  .tile {
+    grid-column: span 6;
+  }
+
+  .daily,
+  .stock,
+  .third {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (width <= 767px) {
+  .board {
+    gap: var(--space-3);
+  }
+
+  /* The period switch takes its own row under the title and spans it. */
+  .segmented {
+    display: flex;
+    flex: 1 1 100%;
+
+    > button {
+      flex: 1 1 0;
+      min-height: calc(var(--touch-target) - 6px);
+    }
+  }
+}

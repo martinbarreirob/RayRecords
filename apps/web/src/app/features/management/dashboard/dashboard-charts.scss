@@ -1,0 +1,260 @@
+/*
+ * The charts of the dashboard, drawn with plain boxes. One series each, in the accent color;
+ * only the stock bar uses color to mean something (the same success, warning and danger tokens
+ * as the stock table), and it always carries its labels and counts next to it.
+ */
+
+/* Daily sales: one thin bar per day, the best day as tall as the plot. */
+.readout {
+  color: var(--muted);
+  font-size: var(--text-sm);
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+.plot {
+  position: relative;
+  padding-top: var(--space-4);
+}
+
+/* The value of the tallest bar, on a faint line across the top of the plot. */
+.plot-max {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding-bottom: 2px;
+  border-bottom: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: calc(var(--space-4) - 3px);
+}
+
+.bars {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 180px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+/* The whole column is the hover target, so a short bar is as easy to point at as a tall one. */
+.slot {
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.bar {
+  width: 100%;
+  max-width: 28px;
+  margin: 0 auto;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent);
+  transition: opacity 0.12s;
+}
+
+.bars.hovering .bar {
+  opacity: 0.35;
+}
+
+.bars.hovering .active .bar {
+  opacity: 1;
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* Stock: one bar split by state, with a gap between the parts. (Not ".stack": that global
+   utility lays its children out in a column.) */
+.state-bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+}
+
+.seg {
+  flex: 1 1 0;
+  min-width: 4px;
+  border-radius: 4px;
+}
+
+.seg.ok,
+.dot.ok {
+  background: var(--success);
+}
+
+.seg.low,
+.dot.low {
+  background: var(--warning);
+}
+
+.seg.out,
+.dot.out {
+  background: var(--danger);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.restock,
+.rank,
+.recent {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.restock {
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    flex: none;
+  }
+}
+
+/* Ranked lists: the name and its figure, and under them a bar relative to the first row. */
+.rank {
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3);
+    align-items: center;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.rank-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.recent {
+  font-size: var(--text-sm);
+
+  li + li {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  a {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2) 0;
+    color: var(--text);
+
+    &:hover {
+      text-decoration: none;
+    }
+
+    &:hover .number {
+      background: var(--accent);
+      color: var(--on-accent);
+    }
+  }
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.number {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-weight: 500;
+}
+
+.when {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (width <= 767px) {
+  .bars {
+    height: 140px;
+  }
+
+  .recent a {
+    min-height: var(--touch-target);
+  }
+}

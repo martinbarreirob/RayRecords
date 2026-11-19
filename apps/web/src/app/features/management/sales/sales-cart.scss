@@ -1,0 +1,172 @@
+/*
+ * The cart column of the sales screen. Its phone rules are in sales-page.scss, which the
+ * component loads after this file so that they win.
+ */
+.cart {
+  display: flex;
+  flex-direction: column;
+  /* As tall as its content, from a comfortable minimum up to the whole column. */
+  align-self: start;
+  min-width: 0;
+  min-height: min(440px, 100%);
+  max-height: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+
+  /* While a card is being dragged the cart shows where it can be dropped. */
+  &.drop-ready {
+    border-style: dashed;
+    border-color: var(--line-strong);
+  }
+
+  &.drop-over {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+
+.cart-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 52px;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.cart-count {
+  font-size: var(--text-xs);
+}
+
+/* "Vaciar" sits at the right end of the title row. */
+.clear {
+  margin-left: auto;
+}
+
+/* The lines take whatever the cart has left, so the total and the button stay at the bottom. */
+.lines {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--space-4);
+  overflow-y: auto;
+  list-style: none;
+}
+
+/*
+ * A cart line is two plain rows, each with one thing on the left and one pushed to the far
+ * right: the name over its unit price and the bin; then the quantity and the line total.
+ */
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.line-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Name over unit price; it takes the room the bin leaves and cuts a long name short. */
+.line-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.line-name {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-unit {
+  font-size: var(--text-xs);
+}
+
+.line-remove {
+  flex: none;
+  width: 28px;
+  min-height: 28px;
+  font-size: 15px;
+}
+
+.stepper {
+  display: inline-flex;
+  gap: var(--space-1);
+
+  .btn.icon {
+    width: 32px;
+    min-height: 32px;
+    font-size: 12px;
+  }
+
+  .input {
+    width: 52px;
+    min-height: 32px;
+    padding: 0 var(--space-1);
+    text-align: center;
+  }
+}
+
+.line-total {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cart-empty {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: center;
+
+  app-icon {
+    font-size: var(--text-2xl);
+  }
+}
+
+.cart-foot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.cart-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: var(--text-sm);
+
+  strong {
+    color: var(--text);
+    font-size: var(--text-xl);
+    font-weight: 600;
+  }
+}
+
+.ticket {
+  min-height: var(--touch-target);
+}

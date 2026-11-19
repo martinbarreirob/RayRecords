@@ -1,0 +1,310 @@
+@use '../../../core/ui/skeleton';
+
+:host {
+  display: block;
+  // Sizes the screen is built from; a parent can override them.
+  --search-width: 320px;
+  --date-width: 170px;
+  --receipt-min: 280px;
+}
+
+.alert {
+  margin-bottom: var(--space-3);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.search {
+  width: var(--search-width);
+  max-width: 100%;
+
+  .input {
+    appearance: none;
+  }
+}
+
+.shown {
+  font-size: var(--text-sm);
+}
+
+.filters-toggle {
+  gap: var(--space-2);
+
+  &[aria-expanded='true'] {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+
+  .caret {
+    color: var(--muted);
+    font-size: var(--text-2xs);
+  }
+}
+
+/* Folding filter panel: the date shortcuts and the exact days. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+
+  &[hidden] {
+    display: none;
+  }
+
+  .field {
+    min-width: 0;
+  }
+
+  .field > label {
+    color: var(--muted);
+  }
+
+  .date {
+    width: var(--date-width);
+  }
+}
+
+/* List on the left, the chosen ticket on the right. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(var(--receipt-min), 2fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.list {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.list > .empty {
+  margin: var(--space-3);
+
+  .btn {
+    margin-left: var(--space-2);
+  }
+}
+
+.table {
+  /* The header row of the list is closed with a line, like the rows under it. */
+  thead th {
+    border-bottom: 1px solid var(--line);
+  }
+
+  th.num,
+  td.num {
+    text-align: right;
+  }
+
+  tbody tr {
+    cursor: pointer;
+  }
+
+  tbody tr.selected > td {
+    background: var(--accent-soft);
+  }
+}
+
+@media (hover: hover) {
+  .table tbody tr:not(.selected):hover > td {
+    background: var(--row-hover);
+  }
+}
+
+/* The ticket number is the real control of the row (keyboard and screen readers). */
+.open {
+  padding: 2px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+}
+
+.c-when {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.c-total {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.capped {
+  margin: 0;
+  padding: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+/* The receipt stays in view while the list scrolls. */
+.receipt {
+  position: sticky;
+  top: var(--space-4);
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.receipt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px dashed var(--line-strong);
+
+  .muted {
+    font-size: var(--text-sm);
+  }
+}
+
+.lines {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+  }
+}
+
+.line-qty {
+  color: var(--muted);
+}
+
+.line-name small {
+  display: block;
+  font-size: var(--text-xs);
+}
+
+.line-total {
+  white-space: nowrap;
+}
+
+.receipt-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px dashed var(--line-strong);
+  font-size: var(--text-sm);
+
+  .total {
+    color: var(--muted);
+  }
+
+  strong {
+    margin-left: var(--space-2);
+    color: var(--text);
+    font-size: var(--text-xl);
+    font-weight: 600;
+  }
+}
+
+.receipt-empty {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* Loading skeleton */
+.skel-in {
+  @include skeleton.reveal;
+}
+
+.ghosts {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  list-style: none;
+
+  li {
+    padding: var(--space-3) 0;
+  }
+
+  .skeleton {
+    display: block;
+    height: 12px;
+  }
+}
+
+@media (width <= 767px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .search {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .search .input,
+  .toolbar .btn {
+    min-height: var(--touch-target);
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+
+    .date {
+      width: auto;
+    }
+
+    .segmented {
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+
+      > button {
+        flex: 1 0 auto;
+        min-height: calc(var(--touch-target) - 6px);
+      }
+    }
+  }
+
+  .c-units {
+    display: none;
+  }
+
+  .table tbody td {
+    height: var(--touch-target);
+  }
+
+  .receipt {
+    position: static;
+    scroll-margin-top: var(--space-3);
+  }
+}

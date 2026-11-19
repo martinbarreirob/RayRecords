@@ -1,0 +1,416 @@
+@use '../../../core/ui/skeleton';
+
+// The screen is as tall as the space under the header: the table takes what the toolbar leaves
+// and pages to fit, so nothing scrolls.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-bottom: var(--space-4);
+}
+
+.alert {
+  margin-bottom: var(--space-3);
+}
+
+/* Search, filter toggle and how many products are on screen */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.search {
+  width: 320px;
+  max-width: 100%;
+
+  .input {
+    appearance: none;
+  }
+}
+
+.filters-toggle {
+  gap: var(--space-2);
+
+  &[aria-expanded='true'] {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+
+  .caret {
+    color: var(--muted);
+    font-size: 10px;
+  }
+}
+
+/* The filters float under their button: opening them never changes the height of the table. */
+.filters-wrap {
+  position: relative;
+}
+
+.filters {
+  position: absolute;
+  z-index: var(--z-popover);
+  top: calc(100% + var(--space-2));
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-5);
+  width: max-content;
+  max-width: min(560px, 90vw);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+
+  &[hidden] {
+    display: none;
+  }
+
+  .field {
+    min-width: 0;
+  }
+}
+
+:host ::ng-deep .filters .p-select {
+  width: 240px;
+  max-width: 100%;
+}
+
+/*
+ * The space the table gets: what is left under the toolbar and over the bottom pager. Its height
+ * is what the page size is measured from, and it never goes under the header and five rows.
+ */
+.table-area {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: calc(var(--control-height) + 5 * 44px);
+}
+
+/* Page navigation: centered under the card, outside it. Always in the same place. */
+.pager {
+  --p-paginator-background: transparent;
+  --p-paginator-padding: 0;
+  --p-paginator-border-width: 0;
+  --p-paginator-gap: var(--space-1);
+
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* Products on screen and their total stock, at the right of the toolbar. */
+.shown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+
+  .totals strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+/* Table */
+.table-card {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+
+  @include skeleton.refreshing;
+}
+
+:host ::ng-deep .p-datatable-table {
+  min-width: 720px;
+}
+
+/* The table pages by itself, but its own paginator is not shown: the ones outside the card are. */
+:host ::ng-deep .p-datatable-paginator-bottom {
+  display: none;
+}
+
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.c-name {
+  width: 36%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 500;
+}
+
+.sku {
+  margin-left: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.c-cat {
+  width: 190px;
+}
+
+/* The category is its badge (icon on its colored square) and its name. */
+.cat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  font-size: var(--text-sm);
+  vertical-align: middle;
+
+  &.cat-none {
+    color: var(--muted);
+  }
+}
+
+.cat-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-qty,
+.c-price,
+.c-value {
+  width: 130px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.c-qty .badge {
+  margin-right: var(--space-2);
+}
+
+.c-actions {
+  width: 96px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .p-datatable-tbody > tr > td.c-actions {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.empty-cell {
+  padding: var(--space-5);
+  color: var(--muted);
+  text-align: center;
+  font-size: var(--text-sm);
+
+  strong {
+    display: block;
+    margin-bottom: var(--space-1);
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .btn {
+    margin-left: var(--space-2);
+  }
+}
+
+/* Loading skeleton: ghost rows use the same cells, so they have the same size. */
+.skel-in {
+  pointer-events: none;
+
+  @include skeleton.reveal;
+}
+
+.ghost-status > td {
+  height: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ghost-name {
+  display: block;
+  height: 12px;
+}
+
+.ghost-pill {
+  display: block;
+  width: 96px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+}
+
+.ghost-num {
+  display: block;
+  width: 56px;
+  height: 12px;
+  margin-left: auto;
+}
+
+/* Hover highlight on pointer devices only: on touch it would stick after a tap. */
+@media (hover: none) {
+  :host ::ng-deep .p-datatable-hoverable .p-datatable-tbody > tr.st-row:hover {
+    background: var(--p-datatable-row-background);
+  }
+}
+
+/* Phone: the table becomes stacked rows (category and price under the name). */
+@media (width <= 767px) {
+  :host {
+    display: block;
+    height: auto;
+    min-height: 0;
+  }
+
+  .table-area {
+    display: block;
+    min-height: 0;
+  }
+
+  .toolbar {
+    gap: var(--space-2);
+  }
+
+  .filters-wrap {
+    display: contents;
+  }
+
+  .filters {
+    position: static;
+    flex-basis: 100%;
+    width: auto;
+    max-width: none;
+    margin-bottom: var(--space-3);
+    box-shadow: none;
+  }
+
+  .search {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .search .input,
+  .toolbar .btn {
+    min-height: var(--touch-target);
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters .segmented {
+    display: flex;
+
+    > button {
+      flex: 1 1 0;
+      min-height: calc(var(--touch-target) - 6px);
+      padding: 0 var(--space-1);
+    }
+  }
+
+  :host ::ng-deep .filters .p-select {
+    width: 100%;
+    min-height: var(--touch-target);
+  }
+
+  .table-card {
+    margin: 0 calc(-1 * var(--page-gutter));
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  :host ::ng-deep {
+    .p-datatable-thead {
+      display: none;
+    }
+
+    .p-datatable-table,
+    .p-datatable-tbody {
+      display: block;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .p-datatable-tbody > tr.st-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        'name qty actions'
+        'cat price actions';
+      column-gap: var(--space-3);
+      align-items: center;
+      min-height: 64px;
+      padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--line);
+
+      > td {
+        width: auto;
+        padding: 0;
+        border: 0;
+        background: transparent;
+      }
+
+      > td.c-name {
+        grid-area: name;
+        max-width: none;
+      }
+
+      > td.c-cat {
+        grid-area: cat;
+        min-width: 0;
+        font-size: var(--text-xs);
+      }
+
+      > td.c-qty {
+        grid-area: qty;
+        font-weight: 500;
+      }
+
+      > td.c-price {
+        grid-area: price;
+        color: var(--muted);
+        font-size: var(--text-xs);
+      }
+
+      > td.c-value {
+        display: none;
+      }
+
+      > td.c-actions {
+        grid-area: actions;
+      }
+    }
+
+    .p-datatable-tbody > tr > td.empty-cell,
+    .p-datatable-tbody > tr:has(> td.empty-cell) {
+      display: block;
+    }
+  }
+
+  .c-actions .btn.icon {
+    width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+}
