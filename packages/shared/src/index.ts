@@ -22,6 +22,7 @@ export * from './presets/bank-rules';
 export * from './schemas/review';
 export * from './schemas/stock';
 export * from './schemas/sales';
+export * from './receipt';
 export * from './schemas/dashboard';
 export * from './capture/types';
 export * from './capture/parse';
