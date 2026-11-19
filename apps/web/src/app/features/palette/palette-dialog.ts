@@ -54,6 +54,7 @@ import {
 import { GO_TARGETS, shortcutLabel } from '../../core/palette/go-shortcuts';
 import { PaletteService } from '../../core/palette/palette.service';
 import { RefreshBus } from '../../core/refresh';
+import { StockSearchService } from '../../core/stock-search/stock-search.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import {
   completion,
@@ -71,6 +72,7 @@ import {
   searchRemote,
   type RemoteState,
 } from './palette-search';
+import { Icon } from '../../core/ui/icon';
 
 interface PaletteData {
   lists: List[];
@@ -93,7 +95,7 @@ const GO_HINT = (Object.keys(GO_TARGETS) as (keyof typeof GO_TARGETS)[])
  */
 @Component({
   selector: 'app-palette-dialog',
-  imports: [PaletteCapture],
+  imports: [Icon, PaletteCapture],
   host: { '(document:keydown)': 'onDocumentKeydown($event)' },
   styleUrl: './palette-dialog.scss',
   templateUrl: './palette-dialog.html',
@@ -105,6 +107,7 @@ export class PaletteDialog {
   private readonly bus = inject(RefreshBus);
   private readonly listsStore = inject(ListsStore);
   private readonly theme = inject(ThemeService);
+  private readonly stockSearch = inject(StockSearchService);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -495,6 +498,10 @@ export class PaletteDialog {
       case 'go':
         this.palette.hide(false);
         void this.router.navigateByUrl(action.url);
+        break;
+      case 'stock-search':
+        this.palette.hide(false);
+        this.stockSearch.show();
         break;
       case 'start-capture':
         this.enterCapture();

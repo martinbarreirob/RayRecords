@@ -36,7 +36,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-.search .pi {
+.search app-icon {
   color: var(--accent);
   font-size: var(--text-lg);
 }
@@ -56,7 +56,7 @@
   font-weight: 500;
   white-space: nowrap;
 
-  .pi {
+  app-icon {
     font-size: var(--text-xs);
   }
 }
@@ -78,7 +78,7 @@
     background: var(--surface);
   }
 
-  .pi {
+  app-icon {
     font-size: 10px;
   }
 }
@@ -115,7 +115,7 @@
     color: var(--text);
   }
 
-  .pi {
+  app-icon {
     display: none;
     font-size: var(--text-sm);
   }
@@ -309,7 +309,7 @@
       display: none;
     }
 
-    .pi {
+    app-icon {
       display: inline;
     }
   }

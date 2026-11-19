@@ -1,79 +1,100 @@
 @if (auth.user(); as user) {
   <header class="topbar">
-    <div class="topbar-inner">
-      <div class="start">
-        <ng-template #brandContent
-          ><img class="logo" src="logo.svg" alt="" width="28" height="28" />RayRecords</ng-template
-        >
-        <!-- On a phone the brand is the button that opens the menu; elsewhere it goes home. -->
-        @if (isMobile()) {
-          <button
-            type="button"
-            class="brand"
-            aria-controls="header-menu"
-            [attr.aria-expanded]="menuOpen()"
-            (click)="menuOpen.set(!menuOpen())"
-          >
-            <ng-container [ngTemplateOutlet]="brandContent" />
-            <i class="pi pi-chevron-down caret" aria-hidden="true"></i>
-          </button>
-        } @else {
-          <a class="brand" routerLink="/"><ng-container [ngTemplateOutlet]="brandContent" /></a>
-        }
-        <!-- Icon buttons on desktop; on a phone they are a menu that the brand opens. -->
-        <div class="actions" id="header-menu" [class.open]="menuOpen()">
-          <button
-            type="button"
-            class="btn ghost icon theme-toggle"
-            [attr.aria-label]="
-              'Cambiar a tema ' + (theme.resolved() === 'dark' ? 'claro' : 'oscuro')
-            "
-            [title]="'Tema ' + theme.label().toLowerCase()"
-            (click)="toggleTheme()"
-          >
-            <i
-              class="pi"
-              [class.pi-sun]="theme.resolved() === 'dark'"
-              [class.pi-moon]="theme.resolved() === 'light'"
-              aria-hidden="true"
-            ></i>
-            <span class="label">{{
-              theme.resolved() === 'dark' ? 'Tema claro' : 'Tema oscuro'
-            }}</span>
-          </button>
-          <button
-            type="button"
-            class="btn ghost icon logout"
-            [attr.aria-label]="'Salir (' + user.username + ')'"
-            [title]="'Salir (' + user.username + ')'"
-            (click)="logout()"
-          >
-            <i class="pi pi-sign-out" aria-hidden="true"></i>
-            <span class="label">Salir</span>
+    <div class="primary">
+      <div class="topbar-inner">
+        <!-- Left: the brand and the first level, the area (each tab returns to its last section). -->
+        <div class="start">
+          <a class="brand" routerLink="/" aria-label="RayRecords">
+            <img class="logo" src="logo.svg" alt="" width="28" height="28" />
+            <span class="brand-name">RayRecords</span>
+          </a>
+          <div class="areas" role="group" aria-label="Espacio">
+            @for (area of areas; track area.id) {
+              <a
+                [routerLink]="areaTarget(area.id)"
+                [class.active]="currentArea() === area.id"
+                [attr.aria-current]="currentArea() === area.id ? 'true' : null"
+                ><span class="tab-text" [attr.data-text]="area.label">{{ area.label }}</span></a
+              >
+            }
+          </div>
+        </div>
+
+        <!-- Right: the user menu (theme and logout) and, to its right, the search. -->
+        <div class="end">
+          <div class="user-menu">
+            <button
+              type="button"
+              class="btn ghost icon user-button"
+              aria-haspopup="true"
+              aria-controls="user-menu-list"
+              [attr.aria-expanded]="menuOpen()"
+              [attr.aria-label]="'Menú de ' + user.username"
+              [title]="user.username"
+              (click)="menuOpen.set(!menuOpen())"
+            >
+              <app-icon name="user" />
+            </button>
+            <div class="actions" id="user-menu-list" [class.open]="menuOpen()">
+              <span class="who">{{ user.username }}</span>
+              <button
+                type="button"
+                class="btn ghost theme-toggle"
+                [attr.aria-label]="
+                  'Cambiar a tema ' + (theme.resolved() === 'dark' ? 'claro' : 'oscuro')
+                "
+                [title]="'Tema ' + theme.label().toLowerCase()"
+                (click)="toggleTheme()"
+              >
+                <app-icon [name]="theme.resolved() === 'dark' ? 'sun' : 'moon'" />
+                <span class="label">{{
+                  theme.resolved() === 'dark' ? 'Tema claro' : 'Tema oscuro'
+                }}</span>
+              </button>
+              @if (theme.preference() !== 'system') {
+                <button type="button" class="btn ghost theme-system" (click)="useSystemTheme()">
+                  <app-icon name="device-desktop" />
+                  <span class="label">Tema del sistema</span>
+                </button>
+              }
+              <button
+                type="button"
+                class="btn ghost logout"
+                [attr.aria-label]="'Salir (' + user.username + ')'"
+                (click)="logout()"
+              >
+                <app-icon name="logout" />
+                <span class="label">Salir</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="palette-trigger" (click)="palette.show()">
+            <app-icon name="search" />
+            <span class="palette-label">Buscar o ejecutar…</span>
+            <span class="kbd">Ctrl K</span>
+            <span class="sr-only">Abrir la paleta de comandos</span>
           </button>
         </div>
       </div>
+    </div>
 
-      <nav aria-label="Principal">
-        <a routerLink="/notas" routerLinkActive="active">Notas</a>
-        <a routerLink="/listas" routerLinkActive="active">Listas</a>
-        <a routerLink="/calendario" routerLinkActive="active">Calendario</a>
-        <a routerLink="/gastos" routerLinkActive="active">Gastos</a>
+    <!-- Second level: the sections of the current area. -->
+    <div class="secondary">
+      <nav class="secondary-inner" aria-label="Secciones">
+        @for (section of sections(); track section.url) {
+          <a [routerLink]="section.url" routerLinkActive="active"
+            ><span class="tab-text" [attr.data-text]="section.label">{{ section.label }}</span></a
+          >
+        }
       </nav>
-
-      <button type="button" class="palette-trigger" (click)="palette.show()">
-        <i class="pi pi-search" aria-hidden="true"></i>
-        <span class="palette-label">Buscar o ejecutar…</span>
-        <span class="palette-short">Buscar</span>
-        <span class="kbd">Ctrl K</span>
-        <span class="sr-only">Abrir la paleta de comandos</span>
-      </button>
     </div>
   </header>
 
   <app-command-palette />
 }
 
-<main>
+<!-- The only part that scrolls: the two header rows above stay put. -->
+<main #content [id]="scrollerId">
   <router-outlet />
 </main>

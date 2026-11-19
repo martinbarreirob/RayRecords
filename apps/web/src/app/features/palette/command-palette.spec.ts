@@ -22,7 +22,7 @@ describe('CommandPalette (shell)', () => {
       providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
     }).compileComponents();
 
-    TestBed.inject(AuthStore).user.set({ id: 'u'.repeat(24), username: 'martin' });
+    TestBed.inject(AuthStore).user.set({ id: 'u'.repeat(24), username: 'martin', theme: 'system' });
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     fixture = TestBed.createComponent(CommandPalette);

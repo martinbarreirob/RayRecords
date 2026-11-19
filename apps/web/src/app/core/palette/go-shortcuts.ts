@@ -3,6 +3,8 @@
  * (always loaded) uses them, while the palette itself is downloaded the first time it opens.
  */
 
+import { areaById, sectionOf } from '../nav/areas';
+
 export const GO_TARGETS = {
   n: { url: '/notas', label: 'Notas', keywords: 'tablero lienzo apuntes' },
   l: { url: '/listas', label: 'Listas', keywords: 'kanban tableros' },
@@ -22,6 +24,13 @@ export const SECTION_ORDER = ['/notas', '/listas', '/calendario', '/gastos'] as 
  */
 export function adjacentSection(url: string, direction: 1 | -1): string | null {
   const first = url.split(/[?#]/)[0]?.split('/')[1] ?? '';
+  // Management has its own sections; the walk stays inside the area it starts in.
+  if (first === 'gestion') {
+    const management = areaById('gestion').sections.map((section) => section.url);
+    const here = sectionOf(url)?.url;
+    const at = here === undefined ? -1 : management.indexOf(here);
+    return at < 0 ? null : (management[at + direction] ?? null);
+  }
   const index = SECTION_ORDER.findIndex((section) => section === `/${first}`);
   if (index < 0) return null;
   return SECTION_ORDER[index + direction] ?? null;

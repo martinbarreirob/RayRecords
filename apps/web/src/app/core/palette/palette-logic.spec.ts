@@ -136,7 +136,7 @@ describe('searchCommands', () => {
       action: { type: 'start-capture' },
     });
     expect(results[1]?.label).toBe('Nueva tarjeta vacía');
-    const go = results.filter((r) => r.label.startsWith('Ir a'));
+    const go = results.filter((r) => r.shortcut?.[0]?.startsWith('⇧'));
     expect(go.map((r) => r.shortcut?.join(' '))).toEqual(['⇧N', '⇧L', '⇧C', '⇧G']);
     expect(results.at(-1)?.label).toBe('Cerrar sesión');
   });
@@ -361,5 +361,29 @@ describe('highlightSegments', () => {
   it('with no query or no match returns the whole text', () => {
     expect(highlightSegments('Dune', '')).toEqual([{ text: 'Dune', match: false }]);
     expect(highlightSegments('Dune', 'zzz')).toEqual([{ text: 'Dune', match: false }]);
+  });
+});
+
+describe('management commands', () => {
+  it('"gestion" finds the four sections, the stock search and the new product', () => {
+    const labels = searchCommands('gestion', context).map((r) => r.label);
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'Ir a Dashboard',
+        'Ir a Stock',
+        'Ir a Ventas',
+        'Ir a Tickets',
+        'Buscar en el stock',
+        'Nuevo producto',
+      ]),
+    );
+  });
+
+  it('"buscar stock" runs the stock search and "nuevo producto" opens the stock form', () => {
+    expect(searchCommands('buscar stock', context)[0]?.action).toEqual({ type: 'stock-search' });
+    expect(searchCommands('nuevo producto', context)[0]?.action).toEqual({
+      type: 'go',
+      url: '/gestion/stock?nuevo=1',
+    });
   });
 });

@@ -1,48 +1,103 @@
-// The bar spans the full width (background and line), but its content lines up with the screens:
-// brand on the left, navigation centered, actions on the right.
+// Two-level bar. The first level (inverted: dark on a light theme, light on a dark one) holds, on the
+// left, the brand and the area tabs and, on the right, the user menu and the search. The second level
+// lists the sections of the current area. Both span the full width, but their content lines up with
+// the screens.
+//
+// The shell is exactly as tall as the window: the bar keeps its height and the screen below it is
+// the only thing that scrolls, so the scrollbar never runs alongside the bar.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
 .topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: var(--z-nav);
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
+  flex: none;
+}
+
+// Tabs of both rows. The text never changes the width of its tab: a hidden copy in the bold weight
+// reserves the room, so the active tab can get heavier without the others moving. The bar under the
+// tab is a pseudo-element that grows from the middle and fades, instead of a border that pops in.
+@mixin tab-bar($color) {
+  position: relative;
+  transition: color 0.2s ease;
+
+  .tab-text {
+    display: inline-block;
+    transition: font-weight 0.2s ease;
+
+    &::after {
+      content: attr(data-text);
+      display: block;
+      height: 0;
+      overflow: hidden;
+      font-weight: 600;
+      visibility: hidden;
+    }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: $color;
+    opacity: 0;
+    transform: scaleX(0.4);
+    transition:
+      opacity 0.2s ease,
+      transform 0.25s ease;
+  }
+
+  &.active::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  &.active .tab-text {
+    font-weight: 600;
+  }
+}
+
+// ---- First level -------------------------------------------------------------------------------
+
+.primary {
+  background: var(--text);
+  color: var(--bg);
 }
 
 .topbar-inner {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
-  gap: var(--space-2) var(--space-4);
+  justify-content: space-between;
+  gap: var(--space-4);
   max-width: var(--page-max);
   min-height: var(--nav-height);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter);
+  padding: 0 var(--page-gutter);
 }
 
-/* Left: the brand and the icon buttons. The search sits on the right. */
+// Left: the brand and the area tabs, stretched to the full height of the bar so the tab underline
+// sits on its bottom edge.
 .start {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  justify-self: start;
+  align-self: stretch;
+  gap: var(--space-5);
+  min-width: 0;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--text);
+  color: var(--bg);
   font-size: 15px;
   font-weight: 600;
-
-  // On a phone it is a button (it opens the menu), so it drops the button look.
-  &:is(button) {
-    padding: 0;
-    border: 0;
-    background: none;
-    font-family: inherit;
-    cursor: pointer;
-  }
 
   &:hover {
     text-decoration: none;
@@ -52,202 +107,256 @@
     flex: none;
     width: 28px;
     height: 28px;
-  }
-
-  .caret {
-    color: var(--muted);
-    font-size: var(--text-xs);
-    transition: transform 0.15s;
-  }
-
-  &[aria-expanded='true'] .caret {
-    transform: rotate(180deg);
+    border-radius: 50%;
+    // The disc is dark: a thin light ring keeps it visible on the dark bar.
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bg) 35%, transparent);
   }
 }
 
-nav {
+// The area tabs look like the section tabs below: an underline on the current one.
+.areas {
   display: flex;
-  justify-content: center;
+  align-self: stretch;
   gap: 2px;
 
   a {
     display: inline-flex;
     align-items: center;
-    min-height: var(--control-height);
-    padding: 0 var(--space-3);
-    border-radius: var(--radius-sm);
-    color: var(--muted);
+    padding: 0 var(--space-4);
+    color: color-mix(in srgb, var(--bg) 65%, transparent);
     font-size: var(--text-base);
     white-space: nowrap;
-    transition:
-      background-color 0.15s,
-      color 0.15s;
+    @include tab-bar(var(--bg));
 
     &:hover {
-      background: var(--surface-2);
-      color: var(--text);
+      color: var(--bg);
       text-decoration: none;
     }
 
     &.active {
-      background: var(--surface-2);
-      color: var(--text);
-      font-weight: 500;
+      color: var(--bg);
     }
   }
 }
 
-.actions {
+// Right: the user button (with its menu) and, to its right, the search.
+.end {
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: var(--space-1);
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
-.palette-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-self: end;
-  gap: var(--space-2);
-  min-height: 40px;
-  padding: 0 var(--space-2) 0 var(--space-4);
+.user-menu {
+  position: relative;
+}
+
+.user-button {
+  color: color-mix(in srgb, var(--bg) 75%, transparent);
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: color-mix(in srgb, var(--bg) 16%, transparent);
+    color: var(--bg);
+  }
+}
+
+// The menu is a light panel (not on the dark bar), so its buttons use the normal colors.
+.actions {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: var(--z-nav);
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 220px;
+  padding: var(--space-1);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  color: var(--muted);
-  font-size: var(--text-base);
-  cursor: pointer;
-  transition: border-color 0.15s;
+  box-shadow: var(--shadow-md);
 
-  &:hover {
-    border-color: var(--line-strong);
+  &.open {
+    display: flex;
   }
 
-  .pi {
+  .who {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: var(--space-1);
+    color: var(--muted);
     font-size: var(--text-sm);
   }
 
-  .palette-label {
-    margin-right: var(--space-4);
+  .btn {
+    justify-content: flex-start;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--control-height);
+    padding: 0 var(--space-3);
+    color: var(--muted);
+
+    &:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
   }
 
-  .palette-short {
-    display: none;
+  .label {
+    font-size: var(--text-base);
   }
-}
-
-.actions .label {
-  display: none;
 }
 
 .logout:hover {
   color: var(--danger);
 }
 
-main {
-  display: block;
+.palette-trigger {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 360px;
+  min-height: 40px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: color-mix(in srgb, var(--bg) 75%, transparent);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--bg) 60%, transparent);
+    color: var(--bg);
+  }
+
+  app-icon {
+    font-size: var(--text-sm);
+  }
+
+  // The label takes the free space of the search, which grows with the bar and pushes the shortcut
+  // to the right edge.
+  .palette-label {
+    flex: 1;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kbd {
+    border-color: color-mix(in srgb, var(--bg) 30%, transparent);
+    background: transparent;
+    color: inherit;
+  }
 }
 
-// Medium width: the palette keeps a short label («Buscar») so the navigation stays centered.
-@media (width <= 1023px) {
+// ---- Second level ------------------------------------------------------------------------------
+
+.secondary {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.secondary-inner {
+  display: flex;
+  gap: 2px;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter);
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    color: var(--muted);
+    font-size: var(--text-base);
+    white-space: nowrap;
+    @include tab-bar(var(--accent));
+
+    &:hover {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    &.active {
+      color: var(--text);
+    }
+  }
+}
+
+// The gutter is reserved on both sides whether or not there is a scrollbar, so the screens stay
+// centred under the bar and nothing shifts when one appears.
+main {
+  position: relative;
+  display: block;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+@media (width <= 767px) {
+  // The brand shrinks to the logo and the search to an icon, so the area tabs and the user button
+  // fit in one row.
+  .topbar-inner {
+    gap: var(--space-2);
+  }
+
+  .start {
+    gap: var(--space-3);
+  }
+
+  .brand {
+    min-height: var(--touch-target);
+
+    .brand-name {
+      display: none;
+    }
+  }
+
+  .areas a {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-3);
+  }
+
   .palette-trigger {
-    padding: 0 var(--space-4);
+    flex: none;
+    justify-content: center;
+    width: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
 
     .palette-label,
     .kbd {
       display: none;
     }
-
-    .palette-short {
-      display: inline;
-    }
-  }
-}
-
-@media (width <= 767px) {
-  // First row: the brand (opens the menu) and the search, which takes all the remaining width.
-  // Second row: the navigation, which scrolls.
-  .topbar-inner {
-    grid-template-columns: auto 1fr;
-    gap: 0 var(--space-3);
-    padding-bottom: 0;
   }
 
-  .brand {
+  .actions .btn {
     min-height: var(--touch-target);
   }
 
-  .palette-trigger {
-    justify-self: stretch;
-    min-height: var(--touch-target);
-    padding: 0 var(--space-4);
-
-    .palette-short {
-      flex: 1;
-      text-align: left;
-    }
-
-    .kbd {
-      display: none;
-    }
-  }
-
-  // The theme toggle and logout become a menu under the brand.
-  .actions {
-    position: absolute;
-    top: calc(var(--space-2) + var(--touch-target));
-    left: var(--page-gutter);
-    z-index: var(--z-nav);
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    min-width: 220px;
-    padding: var(--space-1);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    box-shadow: var(--shadow-md);
-
-    &.open {
-      display: flex;
-    }
-
-    .btn.icon {
-      justify-content: flex-start;
-      gap: var(--space-3);
-      width: auto;
-      height: var(--touch-target);
-      padding: 0 var(--space-3);
-    }
-
-    .label {
-      display: inline;
-      font-size: var(--text-base);
-    }
-  }
-
-  nav {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-content: stretch;
-    width: calc(100% + var(--page-gutter) * 2);
-    margin: 0 calc(var(--page-gutter) * -1);
+  .secondary-inner {
     padding: 0;
     overflow-x: auto;
     scrollbar-width: none;
 
-    /* The four tabs share the whole width evenly. */
+    // The tabs share the whole width evenly; with more than fit they scroll.
     a {
       flex: 1 0 auto;
       justify-content: center;
       min-height: var(--touch-target);
-      padding: 0 var(--space-2);
-      border-radius: 0;
-
-      &.active {
-        background: transparent;
-        box-shadow: inset 0 -2px 0 var(--accent);
-      }
+      padding: 0 var(--space-3);
     }
   }
 }

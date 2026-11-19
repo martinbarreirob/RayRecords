@@ -1,7 +1,7 @@
 <div class="body">
   @if (feedback(); as done) {
     <p class="done" role="status">
-      <i class="pi pi-check" aria-hidden="true"></i>
+      <app-icon name="check" />
       <span class="message">{{ done.message }}</span>
       @if (done.link) {
         <button type="button" class="link" (click)="opened.emit(done.link)">Ver</button>
@@ -14,7 +14,7 @@
 
   @if (error()) {
     <p class="error" role="alert">
-      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      <app-icon name="alert-circle" />
       <span class="message">{{ error() }}</span>
     </p>
   }
@@ -28,13 +28,11 @@
           [class.accent]="plan.target === 'list'"
           [class.warn]="plan.incomplete"
         >
-          <i
-            class="pi"
-            [class.pi-list]="plan.target === 'list'"
-            [class.pi-clone]="plan.target === 'note'"
-            [class.pi-exclamation-circle]="plan.target === 'none'"
-            aria-hidden="true"
-          ></i>
+          <app-icon
+            [name]="
+              plan.target === 'list' ? 'list' : plan.target === 'note' ? 'copy' : 'alert-circle'
+            "
+          />
           {{ plan.destination }}
         </span>
       </div>

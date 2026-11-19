@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { completion, type PrefixOption } from '../capture/capture-prefix';
 import type { CapturePreview } from '../capture/capture-preview';
+import { Icon } from '../../core/ui/icon';
 
 /** What is shown after saving: what was added, where to see it and how to undo it. */
 export interface CaptureFeedback {
@@ -26,6 +27,7 @@ const EXAMPLES: readonly { text: string; effect: string }[] = [
  */
 @Component({
   selector: 'app-palette-capture',
+  imports: [Icon],
   styleUrl: './palette-capture.scss',
   templateUrl: './palette-capture.html',
 })

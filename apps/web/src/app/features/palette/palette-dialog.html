@@ -15,7 +15,7 @@
       <div class="search">
         @if (mode() === 'capture') {
           <span class="mode-chip">
-            <i class="pi pi-plus" aria-hidden="true"></i>
+            <app-icon name="plus" />
             Nueva nota o tarea
             <button
               type="button"
@@ -25,11 +25,11 @@
               [disabled]="saving()"
               (click)="exitCapture()"
             >
-              <i class="pi pi-times" aria-hidden="true"></i>
+              <app-icon name="x" />
             </button>
           </span>
         } @else {
-          <i class="pi pi-search" aria-hidden="true"></i>
+          <app-icon name="search" />
         }
         <input
           #field
@@ -62,7 +62,7 @@
           (click)="palette.hide()"
         >
           <span class="esc">Esc</span>
-          <i class="pi pi-times" aria-hidden="true"></i>
+          <app-icon name="x" />
         </button>
       </div>
 

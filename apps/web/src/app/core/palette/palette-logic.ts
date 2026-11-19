@@ -1,5 +1,6 @@
 import type { Item, List, NoteCard, Transaction } from '@rayrecords/shared';
 import { formatCents } from '../format';
+import { MANAGEMENT_SECTIONS } from '../nav/areas';
 import { GO_TARGETS, shortcutLabel, type GoKey } from './go-shortcuts';
 
 /**
@@ -26,6 +27,7 @@ export type PaletteAction =
   | { type: 'go'; url: string }
   | { type: 'new-note' }
   | { type: 'start-capture' }
+  | { type: 'stock-search' }
   | { type: 'toggle-theme' }
   | { type: 'logout' }
   | { type: 'capture'; text: string };
@@ -216,6 +218,28 @@ const COMMANDS: readonly CommandDef[] = [
       action: { type: 'go', url: target.url },
     }),
   ),
+  // Management: its sections (the personal ones above carry their Shift shortcut) and the stock.
+  ...MANAGEMENT_SECTIONS.map((section): CommandDef => ({
+    id: `go-gestion-${section.url.split('/').pop()}`,
+    label: `Ir a ${section.label}`,
+    keywords: `gestion negocio tienda ${section.label} abrir ir`,
+    hint: () => 'gestión',
+    action: { type: 'go', url: section.url },
+  })),
+  {
+    id: 'stock-search',
+    label: 'Buscar en el stock',
+    keywords: 'gestion producto productos inventario existencias referencia vender venta',
+    action: { type: 'stock-search' },
+    hint: () => 'gestión',
+  },
+  {
+    id: 'new-product',
+    label: 'Nuevo producto',
+    keywords: 'gestion anadir crear producto stock inventario',
+    action: { type: 'go', url: '/gestion/stock?nuevo=1' },
+    hint: () => 'en el stock',
+  },
   {
     id: 'toggle-theme',
     label: 'Cambiar tema',

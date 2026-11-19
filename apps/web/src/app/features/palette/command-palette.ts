@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { canUseGlobalShortcut, goShortcutTarget } from '../../core/palette/go-shortcuts';
 import { PaletteService } from '../../core/palette/palette.service';
+import { StockSearchService } from '../../core/stock-search/stock-search.service';
+import { StockSearchDialog } from '../stock-search/stock-search-dialog';
 import { PaletteDialog } from './palette-dialog';
 
 /**
@@ -13,16 +15,20 @@ import { PaletteDialog } from './palette-dialog';
  */
 @Component({
   selector: 'app-command-palette',
-  imports: [PaletteDialog],
+  imports: [PaletteDialog, StockSearchDialog],
   host: { '(document:keydown)': 'onKeydown($event)' },
   template: `
     @defer (when palette.isOpen(); prefetch on idle) {
       <app-palette-dialog />
     }
+    @defer (when stockSearch.isOpen(); prefetch on idle) {
+      <app-stock-search-dialog />
+    }
   `,
 })
 export class CommandPalette {
   protected readonly palette = inject(PaletteService);
+  protected readonly stockSearch = inject(StockSearchService);
   private readonly router = inject(Router);
 
   /**

@@ -155,4 +155,12 @@ describe('adjacentSection (Alt+← / Alt+→)', () => {
     expect(adjacentSection('/login', 1)).toBeNull();
     expect(adjacentSection('/', 1)).toBeNull();
   });
+
+  it('inside management it walks the management sections and never leaves the area', () => {
+    expect(adjacentSection('/gestion/dashboard', 1)).toBe('/gestion/stock');
+    expect(adjacentSection('/gestion/tickets', -1)).toBe('/gestion/ventas');
+    expect(adjacentSection('/gestion/dashboard', -1)).toBeNull();
+    expect(adjacentSection('/gestion/tickets', 1)).toBeNull();
+    expect(adjacentSection('/gestion', 1)).toBeNull();
+  });
 });
