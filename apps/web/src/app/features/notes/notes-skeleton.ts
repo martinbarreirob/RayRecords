@@ -82,7 +82,7 @@ interface GhostGroup {
     /* Same measures as app-note-group: box with header and the cards inside. */
     .ghost-group {
       position: absolute;
-      border-radius: var(--radius-xl);
+      border-radius: var(--radius-md);
       background: var(--surface-2);
       box-shadow: inset 0 0 0 1.5px var(--line);
     }

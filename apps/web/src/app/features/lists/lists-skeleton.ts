@@ -96,7 +96,7 @@ export type ListsSkeletonVariant = 'grid' | 'table' | 'board';
     .wrap {
       overflow: hidden;
       border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-container);
       background: var(--surface);
     }
 

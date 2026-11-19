@@ -19,7 +19,7 @@ import { Icon } from '../../core/ui/icon';
     .wrap {
       overflow-x: auto;
       border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-container);
       background: var(--surface);
     }
 

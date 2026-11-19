@@ -68,7 +68,7 @@ function sameList(a: readonly number[], b: readonly number[]): boolean {
       /* Inside the outline of the box, which is an inner shadow one pixel wide. */
       margin: 0 1px 1px;
       padding: var(--space-1) var(--space-3);
-      border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+      border-radius: 0 0 calc(var(--radius-container) - 1px) calc(var(--radius-container) - 1px);
       background: var(--bg);
       color: var(--muted);
       font-size: var(--text-xs);

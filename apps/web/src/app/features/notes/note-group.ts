@@ -27,7 +27,7 @@ import type { NoteGroup } from '@rayrecords/shared';
      */
     :host {
       position: absolute;
-      border-radius: var(--radius-xl);
+      border-radius: var(--radius-md);
       background: var(--surface-2);
       box-shadow:
         inset 0 0 0 1.5px var(--line),
@@ -81,7 +81,7 @@ import type { NoteGroup } from '@rayrecords/shared';
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
-      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
       cursor: grab;
       user-select: none;
       touch-action: none;

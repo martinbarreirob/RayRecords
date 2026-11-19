@@ -78,7 +78,7 @@ app-page-header {
   overflow: auto;
   touch-action: pan-x pan-y;
   user-select: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   /* Bounded, subtle box. The border is an inner shadow, not border: so the cards' origin (left/top) matches x/y. */
   box-shadow: inset 0 0 0 1px var(--line);
   /* The outline always exists, transparent: only its colour is animated (the style is not). */
@@ -98,7 +98,7 @@ app-page-header {
   min-width: 0;
   /* Never less than a few notes tall: on a very short window the page scrolls instead. */
   min-height: 240px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -249,7 +249,7 @@ app-page-header {
 
   .undo {
     min-height: 56px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-container);
   }
 
   .undo button {
