@@ -27,7 +27,7 @@ Base: `/api`. In production nginx routes `/api/` to the `api` container (port 30
 | `POST`  | `/api/auth/login`  | `{ id, username }`                  | Body `{ username, password }`. Creates the session and sets the cookie. Generic 401 if the credentials are invalid; 429 after 10 attempts per IP in 15 min. |
 | `POST`  | `/api/auth/logout` | 204                                 | Revokes the session on the server and clears the cookie.                                                                                                    |
 | `GET`   | `/api/auth/me`     | `{ id, username }`                  | User of the current session (used by the Angular guard).                                                                                                    |
-| `PATCH` | `/api/auth/me`     | `User`                              | `UpdateUser`: `{ theme }` (`system`, `light` or `dark`). Saves the theme in the account; `User` carries it (`system` until one is chosen).                  |
+| `PATCH` | `/api/auth/me`     | `User`                              | `UpdateUser`: `{ theme }` (`system`, `light` or `dark`). Saves the theme in the account; `User` carries it (`light` until one is chosen).                   |
 
 ## Lists and items
 
