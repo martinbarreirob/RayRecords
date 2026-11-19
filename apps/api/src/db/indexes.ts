@@ -75,6 +75,21 @@ export async function ensureIndexes(c: Collections): Promise<void> {
 
     c.importBatches.createIndexes([{ key: { createdAt: -1 }, name: 'created' }]),
 
+    c.products.createIndexes([
+      { key: { name: 1 }, name: 'name' }, // the stock table, sorted by name
+      { key: { categoryId: 1 }, name: 'category' }, // releasing products when a category goes
+    ]),
+
+    c.stockCategories.createIndexes([
+      { key: { nameKey: 1 }, unique: true, name: 'nameKey_unique' },
+    ]),
+
+    // Unique: two sales racing for the same number cannot both get it. Also the newest-first list.
+    c.tickets.createIndexes([
+      { key: { number: 1 }, unique: true, name: 'number_unique' },
+      { key: { createdAt: -1 }, name: 'created' }, // the date filter of the tickets screen
+    ]),
+
     c.users.createIndexes([{ key: { username: 1 }, unique: true, name: 'username_unique' }]),
 
     c.sessions.createIndexes([

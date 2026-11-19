@@ -28,7 +28,7 @@ function toAccount(doc: AccountDoc) {
 }
 
 export const accountsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   /** The balance is not stored: opening balance plus the sum of the account's transactions. */
   async function summarize(docs: AccountDoc[]): Promise<AccountSummary[]> {

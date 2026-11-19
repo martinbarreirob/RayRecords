@@ -23,6 +23,12 @@ export async function syncCatalog(c: Collections): Promise<CatalogSyncResult> {
       updateOne: { filter: { _id: key }, update: { $setOnInsert: rest }, upsert: true },
     })),
   );
+  // Default categories saved before they had a look get theirs; one the user has styled is left.
+  await c.categories.bulkWrite(
+    DEFAULT_CATEGORIES.map(({ key, name: _name, ...look }) => ({
+      updateOne: { filter: { _id: key, icon: { $exists: false } }, update: { $set: look } },
+    })),
+  );
   const migrated = await migrateLegacyCategories(c);
   const rules = await c.rules.bulkWrite(
     BANK_RULES.map((rule) => ({

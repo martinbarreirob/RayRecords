@@ -50,7 +50,7 @@ interface GroupRow {
  * separate state.
  */
 export const reviewRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   app.get(
     '/review/queue',

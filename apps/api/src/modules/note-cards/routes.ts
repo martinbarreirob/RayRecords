@@ -28,7 +28,7 @@ const IdParams = z.object({ id: ObjectIdString });
 
 /** Notes as cards on a canvas, with groups. See docs/ARCHITECTURE.md. */
 export const noteCardsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   app.get('/note-cards', { schema: { response: { 200: NoteBoardSchema } } }, async () => {
     const { cards, groups } = await listBoard(c);

@@ -26,7 +26,7 @@ function captureExtra(item: CaptureItem): Extra {
  * anything that does not fit ends up as a note card in the first free spot of the canvas.
  */
 export const captureRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   app.post(
     '/capture',

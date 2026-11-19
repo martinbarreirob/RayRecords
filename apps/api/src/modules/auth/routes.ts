@@ -1,5 +1,6 @@
-import { LoginInputSchema, UserSchema } from '@rayrecords/shared';
+import { LoginInputSchema, UpdateUserSchema, UserSchema } from '@rayrecords/shared';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import { ApiError } from '../../http/errors';
 import { setSessionCookie } from './guard';
@@ -33,7 +34,11 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         request.headers['user-agent'],
       );
       setSessionCookie(reply, token, expiresAt, request.protocol === 'https');
-      return { id: user._id.toHexString(), username: user.username };
+      return {
+        id: user._id.toHexString(),
+        username: user.username,
+        theme: user.theme ?? 'system',
+      };
     },
   );
 
@@ -45,7 +50,19 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.get('/auth/me', { schema: { response: { 200: UserSchema } } }, async (request) => {
-    const { id, username } = request.user!;
-    return { id, username };
+    const { id, username, theme } = request.user!;
+    return { id, username, theme };
   });
+
+  /** The user's own preferences; for now, the theme. */
+  app.patch(
+    '/auth/me',
+    { schema: { body: UpdateUserSchema, response: { 200: UserSchema } } },
+    async (request) => {
+      const { id, username } = request.user!;
+      const { theme } = request.body;
+      await app.db.collections.users.updateOne({ _id: new ObjectId(id) }, { $set: { theme } });
+      return { id, username, theme };
+    },
+  );
 };

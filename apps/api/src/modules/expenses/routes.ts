@@ -1,7 +1,13 @@
 import {
+  CATEGORY_ICONS,
   CategorizationRuleSchema,
   CategorySchema,
+  CategoryUsageSchema,
+  CreateCategorySchema,
   CreateRuleSchema,
+  DEFAULT_CATEGORY_COLOR,
+  DEFAULT_CATEGORY_ICON,
+  DEFAULT_CATEGORY_ICON_COLOR,
   ImportBatchSchema,
   ImportResultSchema,
   MonthlyCategoryTotalSchema,
@@ -15,13 +21,15 @@ import {
   UpdateCategorySchema,
   UpdateRuleSchema,
   FieldKey,
+  type Category,
 } from '@rayrecords/shared';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { MongoBulkWriteError, ObjectId, type Filter } from 'mongodb';
 import { z } from 'zod';
-import type { RuleDoc, TransactionDoc } from '../../db/documents';
+import type { CategoryDoc, RuleDoc, TransactionDoc } from '../../db/documents';
 import { ApiError } from '../../http/errors';
 import { isDuplicateKey } from '../../http/mongo';
+import { categoryNameKey, freeKey } from '../categories/naming';
 import { applyRulesToUncategorized } from './apply-rules';
 import { CsvFormatError, decodeCsv, parseBankCsv } from './csv';
 import { toDateOnly, toTransaction } from './mapper';
@@ -41,6 +49,23 @@ const toRule = (doc: RuleDoc) => ({
   active: doc.active,
 });
 
+/**
+ * Categories saved before they had a look get the default one, and so does an icon that is no
+ * longer on the list. The old single `color` was a strong hue meant for text and dots: without
+ * its icon color it would not read as a square, so it is not reused.
+ */
+function toCategory(doc: CategoryDoc): Category {
+  const icon = CATEGORY_ICONS.find((name) => name === doc.icon);
+  const styled = icon !== undefined && doc.color !== undefined && doc.iconColor !== undefined;
+  return {
+    key: doc._id,
+    name: doc.name,
+    icon: icon ?? DEFAULT_CATEGORY_ICON,
+    color: styled ? doc.color! : DEFAULT_CATEGORY_COLOR,
+    iconColor: styled ? doc.iconColor! : DEFAULT_CATEGORY_ICON_COLOR,
+  };
+}
+
 function assertRegex(matchType: string | undefined, pattern: string | undefined): void {
   if (matchType !== 'regex' || pattern === undefined) return;
   try {
@@ -52,7 +77,16 @@ function assertRegex(matchType: string | undefined, pattern: string | undefined)
 
 /** Categories, rules, transactions, statement import and the monthly summary. */
 export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
+
+  /** Two categories cannot share a name, ignoring accents and capitals. */
+  async function assertNameFree(name: string, exceptKey?: string): Promise<void> {
+    const wanted = categoryNameKey(name);
+    const taken = (await c.categories.find().toArray()).some(
+      (doc) => doc._id !== exceptKey && categoryNameKey(doc.name) === wanted,
+    );
+    if (taken) throw new ApiError(409, 'conflict', `Ya existe la categoría «${name}»`);
+  }
 
   async function assertCategoryExists(key: string): Promise<void> {
     if (!(await c.categories.findOne({ _id: key }, { projection: { _id: 1 } }))) {
@@ -64,23 +98,38 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/categories', { schema: { response: { 200: z.array(CategorySchema) } } }, async () => {
     const docs = await c.categories.find().sort({ name: 1 }).toArray();
-    return docs.map(({ _id, ...rest }) => ({ key: _id, ...rest }));
+    return docs.map(toCategory);
+  });
+
+  /** Transactions per category, so the manager can say what deleting one affects. */
+  app.get('/categories/usage', { schema: { response: { 200: CategoryUsageSchema } } }, async () => {
+    const rows = await c.transactions
+      .aggregate<{ _id: string; count: number }>([
+        { $match: { category: { $type: 'string' } } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+      ])
+      .toArray();
+    return Object.fromEntries(rows.map((row) => [row._id, row.count]));
   });
 
   app.post(
     '/categories',
-    { schema: { body: CategorySchema, response: { 201: CategorySchema } } },
+    { schema: { body: CreateCategorySchema, response: { 201: CategorySchema } } },
     async (request, reply) => {
-      const { key, ...rest } = request.body;
+      const { key: given, name, icon, color, iconColor } = request.body;
+      await assertNameFree(name);
+      const taken = new Set((await c.categories.find().toArray()).map((doc) => doc._id));
+      const key = given ?? freeKey(name, taken);
+      const doc: CategoryDoc = { _id: key, name, icon, color, iconColor };
       try {
-        await c.categories.insertOne({ _id: key, ...rest });
+        await c.categories.insertOne(doc);
       } catch (error) {
         if (isDuplicateKey(error)) {
           throw new ApiError(409, 'conflict', `Ya existe la categoría «${key}»`);
         }
         throw error;
       }
-      return reply.status(201).send(request.body);
+      return reply.status(201).send(toCategory(doc));
     },
   );
 
@@ -90,14 +139,28 @@ export const expensesRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: { params: KeyParams, body: UpdateCategorySchema, response: { 200: CategorySchema } },
     },
     async (request) => {
+      const { key } = request.params;
+      if (request.body.name !== undefined) await assertNameFree(request.body.name, key);
+      const current = await c.categories.findOne({ _id: key });
+      if (!current) throw new ApiError(404, 'not_found', 'La categoría no existe');
+      // The first change to a category saved without a look settles the whole look, so the part
+      // that was not touched does not stay undefined.
+      const look = toCategory(current);
       const doc = await c.categories.findOneAndUpdate(
-        { _id: request.params.key },
-        { $set: request.body },
+        { _id: key },
+        {
+          $set: {
+            name: look.name,
+            icon: look.icon,
+            color: look.color,
+            iconColor: look.iconColor,
+            ...request.body,
+          },
+        },
         { returnDocument: 'after' },
       );
       if (!doc) throw new ApiError(404, 'not_found', 'La categoría no existe');
-      const { _id, ...rest } = doc;
-      return { key: _id, ...rest };
+      return toCategory(doc);
     },
   );
 

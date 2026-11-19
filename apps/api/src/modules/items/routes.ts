@@ -17,7 +17,7 @@ import { assertValidExtra, createItem, groupFilter, nextOrder, resolveColumn } f
 const IdParams = z.object({ id: ObjectIdString });
 
 export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   async function loadItem(id: string) {
     const item = await c.items.findOne({ _id: new ObjectId(id) });

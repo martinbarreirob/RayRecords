@@ -27,7 +27,7 @@ export function toEvent(doc: EventDoc): CalendarEvent {
 
 /** Events that belong to the calendar only, not to any list. */
 export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   app.post(
     '/events',

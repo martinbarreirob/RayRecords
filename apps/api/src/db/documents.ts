@@ -9,6 +9,11 @@ import type {
   List,
   NoteCard,
   NoteGroup,
+  Product,
+  StockCategory,
+  ThemePreference,
+  Ticket,
+  TicketLine,
   Transaction,
 } from '@rayrecords/shared';
 
@@ -53,9 +58,33 @@ export type TransactionDoc = Omit<Transaction, 'id' | 'accountId' | 'date' | 'im
 };
 
 /** The category key is its `_id`, so it is unique without a separate index. */
-export type CategoryDoc = Omit<Category, 'key'> & { _id: string };
+export type CategoryDoc = Omit<Category, 'key' | 'icon' | 'color' | 'iconColor'> & {
+  _id: string;
+  /** Missing on categories saved before they had a look: the default one is shown. */
+  icon?: string;
+  color?: string;
+  iconColor?: string;
+};
 
 export type RuleDoc = Omit<CategorizationRule, 'id'> & { _id: ObjectId };
+
+/** `nameKey` is the name without accents or capitals: its unique index stops near-duplicates. */
+export type StockCategoryDoc = Omit<StockCategory, 'id' | 'createdAt'> & {
+  _id: ObjectId;
+  nameKey: string;
+  createdAt: Date;
+};
+
+/** `categoryId` is always stored (as `null`) so uncategorized products can be filtered. */
+export type ProductDoc = Omit<Product, 'id' | 'categoryId' | 'createdAt' | 'updatedAt'> &
+  Timestamps & { _id: ObjectId; categoryId: ObjectId | null };
+
+/** A sale. `number` is consecutive and unique; the lines copy the name and price of the moment. */
+export type TicketDoc = Omit<Ticket, 'id' | 'lines' | 'createdAt'> & {
+  _id: ObjectId;
+  lines: (Omit<TicketLine, 'productId'> & { productId: ObjectId })[];
+  createdAt: Date;
+};
 
 export interface ImportBatchDoc {
   _id: ObjectId;
@@ -70,6 +99,14 @@ export interface UserDoc {
   _id: ObjectId;
   username: string;
   passwordHash: string;
+  /**
+   * Prefix of the collections holding this user's data (notes, lists, expenses, stock, sales), like
+   * `demo_` for `demo_lists`. Missing for the first user, whose collections have no prefix. The
+   * users and sessions are shared and never prefixed.
+   */
+  dataPrefix?: string;
+  /** Missing until the user picks one: the device's theme is used. */
+  theme?: ThemePreference;
   createdAt: Date;
 }
 

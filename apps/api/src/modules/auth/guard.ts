@@ -1,12 +1,17 @@
+import type { ThemePreference } from '@rayrecords/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { ApiError } from '../../http/errors';
 import { isOriginAllowed } from '../../http/origin';
+import { runWithData } from '../../db/scope';
 import { SESSION_COOKIE, resolveSession } from './sessions';
 
 export interface SessionUser {
   id: string;
   username: string;
+  theme: ThemePreference;
   sessionId: string;
+  /** Prefix of this user's data collections (see `UserDoc.dataPrefix`). */
+  dataPrefix?: string;
 }
 
 declare module 'fastify' {
@@ -70,11 +75,22 @@ export function registerAuthGuard(
     request.user = {
       id: user._id.toHexString(),
       username: user.username,
+      theme: user.theme ?? 'system',
       sessionId: resolved.session._id,
+      ...(user.dataPrefix !== undefined && { dataPrefix: user.dataPrefix }),
     };
     // Sliding renewal: when the session was extended, the cookie must reflect it.
     if (resolved.renewedUntil) {
       setSessionCookie(reply, token, resolved.renewedUntil, request.protocol === 'https');
     }
+  });
+
+  // Everything after this point works on the data of the user who made the request, and only on it:
+  // the rest of the request runs inside that user's scope (see `db/scope.ts`).
+  api.addHook('onRequest', (request, _reply, done) => {
+    if (!request.user) return done();
+    api.db
+      .forUser(request.user.dataPrefix)
+      .then((collections) => runWithData(collections, done), done);
   });
 }

@@ -3,10 +3,12 @@ import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import type { Config } from './config';
-import type { Database } from './db/client';
+import type { Collections, Database } from './db/client';
+import { scopedCollections } from './db/scope';
 import { registerErrorHandling } from './http/errors';
 import { authRoutes } from './modules/auth/routes';
 import { registerAuthGuard } from './modules/auth/guard';
+import { dashboardRoutes } from './modules/dashboard/routes';
 import { expensesRoutes } from './modules/expenses/routes';
 import { reviewRoutes } from './modules/expenses/review-routes';
 import { healthRoutes } from './modules/health/routes';
@@ -18,10 +20,14 @@ import { itemsRoutes } from './modules/items/routes';
 import { listsRoutes } from './modules/lists/routes';
 import { noteCardsRoutes } from './modules/note-cards/routes';
 import { notesRoutes } from './modules/notes/routes';
+import { salesRoutes } from './modules/sales/routes';
+import { stockRoutes } from './modules/stock/routes';
 
 declare module 'fastify' {
   interface FastifyInstance {
     db: Database;
+    /** The data of the user making the request (see `db/scope.ts`). */
+    data: Collections;
   }
 }
 
@@ -47,6 +53,7 @@ export async function buildApp({ config, database }: AppOptions): Promise<Fastif
   registerErrorHandling(app);
 
   app.decorate('db', database);
+  app.decorate('data', scopedCollections());
   await app.register(cookie);
 
   // Responses are tied to the session, so they must never be cached. The other security headers
@@ -78,6 +85,9 @@ export async function buildApp({ config, database }: AppOptions): Promise<Fastif
       await api.register(accountsRoutes);
       await api.register(expensesRoutes);
       await api.register(reviewRoutes);
+      await api.register(stockRoutes);
+      await api.register(salesRoutes);
+      await api.register(dashboardRoutes);
     },
     { prefix: '/api' },
   );

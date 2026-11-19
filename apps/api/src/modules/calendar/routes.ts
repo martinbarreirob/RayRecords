@@ -36,7 +36,7 @@ function entry(
 }
 
 export const calendarRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   /**
    * Items with a `dueDate` between `from` and `to` (both inclusive) from non-archived lists, plus

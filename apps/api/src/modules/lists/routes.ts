@@ -39,7 +39,7 @@ async function aliasConflict(c: Collections, alias: string | undefined): Promise
 }
 
 export const listsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const c = app.db.collections;
+  const c = app.data;
 
   app.get(
     '/lists',
