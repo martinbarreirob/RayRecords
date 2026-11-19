@@ -36,6 +36,7 @@ import {
   type TileSize,
 } from './sales-logic';
 import { Icon } from '../../../core/ui/icon';
+import { TicketPrinter } from '../../../core/print/ticket-printer';
 
 /**
  * Point of sale in two columns. Left, three quarters: the products as a bento grid (the best
@@ -60,14 +61,12 @@ import { Icon } from '../../../core/ui/icon';
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
     }
-    @if (notice(); as message) {
+    @if (printed(); as last) {
       <p class="alert success" role="status">
-        {{ message }}
-        @if (lastTicketId(); as id) {
-          <a class="see-ticket" routerLink="/gestion/tickets" [queryParams]="{ ticket: id }">
-            Ver ticket
-          </a>
-        }
+        Ticket n.º {{ last.number }} impreso · {{ money(last.totalCents) }}
+        <a class="see-ticket" routerLink="/gestion/tickets" [queryParams]="{ ticket: last.id }">
+          Ver ticket
+        </a>
       </p>
     }
 
@@ -287,7 +286,7 @@ import { Icon } from '../../../core/ui/icon';
             [disabled]="!rows().length || saving()"
             (click)="generateTicket()"
           >
-            {{ saving() ? 'Generando…' : 'Generar ticket' }}
+            {{ saving() ? 'Imprimiendo…' : 'Imprimir ticket' }}
           </button>
         </footer>
       </aside>
@@ -296,6 +295,7 @@ import { Icon } from '../../../core/ui/icon';
 })
 export class SalesPage {
   private readonly api = inject(ApiClient);
+  private readonly printer = inject(TicketPrinter);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly cart = inject(CartStore);
   protected readonly stockSearch = inject(StockSearchService);
@@ -314,9 +314,10 @@ export class SalesPage {
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly error = signal('');
-  protected readonly notice = signal('');
-  /** The ticket the notice talks about, to link to it. */
-  protected readonly lastTicketId = signal<string | null>(null);
+  /** The last ticket printed, until something else is sold: the screen stays on the sale. */
+  protected readonly printed = signal<{ id: string; number: number; totalCents: number } | null>(
+    null,
+  );
 
   protected readonly category = signal<CategoryFilter>('all');
 
@@ -409,10 +410,9 @@ export class SalesPage {
     return product.quantity > this.inCart(product.id);
   }
 
-  /** Alt N: starts looking for what to sell, with no trace of the sale before. */
+  /** Alt N: starts looking for what to sell. */
   protected newSale(): void {
-    this.notice.set('');
-    this.lastTicketId.set(null);
+    this.printed.set(null);
     this.stockSearch.show();
   }
 
@@ -423,8 +423,7 @@ export class SalesPage {
 
   protected add(product: Product): void {
     if (!this.canAdd(product)) return;
-    this.notice.set('');
-    this.lastTicketId.set(null);
+    this.printed.set(null);
     this.cart.add(product);
   }
 
@@ -481,8 +480,7 @@ export class SalesPage {
     const rows = this.rows();
     if (!rows.length || this.saving()) return;
     this.error.set('');
-    this.notice.set('');
-    this.lastTicketId.set(null);
+    this.printed.set(null);
     this.saving.set(true);
     this.api
       .createTicket({
@@ -492,10 +490,9 @@ export class SalesPage {
         next: (ticket) => {
           this.saving.set(false);
           this.cart.clear();
-          this.lastTicketId.set(ticket.id);
-          this.notice.set(
-            `Ticket n.º ${ticket.number} generado · ${formatCents(ticket.totalCents)}`,
-          );
+          this.printer.print(ticket);
+          this.printed.set({ id: ticket.id, number: ticket.number, totalCents: ticket.totalCents });
+          // The units left in the stock changed.
           this.load();
         },
         error: (error: unknown) => {

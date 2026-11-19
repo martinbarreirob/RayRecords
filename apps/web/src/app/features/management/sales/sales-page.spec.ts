@@ -1,9 +1,10 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import type { CreateTicket, Product, StockCategory, Ticket } from '@rayrecords/shared';
 import { NEVER, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClient } from '../../../core/api/api-client';
+import { TicketPrinter } from '../../../core/print/ticket-printer';
 import { CartStore } from './cart.store';
 import { SalesPage } from './sales-page';
 
@@ -51,12 +52,18 @@ describe('SalesPage', () => {
       createTicket: vi.fn((_input: CreateTicket) => of(ticket)),
       ...overrides,
     };
+    const printer = { print: vi.fn() };
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
+      providers: [
+        provideRouter([]),
+        { provide: ApiClient, useValue: api },
+        { provide: TicketPrinter, useValue: printer },
+      ],
     });
     const fixture = TestBed.createComponent(SalesPage);
     fixture.detectChanges();
-    return { fixture, api };
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    return { fixture, api, printer };
   }
 
   const el = (fixture: ComponentFixture<SalesPage>) => fixture.nativeElement as HTMLElement;
@@ -188,7 +195,7 @@ describe('SalesPage', () => {
     const clear = head.querySelector<HTMLButtonElement>('.clear')!;
     expect(clear.textContent?.trim()).toBe('Vaciar');
     const footButtons = el(fixture).querySelectorAll('.cart-foot button');
-    expect([...footButtons].map((b) => b.textContent?.trim())).toEqual(['Generar ticket']);
+    expect([...footButtons].map((b) => b.textContent?.trim())).toEqual(['Imprimir ticket']);
 
     clear.click();
     fixture.detectChanges();
@@ -241,11 +248,11 @@ describe('SalesPage', () => {
     expect(lineNames(fixture)).toEqual([]);
   });
 
-  it('generates the ticket with the cart, empties it and says so', () => {
-    const { fixture, api } = setup();
+  it('prints the ticket, empties the cart and stays on the sale', () => {
+    const { fixture, api, printer } = setup();
     addToCart(fixture, 'Agua');
     addToCart(fixture, 'Café');
-    button(el(fixture), 'Generar ticket').click();
+    button(el(fixture), 'Imprimir ticket').click();
     fixture.detectChanges();
 
     expect(api.createTicket).toHaveBeenCalledWith({
@@ -254,12 +261,30 @@ describe('SalesPage', () => {
         { productId: coffee.id, quantity: 1 },
       ],
     });
+    expect(printer.print).toHaveBeenCalledTimes(1);
+    expect(printer.print).toHaveBeenCalledWith(ticket);
     expect(TestBed.inject(CartStore).lines()).toEqual([]);
-    expect(el(fixture).querySelector('.alert.success')?.textContent).toContain('Ticket n.º 7');
-    expect(el(fixture).querySelector('.see-ticket')?.getAttribute('href')).toBe(
+    expect(TestBed.inject(Router).navigate).not.toHaveBeenCalled();
+
+    // It says what was printed and links to it, until something else is sold.
+    const notice = el(fixture).querySelector('.alert.success')!;
+    expect(notice.textContent).toContain('Ticket n.º 7 impreso');
+    expect(notice.querySelector('a')?.getAttribute('href')).toBe(
       `/gestion/tickets?ticket=${ticket.id}`,
     );
-    expect(button(el(fixture), 'Generar ticket').disabled).toBe(true);
+    addToCart(fixture, 'Agua');
+    expect(el(fixture).querySelector('.alert.success')).toBeNull();
+  });
+
+  it('prints nothing when the ticket fails', () => {
+    const { fixture, printer } = setup({
+      createTicket: () => throwError(() => new Error('sin stock')),
+    });
+    addToCart(fixture, 'Agua');
+    button(el(fixture), 'Imprimir ticket').click();
+    fixture.detectChanges();
+    expect(printer.print).not.toHaveBeenCalled();
+    expect(el(fixture).querySelector('.alert.success')).toBeNull();
   });
 
   it('keeps the cart and shows the error when the ticket fails', () => {
@@ -267,7 +292,7 @@ describe('SalesPage', () => {
       createTicket: () => throwError(() => new Error('sin stock')),
     });
     addToCart(fixture, 'Café');
-    button(el(fixture), 'Generar ticket').click();
+    button(el(fixture), 'Imprimir ticket').click();
     fixture.detectChanges();
     expect(el(fixture).querySelector('.alert[role="alert"]')).not.toBeNull();
     expect(lineNames(fixture)).toEqual(['Café']);
