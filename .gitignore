@@ -10,8 +10,8 @@ coverage/
 .env.*
 !.env.example
 
-# Written by apps/web/scripts/write-license.mjs with the PrimeUI license key
-*.generated.ts
+# Written by apps/web/scripts/write-license.mjs with the PrimeUI license key (the Tabler icons module is versioned)
+apps/web/src/app/core/theme/primeng-license.generated.ts
 
 # Keys and certificates
 *.pem
