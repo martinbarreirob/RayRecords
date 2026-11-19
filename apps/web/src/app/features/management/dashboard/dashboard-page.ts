@@ -255,17 +255,33 @@ const UNITS = new Intl.NumberFormat('es-ES');
             <a routerLink="/gestion/tickets">Ver todos</a>
           </header>
           @if (d.recentTickets.length) {
-            <ul class="recent">
-              @for (ticket of d.recentTickets; track ticket.id) {
-                <li>
-                  <a routerLink="/gestion/tickets" [queryParams]="{ ticket: ticket.id }">
-                    <span class="number num">#{{ ticket.number }}</span>
-                    <span class="when">{{ when(ticket.createdAt) }}</span>
-                    <strong class="num">{{ money(ticket.totalCents) }}</strong>
-                  </a>
-                </li>
-              }
-            </ul>
+            <table class="table recent">
+              <thead>
+                <tr>
+                  <th scope="col">N.º</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col" class="num">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ticket of d.recentTickets; track ticket.id) {
+                  <tr>
+                    <td>
+                      <a
+                        class="number num"
+                        routerLink="/gestion/tickets"
+                        [queryParams]="{ ticket: ticket.id }"
+                        [attr.aria-label]="'Ver el ticket número ' + ticket.number"
+                      >
+                        #{{ ticket.number }}
+                      </a>
+                    </td>
+                    <td class="when">{{ when(ticket.createdAt) }}</td>
+                    <td class="num c-total">{{ money(ticket.totalCents) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           } @else {
             <p class="none">Todavía no hay tickets.</p>
           }

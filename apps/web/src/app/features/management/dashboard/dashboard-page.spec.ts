@@ -148,9 +148,15 @@ describe('DashboardPage', () => {
     ]);
   });
 
-  it('links each recent ticket to the tickets screen', () => {
+  it('lists the recent tickets as a table, like the tickets screen', () => {
     const { fixture } = setup();
-    const link = el(fixture).querySelector<HTMLAnchorElement>('.recent a')!;
+    const table = el(fixture).querySelector('table.recent')!;
+    expect([...table.querySelectorAll('thead th')].map((th) => text(th))).toEqual([
+      'N.º',
+      'Fecha',
+      'Total',
+    ]);
+    const link = table.querySelector<HTMLAnchorElement>('tbody a.number')!;
     expect(text(link)).toContain('#12');
     expect(link.getAttribute('href')).toBe(`/gestion/tickets?ticket=${'f'.repeat(24)}`);
   });
