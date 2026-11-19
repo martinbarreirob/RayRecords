@@ -22,7 +22,7 @@
     "@primeuix/themes": "^3.1.0",
     "@rayrecords/shared": "workspace:*",
     "primeicons": "^8.0.2",
-    "primeng": "22.1.4",
+    "primeng": "22.1.5",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
