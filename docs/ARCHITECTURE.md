@@ -39,13 +39,26 @@ Access is via a Cloudflare Tunnel (`cloudflared` container); the server opens no
 | `daily_notes`          | **Legacy.** One markdown note per date; kept only to migrate it to cards                                                                                                           | unique `date`                                                                                                                            |
 | `accounts`             | `name`, `bank`, `type`, `currency`, `openingBalanceCents`, `openingDate`, `archived`. **The balance is not stored**: it is the opening balance plus the sum of transactions        | `{archived, name}`                                                                                                                       |
 | `transactions`         | `accountId`, `date`, `month`, `amountCents`, `description`, `descriptionNorm`, `balanceAfterCents`, `hash`, `category`, `categorySource` (`rule`/`manual`/`none`), `importBatchId` | **unique `{accountId, hash}`** (deduplication) · `{accountId, date:-1}` · `{month, category}` (charts) · partial `importBatchId`         |
-| `categories`           | `_id` = key, `name`, `color`, `icon`                                                                                                                                               | —                                                                                                                                        |
+| `categories`           | `_id` = key, `name`, and the look `icon`, `color`, `iconColor` (missing on old ones: the default look is shown)                                                                    | —                                                                                                                                        |
 | `categorization_rules` | `pattern`, `matchType` (`contains`/`startsWith`/`regex`), `categoryKey`, `priority`, `active`                                                                                      | `{active, priority:-1}`                                                                                                                  |
 | `import_batches`       | Trace of each import (`fileName`, `imported`, `skipped`) so it can be undone                                                                                                       | `createdAt:-1`                                                                                                                           |
+| `products`             | Stock: `name`, `sku`, `categoryId` (or `null`), `quantity`, `minQuantity` (low-stock threshold, 0 = no warning), `priceCents`, `notes`                                             | `{name}` · `{categoryId}`                                                                                                                |
+| `stock_categories`     | The user's own stock categories: `name`, `nameKey` (name without accents or capitals) and their look, `icon`, `color` and `iconColor`                                              | unique `nameKey`                                                                                                                         |
+| `tickets`              | A sale: consecutive `number`, `lines[]` (`productId`, plus the `name`, `quantity` and `unitPriceCents` of the moment) and `totalCents`                                             | unique `number` · `{createdAt:-1}`                                                                                                       |
 
 Access: `users` (unique index on `username`), `sessions` (`_id` = sha256 of the token; TTL index on `expiresAt`) and `credentials` (passkeys, unused for now). The seeder does not touch them.
 
-Indexes are created by `ensureIndexes` on every API start (idempotent). With a single user a migration system is not worth it.
+Indexes are created by `ensureIndexes` on every API start (idempotent) and, for a user seen for the first time, when their collections are opened. A migration system is not worth it at this size.
+
+## Users and data isolation
+
+Several users can exist (created from the command line; there is no web sign-up). Each user's data (lists, items, notes, events, accounts, transactions, categories, rules, stock, tickets) lives in collections of their own, and the users and sessions are shared:
+
+- A user has an optional `dataPrefix` (`demo_`). Their collections are named `<prefix><name>` (`demo_lists`) in the same database. The first user has no prefix, so their data stays where it always was and needs no migration.
+- The auth guard resolves the session, opens that user's collections (`Database.forUser`: indexes and the default catalog the first time) and runs the rest of the request inside an `AsyncLocalStorage` scope (`db/scope.ts`). Routes read `app.data`, a proxy over the collections of the current request. Outside a signed-in request it throws, so a route cannot fall back to someone else's data or forget a filter.
+- Unique indexes, ticket numbers, category keys and list slugs are therefore per user with no change to them.
+
+**Decided**: collections with a prefix instead of a `userId` field on every document (every query and every unique index would need it, and a missed filter would leak data) and instead of a database per user (the production Mongo user is limited to one database).
 
 ## Decisions and discarded alternatives
 

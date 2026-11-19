@@ -22,7 +22,8 @@ Shortcut: `pnpm bootstrap` (install + Mongo + seed) the first time and `pnpm dev
 pnpm install
 pnpm dev:db      # MongoDB in Docker
 pnpm seed        # sample data in rayrecords_dev and a development user (see seed/user.ts)
-pnpm --filter @rayrecords/api create-user <username>   # create the single user (prompts for the password)
+pnpm --filter @rayrecords/api create-user <username> [--prefix <prefix_>]   # create a user or change its password (prompts); a prefix gives it collections of its own, like demo_
+pnpm --filter @rayrecords/api create-demo             # the public demo user (demo / demo) with sample data in demo_* collections only
 pnpm --filter @rayrecords/api migrate-notes           # old daily notes -> cards (does not repeat if cards already exist; --force skips the check)
 pnpm dev:api     # http://localhost:3000
 pnpm dev:web     # http://localhost:4300
@@ -41,6 +42,18 @@ To change the API configuration, copy `apps/api/.env.example` to `apps/api/.env`
 | `MONGO_DB`        | `rayrecords_dev`            | **Required in production**. The seeder requires it to end in `_dev` or `_demo` |
 | `ALLOWED_ORIGINS` | empty                       | Extra origins (comma-separated) accepted on requests that modify data          |
 | `LOG_LEVEL`       | `info`                      |                                                                                |
+
+### PrimeUI license key
+
+PrimeNG 22 needs a license key; without one it works but shows a red "Invalid PrimeUI License" notice on the screens that use it. The key is never versioned. `apps/web/scripts/write-license.mjs` runs before `start`, `build`, `watch` and `test`, takes the key from `PRIMEUI_LICENSE` and writes it to `src/app/core/theme/primeng-license.generated.ts` (ignored by git), which `providePrimeNgTheme()` passes to `providePrimeNG({ license })`.
+
+| Where              | How to set it                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Local development  | Copy `apps/web/.env.example` to `apps/web/.env` and fill in `PRIMEUI_LICENSE`        |
+| CI image           | Repository secret `PRIMEUI_LICENSE` (the `images` job passes it as a build argument) |
+| Manual image build | `docker build --build-arg PRIMEUI_LICENSE=<key> -f apps/web/Dockerfile ...`          |
+
+An environment variable wins over `apps/web/.env`. After changing the key, restart `pnpm dev:web` (or run `pnpm --filter @rayrecords/web run license` and let it rebuild). The key ends up in the JavaScript the browser downloads, so it is not a secret in the strict sense; it is kept out of the repo because it is personal. A Community key is renewed yearly at primeui.dev and has a 30-day grace period after its end date: replace the value and rebuild.
 
 ### Deployment variables
 
@@ -148,6 +161,8 @@ List aliases are not coded: they are each list's `captureAlias` and are passed t
 | Lists              | 6: Películas (movies), Series (shows), Compras (shopping), Tareas (tasks), Portfolio web (board), Ideas                                        |
 | Items              | 47                                                                                                                                             |
 | Notes              | 10 cards: one group of 3, one done 3 h ago, another 22 h ago (hidden soon) and another 30 h ago (already hidden; shows in "Terminadas" / done) |
+| Stock              | A shop of accessories, bags, jewellery and clothes: 4 categories and 37 products (two without a category), some low on stock or sold out       |
+| Tickets            | About 47 sales over the last 30 days, within shop hours; the product quantities are what is left after them                                    |
 | Accounts           | 2 (checking and savings)                                                                                                                       |
 | Transactions       | 130 over 6 months, with one manual correction, several uncategorized and two identical coffees on the same day to exercise deduplication       |
 
@@ -193,7 +208,7 @@ Guards: it refuses to run with `NODE_ENV=production` or if `MONGO_DB` does not e
 `.github/workflows/ci.yml` defines three jobs:
 
 1. `check`: `pnpm install --frozen-lockfile`, `typecheck`, `test` and `build`, on every push to `main` and every pull request.
-2. `images`: only on push to `main`, builds `rayrecords-api` and `rayrecords-web` and publishes them to GHCR tagged `latest` and with the commit SHA.
+2. `images`: only on push to `main`, builds `rayrecords-api` and `rayrecords-web` and publishes them to GHCR tagged `latest` and with the commit SHA. The web image takes the PrimeUI key from the `PRIMEUI_LICENSE` secret.
 3. `deploy`: after `images`, connects to the server over SSH (`environment: production`), copies the compose files to `~/rayrecords/deploy` and runs `TAG=<sha> docker compose pull && up -d`. Secrets required in GitHub: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (dedicated key, no passphrase) and `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan <host>`). `~/rayrecords/deploy/.env` must exist on the server.
 
 **Git flow:** trunk directly on `main`. Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`); every push to `main` goes through CI and, if it passes, deploys automatically. To roll back: `TAG=<previous-sha> docker compose up -d` on the server. Dependabot opens weekly dependency PRs.

@@ -14,7 +14,7 @@ Legend: `[x]` done and verified · `[ ]` pending · **(decision)** something to 
 | 3b    | Notes as a free-form canvas: cards, groups, done cards hidden after 24 h        | Done (migration pending) |
 | 4     | Expenses and accounts                                                           | Done                     |
 | 5     | Calendar                                                                        | Done                     |
-| 6     | Aesthetics and token system                                                     | Done (license pending)   |
+| 6     | Aesthetics and token system                                                     | Done (license key unset) |
 | 7     | Production rollout and operations                                               | To do                    |
 | —     | Optional (passkeys, public demo, etc.)                                          | No date                  |
 
@@ -114,7 +114,7 @@ Goal: import the bank statement, categorize it and see where the money goes.
 - [x] `POST /api/accounts/:id/imports` with the CSV as raw body (`Content-Type: text/csv`, no multipart or new dependency; 5 MB limit). `?dryRun=true` returns the **preview** (new, duplicates, uncategorized, first 20 rows). Duplicates are skipped by comparing hashes and, on a race, by the unique index.
 - [x] Undo a whole import (`DELETE /api/imports/:id`) and list previous ones.
 - [x] `GET /api/transactions` with filters by account, month, category (or `none`) and text, paginated (`limit`, `offset`).
-- [x] Manual category correction (`PATCH /api/transactions/:id/category`, `categorySource: manual`, never overwritten) with an option to create a rule (priority 10).
+- [x] Manual category correction (`PATCH /api/transactions/:id/category`, `categorySource: manual`, never overwritten) (the movements screen no longer offers to create a rule; the review view keeps its own).
 - [x] Reapply rules to uncategorized transactions (`POST /api/rules/apply`).
 - [x] CRUD for rules (validates category and regular expression) and categories (an in-use one cannot be deleted).
 - [x] `GET /api/expenses/summary`: aggregation by month and category, expenses or income.
@@ -132,7 +132,7 @@ Goal: import the bank statement, categorize it and see where the money goes.
 - [ ] **(decision)** Multi-day events: today only `dueDate` + `time` exist. If ranges are needed, add `endDate`/`endTime` to the `Item` schema and an index.
 - [ ] Week view and reminders (optional).
 
-## Phase 6 — Aesthetics and token system (done; PrimeNG license still to be decided)
+## Phase 6 — Aesthetics and token system (done; PrimeNG license key still to be set)
 
 Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top navigation, one typeface, one indigo accent, light and dark theme).
 
@@ -141,10 +141,27 @@ Full contract in [DESIGN.md](DESIGN.md). Chosen direction: "Folio" (light top na
 - [x] Shell: top bar and command palette (Ctrl+K) with real search, commands, quick capture with "/" (preview of the target list) and Shift+N · L · C · G · U shortcuts (body loaded lazily).
 - [x] Screens: notes (canvas), lists and Kanban (drag with CDK and keyboard), calendar (month/agenda), expenses (category chips, table with in-cell editing and bulk actions, summary, import, rules), accounts and sign-in.
 - [x] Accessibility: visible focus, labels, 44 px touch targets on mobile, keyboard support for everything important.
-- [ ] **(decision, blocks the production release)** **PrimeNG 22 license**: without a key it shows the red "Invalid PrimeUI License" notice on the screens that use it. Options: free Community key (personal use, yearly renewal, requested by the user at primeui.dev and passed in `providePrimeNG({ license })`), PrimeNG 21 (no official support with Angular 22) or remove PrimeNG.
+- [x] **Decided**: **PrimeNG 22 license** with the free Community key (personal use, yearly renewal at primeui.dev). The plumbing is in place: `PRIMEUI_LICENSE` is read at build time and passed to `providePrimeNG({ license })` (see [DEVELOPMENT.md](DEVELOPMENT.md#primeui-license-key)).
+- [ ] **(blocks the production release)** Set the key itself: `apps/web/.env` locally and the `PRIMEUI_LICENSE` repository secret for CI. Until then the red "Invalid PrimeUI License" notice shows on the screens that use PrimeNG.
 - [ ] Expenses: the design called for "mark as paid", delete and add transactions by hand and edit amount/description; the API does not support it (only the category changes). Decide whether to extend it.
 - [ ] Palette search: the server searches by whole word ("re" does not find "Reforma").
 - [x] CSP in nginx: scripts limited to `self` plus build-time hashes of the inline scripts; styles allow `unsafe-inline` because Angular and PrimeNG inject them.
+
+## Management area (in progress)
+
+A second area next to the personal one, under `/gestion`: dashboard, stock, sales and tickets.
+
+- [x] Stock: `products` and `stock_categories` collections, `/api/stock/*` with integration tests, and the screen (table of the whole stock, search, folding filter panel by category and stock level, product dialog, the user's own categories). The seeder adds sample stock.
+- [x] Sales (`/gestion/ventas`, replacing the planned cart section): two columns. Left, three quarters: products as a bento grid with the best sellers on larger cards, over a category bar with arrows. Right: the cart (drag a card onto it or press "Añadir"; quantity stepper, remove) and "Generar ticket". `POST /api/tickets` numbers the ticket and takes the units out of the stock, refusing a sale without enough stock. The cart lives in memory and is lost on reload.
+- [x] Tickets (`/gestion/tickets`): the newest 200 tickets with a search by number or product, and the chosen one opened next to the list as a receipt. `?ticket=<id>` opens a specific one; sales links to it after generating a ticket.
+- [x] Tickets can be filtered by date (shortcuts and exact days; the server filters, so the cap applies inside the range). Stock categories have a look of their own (icon, icon color and square color), chosen in an editor with a live preview and shown as a badge in stock and sales.
+- [x] Stock categories are managed with the list and the editor side by side (rename and delete on each row, color pairs on one row, icon search) and their icons are Tabler Icons, generated into the bundle.
+- [x] The whole app draws its icons with `<app-icon>` (Tabler); PrimeIcons is only left inside PrimeNG's own widgets. The icon module is in the initial bundle, which grew from 367 to 381 kB.
+- [x] Expense categories work like the stock ones: the user manages them (icon, icon color, square color, rename, delete) in the same manager, opened from the expenses header, and they show with their badge in the movements table and chips, the summary, the rules, the import preview and the review. The old form with a manual key is gone. Run `pnpm --filter @rayrecords/api sync-catalog` (or the seeder in development) so the default categories get their look.
+- [x] Expenses reorganised as one view (option A of the layout study): Resumen removed, the totals card over the category list on the left and the movements table on the right. Month-by-month charts and the per-category-and-month table are gone with it (the API endpoint `GET /api/expenses/summary` stays).
+- [ ] Tickets cannot be printed or voided yet (voiding should put the units back in the stock), and there is no paging beyond the newest 200.
+- [x] Dashboard (`/gestion/dashboard`): headline figures (sales against the previous period, tickets and average ticket, today, stock value), sales per day, state of the stock with what to restock, best sellers, sales by category and the last tickets, for 7, 30 or 90 days. One request (`GET /api/dashboard`); the charts are plain boxes, no chart library.
+- [ ] Dragging onto the cart uses native drag and drop, which touch screens do not fire: on a phone only the button adds.
 
 ## Phase 7 — Production rollout and operations
 
