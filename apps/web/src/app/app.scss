@@ -1,4 +1,4 @@
-// Two-level bar. The first level (inverted: dark on a light theme, light on a dark one) holds, on the
+// Two-level bar. The first level (a soft tone close to the page background, see --nav-bg) holds, on the
 // left, the brand and the area tabs and, on the right, the user menu and the search. The second level
 // lists the sections of the current area. Both span the full width, but their content lines up with
 // the screens.
@@ -66,8 +66,9 @@
 // ---- First level -------------------------------------------------------------------------------
 
 .primary {
-  background: var(--text);
-  color: var(--bg);
+  border-bottom: 1px solid var(--line);
+  background: var(--nav-bg);
+  color: var(--nav-fg);
 }
 
 .topbar-inner {
@@ -95,7 +96,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--bg);
+  color: var(--nav-fg);
   font-size: 15px;
   font-weight: 600;
 
@@ -108,8 +109,8 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    // The disc is dark: a thin light ring keeps it visible on the dark bar.
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bg) 35%, transparent);
+    // A thin ring in the bar text colour keeps the disc visible on any bar tone.
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--nav-fg) 35%, transparent);
   }
 }
 
@@ -123,18 +124,18 @@
     display: inline-flex;
     align-items: center;
     padding: 0 var(--space-4);
-    color: color-mix(in srgb, var(--bg) 65%, transparent);
+    color: color-mix(in srgb, var(--nav-fg) 65%, transparent);
     font-size: var(--text-base);
     white-space: nowrap;
-    @include tab-bar(var(--bg));
+    @include tab-bar(var(--nav-fg));
 
     &:hover {
-      color: var(--bg);
+      color: var(--nav-fg);
       text-decoration: none;
     }
 
     &.active {
-      color: var(--bg);
+      color: var(--nav-fg);
     }
   }
 }
@@ -154,16 +155,16 @@
 }
 
 .user-button {
-  color: color-mix(in srgb, var(--bg) 75%, transparent);
+  color: color-mix(in srgb, var(--nav-fg) 75%, transparent);
 
   &:hover,
   &[aria-expanded='true'] {
-    background: color-mix(in srgb, var(--bg) 16%, transparent);
-    color: var(--bg);
+    background: color-mix(in srgb, var(--nav-fg) 16%, transparent);
+    color: var(--nav-fg);
   }
 }
 
-// The menu is a light panel (not on the dark bar), so its buttons use the normal colors.
+// The menu is a light panel (not on the bar), so its buttons use the normal colors.
 .actions {
   position: absolute;
   top: calc(100% + var(--space-1));
@@ -221,12 +222,12 @@
   gap: var(--space-2);
   min-width: 0;
   max-width: 360px;
-  min-height: 40px;
-  padding: 0 var(--space-2) 0 var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+  min-height: var(--control-height);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--nav-fg) 30%, transparent);
   border-radius: var(--radius-control);
   background: transparent;
-  color: color-mix(in srgb, var(--bg) 75%, transparent);
+  color: color-mix(in srgb, var(--nav-fg) 75%, transparent);
   font-size: var(--text-base);
   cursor: pointer;
   transition:
@@ -234,8 +235,8 @@
     color 0.15s;
 
   &:hover {
-    border-color: color-mix(in srgb, var(--bg) 60%, transparent);
-    color: var(--bg);
+    border-color: color-mix(in srgb, var(--nav-fg) 60%, transparent);
+    color: var(--nav-fg);
   }
 
   app-icon {
@@ -253,7 +254,7 @@
   }
 
   .kbd {
-    border-color: color-mix(in srgb, var(--bg) 30%, transparent);
+    border-color: color-mix(in srgb, var(--nav-fg) 30%, transparent);
     background: transparent;
     color: inherit;
   }

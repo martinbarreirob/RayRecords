@@ -20,6 +20,8 @@
   --radius-lg: 12px;
   --radius-xl: 14px;
   --radius-pill: 999px;
+  // Big containers (the notes canvas, the list cards and tables): the same on every screen.
+  --radius-container: var(--radius-xl);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -51,12 +53,12 @@
   --bg: #fafafa;
   --surface: #ffffff;
   --surface-2: #f3f3f3;
-  // Borders: a step darker than the bare minimum, so cards and controls stay outlined on
-  // screens with poor contrast. Three weights: soft (table rules), line (cards, controls) and
+  // Borders and text are kept low-contrast on purpose: only the buttons (--accent) carry the
+  // strong contrast. Three border weights: soft (table rules), line (cards, controls) and
   // strong (hover, dashed).
-  --line: #d8d8d8;
-  --line-strong: #bcbcbc;
-  --line-soft: #e5e5e5;
+  --line: #e2e2e2;
+  --line-strong: #c9c9c9;
+  --line-soft: #ececec;
 
   // Categorical palette (board columns, labels): `--hue-x` for dots and stripes,
   // `-soft` for the background and `-text` for text on that background (contrast >= 4.5).
@@ -78,12 +80,14 @@
   --hue-teal: #1f9aa8;
   --hue-teal-soft: #e0f4f6;
   --hue-teal-text: #0e6b76;
-  --text: #1c1c1c;
-  --muted: #686868;
+  --text: #2f2f2f;
+  --muted: #737373;
   --accent: #2b2b2b;
   --accent-hover: #1a1a1a;
   --accent-soft: #efefef;
   --on-accent: #ffffff;
+  --nav-bg: #f3f3f3;
+  --nav-fg: #2f2f2f;
   --danger: #b42318;
   --danger-soft: #fdeceb;
   --success: #1a7f4b;
@@ -101,9 +105,9 @@
   --bg: #121212;
   --surface: #1a1a1a;
   --surface-2: #242424;
-  --line: #393939;
-  --line-strong: #515151;
-  --line-soft: #2e2e2e;
+  --line: #313131;
+  --line-strong: #444444;
+  --line-soft: #292929;
   --hue-blue: #7aa2f7;
   --hue-blue-soft: #1d2740;
   --hue-blue-text: #a9c1fa;
@@ -122,12 +126,14 @@
   --hue-teal: #5cc6d3;
   --hue-teal-soft: #123036;
   --hue-teal-text: #8ddbe5;
-  --text: #ececec;
-  --muted: #a1a1a1;
+  --text: #d8d8d8;
+  --muted: #9a9a9a;
   --accent: #ededed;
   --accent-hover: #ffffff;
   --accent-soft: #2a2a2a;
   --on-accent: #1a1a1a;
+  --nav-bg: #1e1e1e;
+  --nav-fg: #d8d8d8;
   --danger: #f4a09a;
   --danger-soft: #3a1f1d;
   --success: #7fd1a3;
