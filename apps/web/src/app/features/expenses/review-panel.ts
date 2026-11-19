@@ -56,23 +56,25 @@ interface Decision {
     <section class="review" aria-labelledby="rv-title">
       <header class="rv-head">
         <h2 id="rv-title">Revisar movimientos</h2>
-        <p class="muted" aria-live="polite">
-          @if (loaded()) {
-            Quedan <strong class="num">{{ remaining() }}</strong> en
-            <strong class="num">{{ groupsLeft() }}</strong>
-            {{ groupsLeft() === 1 ? 'comercio' : 'comercios' }}
-          }
-        </p>
-        <div
-          class="rv-bar"
-          role="progressbar"
-          aria-label="Progreso de la revisión"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          [attr.aria-valuenow]="percent()"
-        >
-          <span [style.width.%]="percent()"></span>
-        </div>
+        @if (hasWork()) {
+          <p class="muted" aria-live="polite">
+            @if (loaded()) {
+              Quedan <strong class="num">{{ remaining() }}</strong> en
+              <strong class="num">{{ groupsLeft() }}</strong>
+              {{ groupsLeft() === 1 ? 'comercio' : 'comercios' }}
+            }
+          </p>
+          <div
+            class="rv-bar"
+            role="progressbar"
+            aria-label="Progreso de la revisión"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="percent()"
+          >
+            <span [style.width.%]="percent()"></span>
+          </div>
+        }
       </header>
 
       @if (error(); as message) {
@@ -227,6 +229,8 @@ export class ReviewPanel implements OnInit, OnDestroy {
   private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly current = computed(() => this.groups()[0] ?? null);
+  /** False once everything is reviewed: then only the title and the done card are shown. */
+  protected readonly hasWork = computed(() => !this.loaded() || this.current() !== null);
   protected readonly percent = computed(() =>
     progressPercent(this.initial() - this.remaining(), this.initial()),
   );

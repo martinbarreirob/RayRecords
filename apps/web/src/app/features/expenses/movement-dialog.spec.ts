@@ -102,6 +102,12 @@ describe('MovementDialog', () => {
     expect(chosen.querySelector('app-category-badge')).not.toBeNull();
   });
 
+  it('has no hint about rules and manual choices', () => {
+    setup();
+    expect(text(dialog())).not.toContain('reglas');
+    expect(dialog().querySelector('.hint')).toBeNull();
+  });
+
   it('cannot save until the category changes', () => {
     setup();
     expect(button('Guardar').disabled).toBe(true);

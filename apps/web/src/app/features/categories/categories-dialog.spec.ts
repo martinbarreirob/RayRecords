@@ -84,15 +84,21 @@ describe('CategoriesDialog', () => {
     fixture.detectChanges();
   }
 
-  it('shows the list and, next to it, the editor of the first category', () => {
-    setup();
-    expect(rowNames()).toEqual(['Bolsos', 'Ropa']);
-    expect(dialog().querySelector('.list .count')?.textContent?.trim()).toBe('3 productos');
-    expect(dialog().querySelector('.list li.selected .name')?.textContent?.trim()).toBe('Bolsos');
-    expect(nameField().value).toBe('Bolsos');
-    expect(button('Icono Bolso, bolsa').getAttribute('aria-pressed')).toBe('true');
-    expect(dialog().querySelector('.hint')?.textContent).toContain('se guardan solos');
-  });
+  // The first test of the file compiles the dialog and its icons: under load that can take longer
+  // than the default 5 s.
+  it(
+    'shows the list and, next to it, the editor of the first category',
+    { timeout: 20_000 },
+    () => {
+      setup();
+      expect(rowNames()).toEqual(['Bolsos', 'Ropa']);
+      expect(dialog().querySelector('.list .count')?.textContent?.trim()).toBe('3 productos');
+      expect(dialog().querySelector('.list li.selected .name')?.textContent?.trim()).toBe('Bolsos');
+      expect(nameField().value).toBe('Bolsos');
+      expect(button('Icono Bolso, bolsa').getAttribute('aria-pressed')).toBe('true');
+      expect(dialog().querySelector('.hint')?.textContent).toContain('se guardan solos');
+    },
+  );
 
   it('keeps the color pairs and the own-colors button on a single row of eleven', () => {
     setup();

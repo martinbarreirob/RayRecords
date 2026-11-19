@@ -29,8 +29,7 @@ const LONG_DATE = new Intl.DateTimeFormat('es-ES', {
 
 /**
  * One movement: its data as the bank gave it (date, amount, description, account) and the one
- * thing that can be changed, its category. Picking one by hand protects it: the rules never
- * overwrite a category chosen this way. It saves on its own and tells with `saved`.
+ * thing that can be changed, its category. It saves on its own and tells with `saved`.
  */
 @Component({
   selector: 'app-movement-dialog',
@@ -78,11 +77,6 @@ const LONG_DATE = new Intl.DateTimeFormat('es-ES', {
 
     :host ::ng-deep .p-select {
       width: 100%;
-    }
-
-    .hint {
-      margin-top: var(--space-2);
-      font-size: var(--text-xs);
     }
 
     .foot {
@@ -157,7 +151,6 @@ const LONG_DATE = new Intl.DateTimeFormat('es-ES', {
             ariaLabelledBy="mv-edit-category"
           />
         </div>
-        <p class="hint muted">Si la eliges tú, las reglas no la cambian al reaplicarse.</p>
       }
 
       <ng-template #footer>
