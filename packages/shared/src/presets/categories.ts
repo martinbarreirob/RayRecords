@@ -5,17 +5,45 @@ import type { Category, CreateRule } from '../schemas/category';
  * review screen, so each number always means the same thing.
  */
 export const DEFAULT_CATEGORIES: Category[] = [
-  { key: 'coche', name: 'Coche', color: '#3b6fe0' }, // fuel, insurance, garage, parking...
-  { key: 'hogar', name: 'Hogar', color: '#8d6e63' }, // housing, groceries and bills
-  { key: 'salud', name: 'Salud', color: '#1f9aa8' },
-  { key: 'restauracion', name: 'Restauración', color: '#d98a1b' }, // bars, cafes and restaurants
-  { key: 'ocio', name: 'Ocio', color: '#d9455f' },
-  { key: 'compras', name: 'Compras', color: '#b84fc4' },
-  { key: 'suscripciones', name: 'Suscripciones', color: '#7c5ce0' },
+  // fuel, insurance, garage, parking...
+  { key: 'coche', name: 'Coche', icon: 'car', color: '#e8effc', iconColor: '#1d4fb8' },
+  // housing, groceries and bills
+  { key: 'hogar', name: 'Hogar', icon: 'home', color: '#fdecc8', iconColor: '#b45309' },
+  { key: 'salud', name: 'Salud', icon: 'heartbeat', color: '#d9f2ee', iconColor: '#0f766e' },
+  // bars, cafes and restaurants
+  {
+    key: 'restauracion',
+    name: 'Restauración',
+    icon: 'tools-kitchen-2',
+    color: '#fde4d3',
+    iconColor: '#c2410c',
+  },
+  { key: 'ocio', name: 'Ocio', icon: 'movie', color: '#fde2e8', iconColor: '#be123c' },
+  {
+    key: 'compras',
+    name: 'Compras',
+    icon: 'shopping-bag',
+    color: '#f6e1f9',
+    iconColor: '#a21caf',
+  },
+  {
+    key: 'suscripciones',
+    name: 'Suscripciones',
+    icon: 'repeat',
+    color: '#ebe4fb',
+    iconColor: '#6d28d9',
+  },
   // Cash, fees, loans and moves between own accounts: counted as neither expense nor income.
-  { key: 'traspaso', name: 'Traspasos', color: '#607d8b' },
-  { key: 'ingresos', name: 'Ingresos', color: '#4caf50' },
-  { key: 'otros', name: 'Otros', color: '#9e9e9e' }, // shortcut 0: whatever fits nowhere else
+  {
+    key: 'traspaso',
+    name: 'Traspasos',
+    icon: 'arrows-exchange',
+    color: '#ededed',
+    iconColor: '#2b2b2b',
+  },
+  { key: 'ingresos', name: 'Ingresos', icon: 'cash', color: '#e6f3dc', iconColor: '#3f7d20' },
+  // shortcut 0: whatever fits nowhere else
+  { key: 'otros', name: 'Otros', icon: 'tag', color: '#ededed', iconColor: '#2b2b2b' },
 ];
 
 /**

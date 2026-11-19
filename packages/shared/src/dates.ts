@@ -33,6 +33,43 @@ export function addDays(date: DateOnly, days: number): DateOnly {
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
+/** What the clocks of a time zone show at an instant, read as if it were UTC. */
+function wallClock(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(instant));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
+}
+
+/**
+ * The instant a calendar day starts in a time zone (`2026-11-18` in Madrid is
+ * `2026-11-17T23:00:00Z`). For day ranges over real instants: from the start of the first day
+ * up to, not including, the start of the day after the last.
+ */
+export function startOfDayIn(date: DateOnly, timeZone: string): Date {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const target = Date.UTC(y, m - 1, d);
+  let instant = target;
+  // Two passes: the second corrects a first guess that fell on the other side of a clock change.
+  for (let pass = 0; pass < 2; pass++) instant -= wallClock(instant, timeZone) - target;
+  return new Date(instant);
+}
+
 /** `YYYY-MM-DD` → `YYYY-MM`. */
 export function monthOf(date: DateOnly): string {
   return date.slice(0, 7);

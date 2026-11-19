@@ -12,6 +12,7 @@ export const UpdateAccountSchema = CreateAccountSchema.partial().extend({
 });
 export type UpdateAccount = z.infer<typeof UpdateAccountSchema>;
 
+/** No defaults: a partial PATCH must not reset the look. */
 export const UpdateCategorySchema = CategorySchema.omit({ key: true }).partial();
 export type UpdateCategory = z.infer<typeof UpdateCategorySchema>;
 

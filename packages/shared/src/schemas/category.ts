@@ -1,14 +1,38 @@
 import { z } from 'zod';
+import {
+  DEFAULT_CATEGORY_COLOR,
+  DEFAULT_CATEGORY_ICON,
+  DEFAULT_CATEGORY_ICON_COLOR,
+} from '../category-look';
 import { FieldKey, ObjectIdString } from './common';
+import { CategoryIconSchema, CategoryNameSchema, HexColorSchema } from './look';
 
-/** The key (`hogar`, `ocio`...) is the identifier; there is no separate id. */
+/**
+ * An expense category. The key (`hogar`, `ocio`...) is the identifier; there is no separate id.
+ * Shown as an icon on a colored square: `color` is the square and `iconColor` the icon.
+ */
 export const CategorySchema = z.object({
   key: FieldKey,
-  name: z.string().trim().min(1).max(60),
-  color: z.string().max(20).optional(),
-  icon: z.string().max(40).optional(),
+  name: CategoryNameSchema,
+  icon: CategoryIconSchema,
+  color: HexColorSchema,
+  iconColor: HexColorSchema,
 });
 export type Category = z.infer<typeof CategorySchema>;
+
+/** Without a `key` the server makes one from the name; the look has a default. */
+export const CreateCategorySchema = z.object({
+  key: FieldKey.optional(),
+  name: CategoryNameSchema,
+  icon: CategoryIconSchema.default(DEFAULT_CATEGORY_ICON),
+  color: HexColorSchema.default(DEFAULT_CATEGORY_COLOR),
+  iconColor: HexColorSchema.default(DEFAULT_CATEGORY_ICON_COLOR),
+});
+export type CreateCategory = z.input<typeof CreateCategorySchema>;
+
+/** How many transactions each category holds, by key; categories with none are left out. */
+export const CategoryUsageSchema = z.record(FieldKey, z.number().int().nonnegative());
+export type CategoryUsage = z.infer<typeof CategoryUsageSchema>;
 
 export const RuleMatchType = z.enum(['contains', 'startsWith', 'regex']);
 export type RuleMatchType = z.infer<typeof RuleMatchType>;
