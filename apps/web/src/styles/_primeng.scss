@@ -24,7 +24,7 @@
   --p-form-field-focus-border-color: var(--accent);
   --p-form-field-color: var(--text);
   --p-form-field-placeholder-color: var(--muted);
-  --p-form-field-border-radius: var(--radius-sm);
+  --p-form-field-border-radius: var(--radius-control);
   --p-overlay-select-background: var(--surface);
   --p-overlay-select-border-color: var(--line);
   --p-overlay-popover-background: var(--surface);
@@ -72,7 +72,7 @@
   --p-select-focus-border-color: var(--accent);
   --p-select-color: var(--text);
   --p-select-placeholder-color: var(--muted);
-  --p-select-border-radius: var(--radius-sm);
+  --p-select-border-radius: var(--radius-control);
   --p-select-padding-x: 0.75rem;
   --p-select-padding-y: 0.45rem;
   --p-select-dropdown-color: var(--muted);
@@ -160,7 +160,7 @@
   --p-datatable-footer-cell-padding: 0.6rem 0.875rem;
   --p-datatable-footer-cell-background: var(--surface);
   --p-datatable-row-background: var(--surface);
-  --p-datatable-row-hover-background: var(--surface-2);
+  --p-datatable-row-hover-background: var(--row-hover);
   --p-datatable-row-selected-background: var(--accent-soft);
   --p-datatable-row-selected-color: var(--text);
   --p-datatable-column-title-font-weight: 500;

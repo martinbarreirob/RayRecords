@@ -5,6 +5,7 @@
 :root {
   --font: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
+  --text-2xs: 10px;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;
@@ -14,6 +15,7 @@
   --text-3xl: 40px;
 
   --radius-sm: 8px;
+  --radius-control: 6px; // buttons and inputs
   --radius-md: 10px;
   --radius-lg: 12px;
   --radius-xl: 14px;
@@ -29,21 +31,32 @@
 
   --page-max: 1200px;
   --page-gutter: 40px;
-  --nav-height: 56px;
+  --nav-height: 52px;
   --control-height: 36px;
   --touch-target: 44px;
 
   --z-nav: 20;
+  // Small floating panels (the period picker) over the page but under the sticky bars.
+  --z-popover: 30;
   --z-overlay: 1000;
+  // Above the cards of the notes canvas, whose own z-index grows as they are stacked.
+  --z-drag: 9500;
+
+  // Hovered table row: halfway between the row and the header, so it never reads as a header.
+  // Built from the tokens below, so it follows the theme.
+  --row-hover: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
 
   // Light (default).
   color-scheme: light;
   --bg: #fafafa;
   --surface: #ffffff;
   --surface-2: #f3f3f3;
-  --line: #e4e4e4;
-  --line-strong: #cbcbcb;
-  --line-soft: #ededed;
+  // Borders: a step darker than the bare minimum, so cards and controls stay outlined on
+  // screens with poor contrast. Three weights: soft (table rules), line (cards, controls) and
+  // strong (hover, dashed).
+  --line: #d8d8d8;
+  --line-strong: #bcbcbc;
+  --line-soft: #e5e5e5;
 
   // Categorical palette (board columns, labels): `--hue-x` for dots and stripes,
   // `-soft` for the background and `-text` for text on that background (contrast >= 4.5).
@@ -88,9 +101,9 @@
   --bg: #121212;
   --surface: #1a1a1a;
   --surface-2: #242424;
-  --line: #2e2e2e;
-  --line-strong: #444444;
-  --line-soft: #262626;
+  --line: #393939;
+  --line-strong: #515151;
+  --line-soft: #2e2e2e;
   --hue-blue: #7aa2f7;
   --hue-blue-soft: #1d2740;
   --hue-blue-text: #a9c1fa;

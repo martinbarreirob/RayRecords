@@ -9,7 +9,7 @@
   min-height: var(--control-height);
   padding: 0 var(--space-4);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text);
   font-size: var(--text-sm);
@@ -80,7 +80,7 @@
   min-height: var(--control-height);
   padding: 0 var(--space-3);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text);
 
@@ -208,6 +208,45 @@
   }
 }
 
+/*
+ * Soft edges for a scrolling box (set by the appScrollFade directive, which turns each edge on
+ * only while there is more content that way). It is a mask, so it fades to whatever is behind
+ * in either theme: black and transparent here mean "show" and "hide", they are not colors.
+ * Registering the lengths lets them animate.
+ */
+@property --fade-top {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-bottom {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.scroll-fade {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--fade-top),
+    black calc(100% - var(--fade-bottom)),
+    transparent
+  );
+  transition:
+    --fade-top 0.15s,
+    --fade-bottom 0.15s;
+
+  &.fade-top {
+    --fade-top: 32px;
+  }
+
+  &.fade-bottom {
+    --fade-bottom: 32px;
+  }
+}
+
 /* Notices and empty states */
 .alert {
   padding: var(--space-3) var(--space-4);
@@ -263,7 +302,7 @@
   // Row highlight on hover (only with a real pointer, so it does not stick on touch).
   @media (hover: hover) {
     tbody tr:hover td {
-      background: var(--surface-2);
+      background: var(--row-hover);
     }
   }
 

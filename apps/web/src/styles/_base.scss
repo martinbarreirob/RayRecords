@@ -6,7 +6,10 @@
   box-sizing: border-box;
 }
 
+// The shell is as tall as the window and its <main> is the only thing that scrolls: the document
+// never does, so no scrollbar can ever run alongside the two header rows.
 html {
+  overflow: hidden;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -18,6 +21,42 @@ body {
   font-size: var(--text-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Scrollbars: thin, no track, a rounded thumb that darkens on hover. Chromium and Safari take the
+ * ::-webkit-scrollbar rules; Firefox has no such pseudo-elements and gets the standard properties
+ * (setting those in Chromium too would switch the pseudo-element styling off). Colors come from
+ * the tokens, so both themes are covered. Boxes with scrollbar-width: none stay without one.
+ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* The transparent border leaves a 4 px thumb with air around it. */
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: var(--radius-pill);
+  background-color: var(--line-strong);
+  background-clip: content-box;
+
+  &:hover,
+  &:active {
+    background-color: var(--muted);
+  }
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
 }
 
 h1,
@@ -76,11 +115,11 @@ textarea {
   white-space: nowrap;
 }
 
-/* Page container: lots of white space, narrow width. */
+/* Page container: narrow width. Little room above, right under the section tabs. */
 .page {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: var(--space-6) var(--page-gutter) var(--space-7);
+  padding: var(--space-4) var(--page-gutter) var(--space-7);
 }
 
 .muted {
