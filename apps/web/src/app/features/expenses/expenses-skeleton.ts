@@ -37,7 +37,6 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
     .topline {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: var(--space-3);
       margin-bottom: var(--space-3);
     }
@@ -86,6 +85,22 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       padding: var(--space-2);
     }
 
+    .cats-foot {
+      margin-top: var(--space-3);
+      padding: var(--space-3) var(--space-1) var(--space-1);
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .cats-foot .skeleton {
+      display: block;
+      height: var(--control-height);
+      border-radius: var(--radius-control);
+    }
+
+    .main {
+      min-width: 0;
+    }
+
     .cat-row {
       display: flex;
       align-items: center;
@@ -121,38 +136,88 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       border-radius: var(--radius-sm);
     }
 
-    /* Review: the title with its progress bar, and the card of the merchant being reviewed. */
+    /* Review: the title, subtitle and progress bar, and the card of the merchant being reviewed. */
     .review {
-      display: flex;
-      flex-direction: column;
+      display: grid;
       gap: var(--space-4);
+      max-width: 640px;
+      margin-inline: auto;
+    }
+
+    .review-head {
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .review-head .title {
+      width: 200px;
+      height: calc(var(--text-2xl) * 1.2);
+    }
+
+    .review-head .sub {
+      width: 150px;
+      height: calc(var(--text-sm) * 1.5);
     }
 
     .progress {
-      height: 6px;
-      border-radius: 3px;
+      height: 4px;
+      border-radius: var(--radius-pill);
     }
 
     .review-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      display: grid;
       gap: var(--space-3);
-      padding: var(--space-6) var(--space-5);
+      padding: var(--space-5);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+    }
+
+    .review-card .line {
+      height: calc(var(--text-sm) * 1.5);
+    }
+
+    .review-card .amount {
+      width: 40%;
+      height: calc(var(--text-3xl) * 1.1);
+    }
+
+    .review-card .merchant {
+      width: 60%;
+      height: calc(var(--text-xl) * 1.5);
+    }
+
+    .review-card .raw {
+      height: calc(var(--text-xs) * 1.5);
     }
 
     .chips {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--space-2);
-      margin-top: var(--space-3);
+      margin-top: var(--space-2);
     }
 
     .chips .skeleton {
-      width: 120px;
-      height: 36px;
-      border-radius: var(--radius-md);
+      min-height: var(--touch-target);
+      border-radius: var(--radius-control);
+    }
+
+    .review-card .search {
+      min-height: var(--touch-target);
+      border-radius: var(--radius-control);
+    }
+
+    .review-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .review-actions .skeleton {
+      height: var(--control-height);
+      border-radius: var(--radius-control);
     }
 
     /* Import: the form with its drop zone, and the actions under it. */
@@ -231,7 +296,16 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
 
     @media (width <= 767px) {
       .layout {
-        display: block;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .main {
+        display: contents;
+      }
+
+      .topline {
+        order: -1;
       }
 
       .side {
@@ -265,10 +339,6 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
     <div aria-hidden="true">
       @switch (view()) {
         @case ('movements') {
-          <div class="topline">
-            <span class="skeleton" style="width: 220px"></span>
-            <span class="skeleton" style="width: 280px; max-width: 45%"></span>
-          </div>
           <div class="layout">
             <div class="side">
               <div class="card balance">
@@ -285,54 +355,72 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
                     <span class="skeleton line" [style.width.%]="width"></span>
                   </div>
                 }
+                <div class="cats-foot">
+                  <span class="skeleton"></span>
+                </div>
               </div>
             </div>
-            <div class="card table">
-              <div class="row head">
-                <span class="skeleton line"></span>
-                <span class="opt skeleton line" style="width: 40px"></span>
-                <span class="skeleton line" style="width: 90px"></span>
-                <span class="opt skeleton line" style="width: 60px"></span>
-                <span class="opt skeleton line" style="width: 70px"></span>
-                <span class="opt"></span>
+            <div class="main">
+              <div class="topline">
+                <span class="skeleton" style="width: 220px"></span>
+                <span
+                  class="skeleton"
+                  style="width: 280px; max-width: 45%; margin-left: auto"
+                ></span>
+                <span class="skeleton" style="width: 96px"></span>
               </div>
-              @for (width of rowWidths; track $index) {
-                <div class="row">
-                  <span class="skeleton line" style="height: 18px; width: 18px"></span>
-                  <span class="opt skeleton line" style="width: 48px"></span>
-                  <span class="skeleton line" [style.width.%]="width"></span>
-                  <span class="skeleton line" style="width: 64px"></span>
-                  <span class="opt" style="display: flex; align-items: center; gap: 8px">
-                    <span class="skeleton badge"></span>
-                    <span class="skeleton line" style="width: 70px"></span>
-                  </span>
-                  <span class="opt skeleton line" style="height: 24px; width: 24px"></span>
+              <div class="card table">
+                <div class="row head">
+                  <span class="skeleton line"></span>
+                  <span class="opt skeleton line" style="width: 40px"></span>
+                  <span class="skeleton line" style="width: 90px"></span>
+                  <span class="opt skeleton line" style="width: 60px"></span>
+                  <span class="opt skeleton line" style="width: 70px"></span>
+                  <span class="opt"></span>
                 </div>
-              }
+                @for (width of rowWidths; track $index) {
+                  <div class="row">
+                    <span class="skeleton line" style="height: 18px; width: 18px"></span>
+                    <span class="opt skeleton line" style="width: 48px"></span>
+                    <span class="skeleton line" [style.width.%]="width"></span>
+                    <span class="skeleton line" style="width: 64px"></span>
+                    <span class="opt" style="display: flex; align-items: center; gap: 8px">
+                      <span class="skeleton badge"></span>
+                      <span class="skeleton line" style="width: 70px"></span>
+                    </span>
+                    <span class="opt skeleton line" style="height: 24px; width: 24px"></span>
+                  </div>
+                }
+              </div>
             </div>
           </div>
         }
         @case ('review') {
           <div class="review">
-            <div>
-              <span class="skeleton line" style="width: 200px; height: 20px"></span>
-              <span class="skeleton line" style="width: 150px; margin-top: 10px"></span>
-              <span class="skeleton progress box" style="margin-top: 12px"></span>
+            <div class="review-head">
+              <span class="skeleton line title"></span>
+              <span class="skeleton line sub"></span>
+              <span class="skeleton progress box"></span>
             </div>
             <div class="card review-card">
               <span class="skeleton line" style="width: 160px"></span>
-              <span class="skeleton line" style="width: 130px; height: 34px"></span>
-              <span class="skeleton line" style="width: 220px; height: 20px"></span>
-              <span class="skeleton line" style="width: 300px; max-width: 90%"></span>
+              <span class="skeleton line amount"></span>
+              <span class="skeleton line merchant"></span>
+              <span class="skeleton line raw" style="width: 85%"></span>
+              <span class="skeleton line" style="width: 70%"></span>
               <div class="chips">
                 @for (item of chips; track $index) {
                   <span class="skeleton"></span>
                 }
               </div>
-              <span
-                class="skeleton"
-                style="width: 320px; max-width: 100%; height: 36px; margin-top: 12px; border-radius: 8px"
-              ></span>
+              <span class="skeleton line" style="width: 55%"></span>
+              <span class="skeleton search box"></span>
+              <div class="review-actions">
+                <span class="skeleton" style="width: 180px; max-width: 45%"></span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="skeleton" style="width: 84px"></span>
+                <span class="skeleton" style="width: 96px"></span>
+              </div>
             </div>
           </div>
         }

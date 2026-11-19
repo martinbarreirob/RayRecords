@@ -150,3 +150,79 @@ export function formatDay(date: string, currentYear: number): string {
   const value = new Date(year!, month! - 1, day!);
   return (year === currentYear ? DAY_SHORT : DAY_SHORT_YEAR).format(value).replace(/\./g, '');
 }
+
+/** What the category of a group shows when its movements do not share one. */
+export const MIXED_CATEGORY = 'Varias';
+
+/**
+ * Every movement of one place: the movements that share a normalised description. The field names
+ * (`date`, `description`, `amountCents`, `categoryName`) match those of a movement so the table
+ * sorts a group row with the same sort keys; `id` is the group key, so it also serves as dataKey.
+ */
+export interface MovementGroup {
+  /** The normalised description. */
+  id: string;
+  /** The description of the first movement of the group, as written. */
+  description: string;
+  /** The latest date of the group. */
+  date: string;
+  /** How many movements the group holds. */
+  count: number;
+  /** The summed amount. */
+  amountCents: number;
+  /** The category every movement shares; `null` for none or when they differ (see `mixed`). */
+  category: string | null;
+  categoryName: string;
+  categoryLook: Category | null;
+  /** The movements do not all have the same category. */
+  mixed: boolean;
+  /** The movements, newest first. */
+  rows: MovementRow[];
+}
+
+/**
+ * Groups movements by their normalised description (case and accents ignored), one group
+ * per place. Groups come ordered by the size of their total, largest first, ties by name; their
+ * movements come newest first. The input order does not matter.
+ */
+export function groupMovements(rows: readonly MovementRow[]): MovementGroup[] {
+  const byKey = new Map<string, MovementRow[]>();
+  for (const row of rows) {
+    const key = normalizeText(row.description);
+    const list = byKey.get(key);
+    if (list) list.push(row);
+    else byKey.set(key, [row]);
+  }
+  const groups: MovementGroup[] = [];
+  for (const [key, list] of byKey) {
+    const first = list[0]!;
+    const sorted = [...list].sort(
+      (a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id),
+    );
+    const mixed = list.some((row) => row.category !== first.category);
+    groups.push({
+      id: key,
+      description: first.description,
+      date: sorted[0]!.date,
+      count: list.length,
+      amountCents: sumCents(list),
+      category: mixed ? null : first.category,
+      categoryName: mixed ? MIXED_CATEGORY : first.categoryName,
+      categoryLook: mixed ? null : first.categoryLook,
+      mixed,
+      rows: sorted,
+    });
+  }
+  return groups.sort(
+    (a, b) =>
+      Math.abs(b.amountCents) - Math.abs(a.amountCents) ||
+      a.description.localeCompare(b.description, 'es'),
+  );
+}
+
+/** A new set of expanded groups with the key flipped; the original is left alone. */
+export function toggleExpanded(expanded: ReadonlySet<string>, key: string): Set<string> {
+  const next = new Set(expanded);
+  if (!next.delete(key)) next.add(key);
+  return next;
+}

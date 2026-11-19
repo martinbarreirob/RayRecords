@@ -117,9 +117,6 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
     <div class="page">
       <!-- The views sit in the header, on the title's own row: one band less above the content. -->
       <app-page-header title="Gastos" [eyebrow]="today" [split]="true">
-        <button type="button" class="btn" (click)="store.categoriesOpen.set(true)">
-          Categorías
-        </button>
         <div class="segmented tabs" role="group" aria-label="Vista de gastos">
           @for (entry of views; track entry.id) {
             <button

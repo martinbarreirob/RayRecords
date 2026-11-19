@@ -10,7 +10,7 @@
   color: var(--success);
 }
 
-/* The period on the left, the text filter on the right: one band, one height. */
+/* The period on the left, the text filter on the right, above the movements: one band, one height. */
 .topline {
   display: flex;
   flex-wrap: wrap;
@@ -78,9 +78,11 @@
   white-space: nowrap;
 }
 
+/* Expenses on the left edge, income on the right one. */
 .balance-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--space-3);
   margin: var(--space-2) 0 0;
   padding-top: var(--space-2);
@@ -97,6 +99,10 @@
     font-weight: 500;
     white-space: nowrap;
   }
+
+  div:last-child {
+    text-align: right;
+  }
 }
 
 /*
@@ -110,7 +116,7 @@
 .sections {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .section {
@@ -140,6 +146,8 @@
 .section-row {
   display: flex;
   align-items: center;
+  /* As tall as a category's badge, so a row with only text ("Todas") is as tall as the others. */
+  min-height: 24px;
   justify-content: space-between;
   gap: var(--space-2);
 }
@@ -171,6 +179,18 @@
     height: 100%;
     border-radius: 2px;
     background: var(--accent);
+  }
+
+}
+
+/* The category manager closes the card: air, a rule, air and the button. */
+.cats-foot {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-1) var(--space-1);
+  border-top: 1px solid var(--line-soft);
+
+  .btn {
+    width: 100%;
   }
 }
 
@@ -223,6 +243,49 @@
   display: none;
 }
 
+/* The group switch sits next to the filter: a button that stays pressed while grouping is on. */
+.group-toggle {
+  flex: none;
+
+  /* Two icons on top of each other: the one for the current state fades and turns into place. */
+  .group-icons {
+    position: relative;
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    font-size: var(--text-lg);
+  }
+
+  .group-icons app-icon {
+    position: absolute;
+    inset: 0;
+    transition:
+      opacity 0.22s ease,
+      transform 0.28s ease;
+  }
+
+  .icon-on {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+
+  &[aria-pressed='true'] .icon-off {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+
+  &[aria-pressed='true'] .icon-on {
+    opacity: 1;
+    transform: none;
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
+
 /* The sort options only exist on a phone, folded under the filter. */
 .options {
   display: none;
@@ -251,8 +314,21 @@
     margin-bottom: var(--space-3);
   }
 
+  /*
+   * One column: the period and filter first, then the totals and categories, then the table. The
+   * main column dissolves so its parts can be put in that order.
+   */
   .layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main {
+    display: contents;
+  }
+
+  .topline {
+    order: -1;
   }
 
   .side {
@@ -319,6 +395,17 @@
   }
 
   .section-bar {
+    display: none;
+  }
+
+  /* The group switch is just its icon on a phone, as tall as the other touch controls. */
+  .group-toggle {
+    width: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
+  }
+
+  .group-toggle-label {
     display: none;
   }
 

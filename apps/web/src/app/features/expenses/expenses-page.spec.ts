@@ -33,6 +33,12 @@ describe('ExpensesPage', () => {
     expect(labels).toEqual(['Movimientos', 'Revisar', 'Importar', 'Reglas']);
   });
 
+  it('has no categories button of its own: it lives in the categories card', () => {
+    const fixture = setup();
+    expect(el(fixture).querySelector('.page-foot')).toBeNull();
+    expect(el(fixture).querySelector('app-movements-panel .cats-foot button')).not.toBeNull();
+  });
+
   it('opens on movements, with no placeholder', () => {
     const fixture = setup();
     expect(el(fixture).querySelector('app-movements-panel')).not.toBeNull();

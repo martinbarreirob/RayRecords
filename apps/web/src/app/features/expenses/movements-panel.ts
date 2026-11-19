@@ -31,11 +31,14 @@ import {
   SORT_CHOICES,
   filterMovements,
   formatDay,
+  groupMovements,
   inPeriod,
   periodTotals,
   sectionTotals,
   singleMonth,
   sumCents,
+  toggleExpanded,
+  type MovementGroup,
   type MovementRow,
   type Period,
   type SectionFilter,
@@ -77,51 +80,6 @@ interface SectionCard {
   styleUrls: ['./movements-panel.scss', './movements-table.scss', './movements-bulk.scss'],
   host: { '(document:keydown.escape)': 'onEscape($event)' },
   template: `
-    <!-- The period on the left, the text filter on the right (on a phone the options fold under it). -->
-    <div class="topline">
-      <div class="period" role="group" aria-label="Periodo">
-        <app-period-picker
-          [period]="period()"
-          [allowAll]="true"
-          (periodChange)="setPeriod($event)"
-        />
-      </div>
-      <label class="search">
-        <span class="sr-only">Filtrar por descripción</span>
-        <input
-          class="input"
-          type="search"
-          autocomplete="off"
-          enterkeyhint="search"
-          placeholder="Filtrar por descripción…"
-          [ngModel]="query()"
-          (ngModelChange)="setQuery($event)"
-        />
-      </label>
-      <button
-        type="button"
-        class="btn icon opts-toggle"
-        aria-controls="mv-options"
-        aria-label="Más opciones"
-        [attr.aria-expanded]="options()"
-        (click)="options.set(!options())"
-      >
-        <app-icon name="adjustments-horizontal" />
-      </button>
-      <div id="mv-options" class="options" [class.open]="options()">
-        <p-select
-          class="sort-select"
-          [options]="sortChoices"
-          optionLabel="label"
-          optionValue="id"
-          [ngModel]="sortId()"
-          (ngModelChange)="setSortChoice($event)"
-          ariaLabel="Ordenar por"
-          appendTo="body"
-        />
-      </div>
-    </div>
-
     <div class="layout">
       <!-- Left: the totals of the period over the categories, which also filter the table. -->
       <aside class="side">
@@ -207,11 +165,81 @@ interface SectionCard {
               }
             </div>
           }
+          <div class="cats-foot">
+            <button
+              type="button"
+              class="btn categories-btn"
+              (click)="store.categoriesOpen.set(true)"
+            >
+              Categorías
+            </button>
+          </div>
         </section>
       </aside>
 
       <!-- Right: the movements. -->
       <div class="main">
+        <!--
+          The period on the left, the text filter and the group switch on the right (on a phone the
+          options fold under them).
+        -->
+        <div class="topline">
+          <div class="period" role="group" aria-label="Periodo">
+            <app-period-picker
+              [period]="period()"
+              [allowAll]="true"
+              (periodChange)="setPeriod($event)"
+            />
+          </div>
+          <label class="search">
+            <span class="sr-only">Filtrar por descripción</span>
+            <input
+              class="input"
+              type="search"
+              autocomplete="off"
+              enterkeyhint="search"
+              placeholder="Filtrar por descripción…"
+              [ngModel]="query()"
+              (ngModelChange)="setQuery($event)"
+            />
+          </label>
+          <button
+            type="button"
+            class="btn group-toggle"
+            aria-label="Agrupar por descripción"
+            [attr.aria-pressed]="grouped()"
+            (click)="toggleGrouped()"
+          >
+            <span class="group-icons" aria-hidden="true">
+              <app-icon class="icon-off" name="list" />
+              <app-icon class="icon-on" name="stack-2" />
+            </span>
+            <span class="group-toggle-label">Agrupar</span>
+          </button>
+          <button
+            type="button"
+            class="btn icon opts-toggle"
+            aria-controls="mv-options"
+            aria-label="Más opciones"
+            [attr.aria-expanded]="options()"
+            (click)="options.set(!options())"
+          >
+            <app-icon name="adjustments-horizontal" />
+          </button>
+          <div id="mv-options" class="options" [class.open]="options()">
+            <p-select
+              class="sort-select"
+              [options]="sortChoices"
+              optionLabel="label"
+              optionValue="id"
+              [ngModel]="sortId()"
+              (ngModelChange)="setSortChoice($event)"
+              ariaLabel="Ordenar por"
+              appendTo="body"
+            />
+          </div>
+        </div>
+
         <h2 class="main-title">{{ sectionTitle() }}</h2>
 
         @if (error(); as message) {
@@ -227,14 +255,14 @@ interface SectionCard {
           [attr.aria-busy]="loading()"
         >
           <p-table
-            [value]="visible()"
+            [value]="tableRows()"
             dataKey="id"
             [selection]="selection()"
             (selectionChange)="selection.set($event)"
             [sortField]="sortField()"
             [sortOrder]="sortOrder()"
             (onSort)="onSort($event)"
-            [paginator]="visible().length > pageSize()"
+            [paginator]="tableRows().length > pageSize()"
             [rows]="pageSize()"
             [first]="first()"
             (onPage)="onPage($event)"
@@ -247,7 +275,9 @@ interface SectionCard {
             <ng-template #header>
               <tr>
                 <th class="c-check">
-                  <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
+                  @if (!grouped()) {
+                    <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
+                  }
                 </th>
                 <th class="c-date" pSortableColumn="date">
                   <span class="th-sort">Fecha <p-sorticon field="date" /></span>
@@ -258,57 +288,157 @@ interface SectionCard {
                 <th class="c-amount num" pSortableColumn="amountCents">
                   <span class="th-sort">Importe <p-sorticon field="amountCents" /></span>
                 </th>
-                <th class="c-cat" pSortableColumn="categoryName">
-                  <span class="th-sort">Categoría <p-sorticon field="categoryName" /></span>
-                </th>
+                @if (showCategory()) {
+                  <th class="c-cat" pSortableColumn="categoryName">
+                    <span class="th-sort">Categoría <p-sorticon field="categoryName" /></span>
+                  </th>
+                }
                 <th class="c-edit"><span class="sr-only">Editar</span></th>
               </tr>
             </ng-template>
 
+            <!--
+              A group row stands for one place and its movements hang under it when it is open.
+              The paginator counts the groups, so an open group is never split across pages.
+            -->
             <ng-template #body let-row>
-              <tr class="mv-row" [class.row-selected]="isSelected(row.id)">
-                <td class="c-check">
-                  <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
-                </td>
-                <td class="c-date">{{ day(row.date) }}</td>
-                <td class="c-desc" [title]="row.description">{{ row.description }}</td>
-                <td class="c-amount num" [class.positive]="row.amountCents > 0">
-                  {{ money(row.amountCents) }}
-                </td>
-                <td class="c-cat">
-                  <span class="cat" [class.cat-none]="row.category === null">
-                    <app-category-label
-                      size="sm"
-                      [look]="row.categoryLook"
-                      [name]="row.categoryName"
-                    />
-                    @if (row.categorySource === 'manual') {
-                      <app-icon
-                        name="lock"
-                        class="manual"
-                        title="Elegida a mano: las reglas no la cambian"
-                      />
-                      <span class="sr-only">(elegida a mano)</span>
-                    }
-                  </span>
-                </td>
-                <td class="c-edit">
-                  <button
-                    type="button"
-                    class="btn ghost icon"
-                    [attr.aria-label]="'Editar el movimiento ' + row.description"
-                    (click)="edit(row)"
-                  >
-                    <app-icon name="pencil" />
-                  </button>
-                </td>
-              </tr>
+              @if (row.rows; as children) {
+                <tr class="mv-row mv-group" (click)="toggleGroup(row.id)">
+                  <td class="c-check">
+                    <button
+                      type="button"
+                      class="group-btn"
+                      [attr.aria-expanded]="isExpanded(row.id)"
+                      [attr.aria-label]="
+                        (isExpanded(row.id) ? 'Contraer ' : 'Desplegar ') +
+                        row.description +
+                        ', ' +
+                        row.count +
+                        ' movimientos'
+                      "
+                    >
+                      <app-icon [name]="isExpanded(row.id) ? 'chevron-down' : 'chevron-right'" />
+                    </button>
+                  </td>
+                  <td class="c-date" title="Último movimiento">{{ day(row.date) }}</td>
+                  <td class="c-desc" [title]="row.description">
+                    <span class="group-name">{{ row.description }}</span>
+                    <span class="group-count">{{ row.count }} mov.</span>
+                  </td>
+                  <td class="c-amount num" [class.positive]="row.amountCents > 0">
+                    {{ money(row.amountCents) }}
+                  </td>
+                  @if (showCategory()) {
+                    <td class="c-cat">
+                      @if (row.mixed) {
+                        <span class="cat cat-none">{{ row.categoryName }}</span>
+                      } @else {
+                        <span class="cat" [class.cat-none]="row.category === null">
+                          <app-category-label
+                            size="sm"
+                            [look]="row.categoryLook"
+                            [name]="row.categoryName"
+                          />
+                        </span>
+                      }
+                    </td>
+                  }
+                  <td class="c-edit"></td>
+                </tr>
+                @if (isExpanded(row.id)) {
+                  @for (child of children; track child.id) {
+                    <tr class="mv-row mv-child" [class.row-selected]="isSelected(child.id)">
+                      <td class="c-check">
+                        <p-tablecheckbox
+                          [value]="child"
+                          [ariaLabel]="'Seleccionar ' + child.description"
+                        />
+                      </td>
+                      <!--
+                        Its date takes the room of the date and the description: the group row
+                        already says what it is, so the description only shows when it differs.
+                      -->
+                      <td class="c-date c-child" colspan="2">
+                        <span class="child-day">{{ day(child.date) }}</span>
+                        @if (child.description !== row.description) {
+                          <span class="child-desc" [title]="child.description">
+                            {{ child.description }}
+                          </span>
+                        }
+                      </td>
+                      <td class="c-amount num" [class.positive]="child.amountCents > 0">
+                        {{ money(child.amountCents) }}
+                      </td>
+                      @if (showCategory()) {
+                        <td class="c-cat">
+                          <!-- Only when the group mixes categories: otherwise it repeats the group's. -->
+                          @if (row.mixed) {
+                            <span class="cat" [class.cat-none]="child.category === null">
+                              <app-category-label
+                                size="sm"
+                                [look]="child.categoryLook"
+                                [name]="child.categoryName"
+                              />
+                            </span>
+                          }
+                        </td>
+                      }
+                      <td class="c-edit">
+                        <button
+                          type="button"
+                          class="btn ghost icon"
+                          [attr.aria-label]="'Editar el movimiento ' + child.description"
+                          (click)="edit(child)"
+                        >
+                          <app-icon name="pencil" />
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                }
+              } @else {
+                <tr class="mv-row" [class.row-selected]="isSelected(row.id)">
+                  <td class="c-check">
+                    <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
+                  </td>
+                  <td class="c-date">{{ day(row.date) }}</td>
+                  <td class="c-desc" [title]="row.description">{{ row.description }}</td>
+                  <td class="c-amount num" [class.positive]="row.amountCents > 0">
+                    {{ money(row.amountCents) }}
+                  </td>
+                  @if (showCategory()) {
+                    <td class="c-cat">
+                      <span class="cat" [class.cat-none]="row.category === null">
+                        <app-category-label
+                          size="sm"
+                          [look]="row.categoryLook"
+                          [name]="row.categoryName"
+                        />
+                      </span>
+                    </td>
+                  }
+                  <td class="c-edit">
+                    <button
+                      type="button"
+                      class="btn ghost icon"
+                      [attr.aria-label]="'Editar el movimiento ' + row.description"
+                      (click)="edit(row)"
+                    >
+                      <app-icon name="pencil" />
+                    </button>
+                  </td>
+                </tr>
+              }
             </ng-template>
 
             <ng-template #footer>
               @if (visible().length) {
                 <tr class="mv-foot">
                   <td class="f-label" colspan="3">
+                    @if (grouped()) {
+                      {{ tableRows().length }}
+                      {{ tableRows().length === 1 ? 'lugar' : 'lugares' }} ·
+                    }
                     {{ visible().length }}
                     {{ visible().length === 1 ? 'movimiento' : 'movimientos' }} · Total
                     {{ section() === 'all' ? 'visible' : 'sección' }}
@@ -316,7 +446,7 @@ interface SectionCard {
                   <td class="c-amount num f-total" [class.positive]="visibleTotal() > 0">
                     {{ money(visibleTotal()) }}
                   </td>
-                  <td class="f-end" colspan="2"></td>
+                  <td class="f-end" [attr.colspan]="columns() - 4"></td>
                 </tr>
               }
             </ng-template>
@@ -324,7 +454,7 @@ interface SectionCard {
             <ng-template #emptymessage>
               @if (loading()) {
                 <tr class="ghost-status">
-                  <td colspan="6">
+                  <td [attr.colspan]="columns()">
                     <span class="sr-only" role="status">Cargando movimientos…</span>
                   </td>
                 </tr>
@@ -336,15 +466,17 @@ interface SectionCard {
                       <span class="skeleton ghost-desc" [style.width.%]="row"></span>
                     </td>
                     <td class="c-amount num"><span class="skeleton ghost-amount"></span></td>
-                    <td class="c-cat">
-                      <span class="ghost-cat"><span class="skeleton ghost-pill"></span></span>
-                    </td>
+                    @if (showCategory()) {
+                      <td class="c-cat">
+                        <span class="ghost-cat"><span class="skeleton ghost-pill"></span></span>
+                      </td>
+                    }
                     <td class="c-edit"><span class="skeleton ghost-edit"></span></td>
                   </tr>
                 }
               } @else {
                 <tr>
-                  <td colspan="6" class="empty-cell">
+                  <td [attr.colspan]="columns()" class="empty-cell">
                     @if (periodRows().length === 0) {
                       <strong>Sin movimientos en este periodo.</strong>
                       Cambia el periodo o importa un extracto en la pestaña «Importar».
@@ -460,6 +592,26 @@ export class MovementsPanel {
   protected readonly ghostRows = [72, 54, 66, 48, 78, 60, 70, 52];
 
   protected readonly visibleTotal = computed(() => sumCents(this.visible()));
+  /**
+   * Group the movements by place: one row per description, open to see each amount. On from the
+   * start: a long list of movements reads better as places.
+   */
+  protected readonly grouped = signal(true);
+  /** Keys of the groups that are open; it does not depend on the data, so it survives reloads. */
+  protected readonly expanded = signal<ReadonlySet<string>>(new Set());
+  /**
+   * What the table lists: the movements, or the groups of what is visible (filters apply before
+   * grouping). A place with a single movement has nothing to open, so it stays a plain row.
+   */
+  protected readonly tableRows = computed<(MovementRow | MovementGroup)[]>(() =>
+    this.grouped()
+      ? groupMovements(this.visible()).map((group) => (group.count === 1 ? group.rows[0]! : group))
+      : this.visible(),
+  );
+  /** The category is implicit when the list on the left already filters by one. */
+  protected readonly showCategory = computed(() => this.section() === 'all');
+  /** Columns of the table: checkbox, date, description, amount, [category], edit. */
+  protected readonly columns = computed(() => (this.showCategory() ? 6 : 5));
   protected readonly selectedTotal = computed(() => sumCents(this.selection()));
   protected readonly totals = computed(() => periodTotals(this.periodRows()));
   private readonly selectedIds = computed(() => new Set(this.selection().map((row) => row.id)));
@@ -643,6 +795,19 @@ export class MovementsPanel {
 
   protected day(date: string): string {
     return formatDay(date, this.currentYear);
+  }
+
+  protected toggleGrouped(): void {
+    this.grouped.update((on) => !on);
+    this.first.set(0);
+  }
+
+  protected isExpanded(key: string): boolean {
+    return this.expanded().has(key);
+  }
+
+  protected toggleGroup(key: string): void {
+    this.expanded.update((open) => toggleExpanded(open, key));
   }
 
   protected isSelected(id: string): boolean {
