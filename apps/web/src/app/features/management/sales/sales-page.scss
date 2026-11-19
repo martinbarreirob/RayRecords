@@ -66,6 +66,11 @@
   list-style: none;
 }
 
+/* One or two products: each takes three columns, so it does not sit small in an empty grid. */
+.bento.few .tile {
+  grid-column: span 3;
+}
+
 .tile {
   display: flex;
   flex-direction: column;
@@ -145,7 +150,7 @@
 }
 
 .xl .tile-name {
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   letter-spacing: -0.01em;
   -webkit-line-clamp: 4;
   line-clamp: 4;
@@ -284,6 +289,11 @@
 
 /* Phone: one column, the page scrolls and the cart comes after the products. */
 @media (width <= 767px) {
+  /* A phone has two or three narrow columns: the card takes the whole row instead. */
+  .bento.few .tile {
+    grid-column: 1 / -1;
+  }
+
   :host {
     display: block;
     height: auto;

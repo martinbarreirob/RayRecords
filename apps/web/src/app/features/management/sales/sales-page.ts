@@ -24,6 +24,7 @@ import { AddButton } from '../../../core/ui/add-button';
 import { StockSearchService } from '../../../core/stock-search/stock-search.service';
 import { CartStore } from './cart.store';
 import {
+  FEW_TILES,
   bentoTiles,
   cartRows,
   cartTotal,
@@ -32,6 +33,7 @@ import {
   stepCategory,
   unitsByProduct,
   type CartRow,
+  type TileSize,
 } from './sales-logic';
 import { Icon } from '../../../core/ui/icon';
 
@@ -117,7 +119,7 @@ import { Icon } from '../../../core/ui/icon';
               }
             </ul>
           } @else if (tiles().length) {
-            <ul class="bento">
+            <ul class="bento" [class.few]="few()">
               @for (tile of tiles(); track tile.product.id) {
                 <li
                   class="tile"
@@ -153,14 +155,14 @@ import { Icon } from '../../../core/ui/icon';
                     <button
                       type="button"
                       class="btn sm add"
-                      [class.icon]="tile.size === 'normal'"
+                      [class.icon]="!roomy(tile.size)"
                       [attr.aria-label]="'Añadir ' + tile.product.name + ' al carrito'"
                       [title]="'Añadir al carrito'"
                       [disabled]="!canAdd(tile.product)"
                       (click)="add(tile.product)"
                     >
                       <app-icon name="plus" />
-                      @if (tile.size !== 'normal') {
+                      @if (roomy(tile.size)) {
                         Añadir
                       }
                     </button>
@@ -326,6 +328,8 @@ export class SalesPage {
   protected readonly tiles = computed(() =>
     bentoTiles(this.products(), unitsByProduct(this.sales()), this.category()),
   );
+  /** One or two products: they get the room of three columns instead of a lone small card. */
+  protected readonly few = computed(() => this.tiles().length <= FEW_TILES);
   protected readonly rows = computed(() => cartRows(this.cart.lines(), this.products()));
   protected readonly total = computed(() => cartTotal(this.rows()));
 
@@ -410,6 +414,11 @@ export class SalesPage {
     this.notice.set('');
     this.lastTicketId.set(null);
     this.stockSearch.show();
+  }
+
+  /** A card with room for the word "Añadir": a large one, or any when there are few. */
+  protected roomy(size: TileSize): boolean {
+    return size !== 'normal' || this.few();
   }
 
   protected add(product: Product): void {

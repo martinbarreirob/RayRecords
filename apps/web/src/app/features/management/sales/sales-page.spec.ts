@@ -79,6 +79,19 @@ describe('SalesPage', () => {
     fixture.detectChanges();
   }
 
+  it('lets one or two products grow to three columns, and not more', () => {
+    const { fixture } = setup({ products: () => of([water, coffee]) });
+    const bento = el(fixture).querySelector('.bento')!;
+    expect(bento.classList.contains('few')).toBe(true);
+    // With room to grow, even a card that is not a best seller shows the word on its button.
+    expect(tile(fixture, 'Agua').querySelector('.add')?.textContent).toContain('Añadir');
+  });
+
+  it('keeps the usual cards when there are more than two products', () => {
+    const { fixture } = setup();
+    expect(el(fixture).querySelector('.bento')!.classList.contains('few')).toBe(false);
+  });
+
   it('announces the loading until the products arrive', () => {
     const { fixture } = setup({ products: () => NEVER });
     expect(el(fixture).querySelector('[role="status"]')?.textContent).toContain('Cargando');

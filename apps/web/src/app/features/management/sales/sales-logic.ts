@@ -47,6 +47,9 @@ export function inCategory(product: Product, category: CategoryFilter): boolean 
   return product.categoryId === category;
 }
 
+/** With this many products or fewer, the cards grow to the width of three columns. */
+export const FEW_TILES = 2;
+
 /**
  * Cards of a category, best sellers first (then by name). The ranking is within what is on
  * screen, so every category has its own large cards; a product never sold stays small.

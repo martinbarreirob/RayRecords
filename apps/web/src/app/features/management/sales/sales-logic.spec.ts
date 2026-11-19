@@ -1,6 +1,7 @@
 import type { Product, StockCategory } from '@rayrecords/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  FEW_TILES,
   addToCart,
   bentoTiles,
   cartRows,
@@ -42,6 +43,12 @@ const coffee = product(2, { name: 'Café', categoryId: DRINKS, quantity: 3, pric
 const crisps = product(3, { name: 'Patatas', categoryId: SNACKS, quantity: 0, priceCents: 150 });
 const batteries = product(4, { name: 'Pilas', quantity: 7, priceCents: 500 });
 const products = [water, coffee, crisps, batteries];
+
+describe('FEW_TILES', () => {
+  it('is two: a lone pair of cards is the case that grows', () => {
+    expect(FEW_TILES).toBe(2);
+  });
+});
 
 describe('bentoTiles', () => {
   const sales = unitsByProduct([
