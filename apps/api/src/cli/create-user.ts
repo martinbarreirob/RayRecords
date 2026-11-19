@@ -5,8 +5,9 @@ import { upsertUser } from '../modules/auth/users';
 
 /**
  * Creates the single user or changes its password.
- *   pnpm --filter @rayrecords/api create-user <username>
- *   docker compose exec api node dist/cli/create-user.js <username>
+ *   pnpm --filter @rayrecords/api create-user <username> [--prefix <dataPrefix>]
+ *   docker compose exec api node dist/cli/create-user.js <username> [--prefix <dataPrefix>]
+ * With --prefix (like `ana_`) a new user keeps its data in its own `ana_*` collections.
  * The password is read from the terminal without echo; without a terminal it comes from RR_PASSWORD.
  */
 async function readPassword(): Promise<string> {
@@ -40,14 +41,25 @@ async function readPassword(): Promise<string> {
 }
 
 async function main() {
-  const username = process.argv[2]?.trim();
-  if (!username) throw new Error('Usage: create-user <username>');
+  const usage = 'Usage: create-user <username> [--prefix <dataPrefix>]';
+  const args = process.argv.slice(2);
+  const prefixAt = args.indexOf('--prefix');
+  let dataPrefix: string | undefined;
+  if (prefixAt !== -1) {
+    dataPrefix = args[prefixAt + 1]?.trim();
+    if (!dataPrefix) throw new Error(usage);
+    args.splice(prefixAt, 2);
+  }
+  const username = args[0]?.trim();
+  if (!username) throw new Error(usage);
   const password = await readPassword();
 
   const database = await connectDatabase(loadConfig());
   try {
     await ensureIndexes(database.collections);
-    const result = await upsertUser(database.collections, username, password);
+    const result = await upsertUser(database.collections, username, password, {
+      ...(dataPrefix !== undefined && { dataPrefix }),
+    });
     console.log(
       result === 'created'
         ? `User "${username}" created.`

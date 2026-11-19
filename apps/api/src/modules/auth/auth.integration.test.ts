@@ -184,19 +184,37 @@ describe.skipIf(!database)('authentication (integration)', () => {
   });
 
   // Last on purpose: it changes the password, and the earlier tests need the original.
-  it('single user setup: rejects short passwords and a second user, and a password change closes sessions', async () => {
+  it('user setup: short passwords, several users, data prefixes and a password change closing sessions', async () => {
     const c = database!.collections;
     await expect(upsertUser(c, 'martin', 'short')).rejects.toThrow(/at least/);
-    await expect(upsertUser(c, 'other', PASSWORD)).rejects.toThrow(/single-user/);
+
+    // A second user is allowed; an existing username only gets a new password.
+    expect(await upsertUser(c, 'other', PASSWORD)).toBe('created');
+    expect(await upsertUser(c, 'other', PASSWORD)).toBe('password-updated');
+    expect(await c.users.countDocuments()).toBe(2);
+
+    for (const bad of ['Demo', 'demo', '1x_', 'a-b_', '_']) {
+      await expect(upsertUser(c, 'third', PASSWORD, { dataPrefix: bad })).rejects.toThrow(/prefix/);
+    }
+    expect(await c.users.findOne({ username: 'third' })).toBeNull();
+    expect(await upsertUser(c, 'third', PASSWORD, { dataPrefix: 'demo_' })).toBe('created');
+    expect((await c.users.findOne({ username: 'third' }))!.dataPrefix).toBe('demo_');
+
+    await expect(upsertUser(c, 'weak', 'demo')).rejects.toThrow(/at least/);
+    expect(await upsertUser(c, 'weak', 'demo', { allowWeakPassword: true })).toBe('created');
 
     await c.sessions.insertOne({
       _id: 'x',
-      userId: (await c.users.findOne({}))!._id,
+      userId: (await c.users.findOne({ username: 'martin' }))!._id,
       createdAt: new Date(),
       lastSeenAt: new Date(),
       expiresAt: new Date(Date.now() + 1000),
     });
     expect(await upsertUser(c, 'martin', 'another very long password')).toBe('password-updated');
-    expect(await c.sessions.countDocuments()).toBe(0);
+    expect(
+      await c.sessions.countDocuments({
+        userId: (await c.users.findOne({ username: 'martin' }))!._id,
+      }),
+    ).toBe(0);
   });
 });

@@ -19,7 +19,15 @@ export interface Harness {
     url: string,
     payload?: unknown,
   ) => Promise<{ status: number; body: any }>;
+  /** Creates another user in the same database and signs them in (see `createUser`). */
+  createUser: (username: string, dataPrefix?: string) => Promise<TestUser>;
   close: () => Promise<void>;
+}
+
+export interface TestUser {
+  /** `cookie` header of the user's signed-in session. */
+  cookie: string;
+  call: Harness['call'];
 }
 
 /**
@@ -40,26 +48,43 @@ export async function createHarness(): Promise<Harness | null> {
   await upsertUser(database.collections, 'martin', PASSWORD);
   const app = await buildApp({ config: { nodeEnv: 'test', logLevel: 'silent' }, database });
 
-  const login = await app.inject({
-    method: 'POST',
-    url: '/api/auth/login',
-    payload: { username: 'martin', password: PASSWORD },
-  });
-  const cookie = `${SESSION_COOKIE}=${login.cookies.find((c) => c.name === SESSION_COOKIE)!.value}`;
+  const signIn = async (username: string): Promise<TestUser> => {
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username, password: PASSWORD },
+    });
+    const cookie = `${SESSION_COOKIE}=${login.cookies.find((c) => c.name === SESSION_COOKIE)!.value}`;
+    return {
+      cookie,
+      call: async (method, url, payload) => {
+        const response = await app.inject({
+          method,
+          url: `/api${url}`,
+          headers: { cookie },
+          ...(payload !== undefined && { payload: payload as object }),
+        });
+        const text = response.body;
+        return { status: response.statusCode, body: text ? JSON.parse(text) : null };
+      },
+    };
+  };
+
+  const main = await signIn('martin');
 
   return {
     app,
     database,
-    cookie,
-    call: async (method, url, payload) => {
-      const response = await app.inject({
-        method,
-        url: `/api${url}`,
-        headers: { cookie },
-        ...(payload !== undefined && { payload: payload as object }),
-      });
-      const text = response.body;
-      return { status: response.statusCode, body: text ? JSON.parse(text) : null };
+    cookie: main.cookie,
+    call: main.call,
+    createUser: async (username, dataPrefix) => {
+      await upsertUser(
+        database.collections,
+        username,
+        PASSWORD,
+        dataPrefix !== undefined ? { dataPrefix } : {},
+      );
+      return signIn(username);
     },
     close: async () => {
       await app.close();
