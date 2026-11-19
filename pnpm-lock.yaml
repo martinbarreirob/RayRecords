@@ -94,8 +94,8 @@ importers:
         specifier: ^8.0.2
         version: 8.0.2
       primeng:
-        specifier: 22.1.4
-        version: 22.1.4(289165e9611dedf622bc3f40827f8cfe)
+        specifier: 22.1.5
+        version: 22.1.5(289165e9611dedf622bc3f40827f8cfe)
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -1225,8 +1225,8 @@ packages:
     resolution: {integrity: sha512-PaZ2CMkMGcW03XO3CawHbCCxB9rj0IFKj/7lOmNLYw9s4UqgeleJVii2BJ7P0Un3OxIG7oU9wnjsamrp1QFchQ==}
     engines: {node: '>=12.11.0'}
 
-  '@primeuix/styles@3.1.0':
-    resolution: {integrity: sha512-xl1e8gcUhsqu1YgGIUe3R/PSKJHk88NMVwnOTVZZfptx955Rw0GkwvhRaeBh9iPVz4p5b7t9OiGJDWOu2qpX0Q==}
+  '@primeuix/styles@3.1.1':
+    resolution: {integrity: sha512-7ujpnhU5cU/ZCE/RoQJoKBFJEV6OWZSILWipEk8yfXnaNnED3jmBsG/qATv8DhLEJeJPiCGE2t64iWyfwSDBjg==}
 
   '@primeuix/themes@3.1.0':
     resolution: {integrity: sha512-/co1Vfo5JunRvjatdrTNYJ37j3fyXlvlN/NHgSNXToLP0ahhv4fxWAE5Q5A0C1PS/krrpXfXS2XIUBmKj/hzFg==}
@@ -2302,8 +2302,8 @@ packages:
   primeicons@8.0.2:
     resolution: {integrity: sha512-o3UQey3nXMEQRAudVYZZWswz6mmnWpPnksYb7wIu4rEEVfdS3pLnxnmSJx5gKBRMer1MxnhJZG5QRDxVVJFNkA==}
 
-  primeng@22.1.4:
-    resolution: {integrity: sha512-sUCNTOvHpUeG/TjRYBdsViVuKOJjoDNA8MCPT1FxSoxLNzRFXF0cAAffZor3d2i4GD6CB32nxbVyQhGBQO24Sw==}
+  primeng@22.1.5:
+    resolution: {integrity: sha512-Ku4ErzAmSOep7QSLa3iByHJIisTMtLB+Ec25tp2hrJvj0FZjyg9gddLZ8hN5q9sOG3qw1U3ZqUehAdLlRC3PRg==}
     peerDependencies:
       '@angular/cdk': ^22.1.0
       '@angular/common': ^22.1.0
@@ -2635,6 +2635,7 @@ packages:
 
   tldts-core@7.4.20:
     resolution: {integrity: sha512-C630TWXZCZmLq0F2bW4QqwnaaxCQ/svpAqvJwnC4JvgEM5ohhBnGsEzTLSOXcN+xjz+kEaHS5uoWIw2klnqd0A==}
+    deprecated: Partial release, see https://github.com/remusao/tldts/issues/2735. Use >=7.4.22.
 
   tldts@7.4.19:
     resolution: {integrity: sha512-48dH6aSpQnpbzDUc4vIQZ1VjB8tkK+e8c1yx05/SZK+rkssgjEOlxDd/yU8/a4vGYQ9vRgJr9dwMq9TJ0b3X2Q==}
@@ -3782,7 +3783,7 @@ snapshots:
     dependencies:
       '@primeuix/utils': 0.8.3
 
-  '@primeuix/styles@3.1.0':
+  '@primeuix/styles@3.1.1':
     dependencies:
       '@primeuix/styled': 1.2.0
 
@@ -4716,7 +4717,7 @@ snapshots:
 
   primeicons@8.0.2: {}
 
-  primeng@22.1.4(289165e9611dedf622bc3f40827f8cfe):
+  primeng@22.1.5(289165e9611dedf622bc3f40827f8cfe):
     dependencies:
       '@angular/cdk': 22.2.5(@angular/common@22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(@angular/forms@22.2.4(@angular/common@22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(@angular/platform-browser@22.2.4(@angular/common@22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2)))(rxjs@7.8.2))(@angular/platform-browser@22.2.4(@angular/common@22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@angular/common': 22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -4728,7 +4729,7 @@ snapshots:
       '@primeui/license-manager': 1.1.0
       '@primeuix/motion': 1.0.0
       '@primeuix/styled': 1.2.0
-      '@primeuix/styles': 3.1.0
+      '@primeuix/styles': 3.1.1
       '@primeuix/utils': 0.8.3
       rxjs: 7.8.2
       tslib: 2.9.1
