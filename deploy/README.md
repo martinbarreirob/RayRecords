@@ -58,7 +58,7 @@ On every push to `main`, CI runs the checks, publishes `rayrecords-api` and `ray
 
 ```bash
 docker build -f apps/api/Dockerfile -t ghcr.io/martinbarreirob/rayrecords-api:latest .
-docker build -f apps/web/Dockerfile -t ghcr.io/martinbarreirob/rayrecords-web:latest .
+docker build -f apps/web/Dockerfile --build-arg PRIMEUI_LICENSE=<key> -t ghcr.io/martinbarreirob/rayrecords-web:latest .
 docker push ghcr.io/martinbarreirob/rayrecords-api:latest
 docker push ghcr.io/martinbarreirob/rayrecords-web:latest
 ```

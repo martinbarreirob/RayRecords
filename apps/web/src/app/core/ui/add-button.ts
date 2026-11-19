@@ -1,5 +1,6 @@
 import { Component, HostListener, inject, input, output } from '@angular/core';
 import { PaletteService } from '../palette/palette.service';
+import { Icon } from './icon';
 
 /**
  * The "add something" button of a screen. All of them look the same and show Alt+N (Option+N on
@@ -12,6 +13,7 @@ import { PaletteService } from '../palette/palette.service';
  */
 @Component({
   selector: 'app-add-button',
+  imports: [Icon],
   styles: `
     .kbd {
       border-color: color-mix(in srgb, var(--on-accent) 40%, transparent);
@@ -56,7 +58,7 @@ import { PaletteService } from '../palette/palette.service';
       aria-keyshortcuts="Control+N Alt+N"
       (click)="pressed.emit()"
     >
-      <i class="pi pi-plus plus" aria-hidden="true"></i>
+      <app-icon name="plus" class="plus" />
       <span class="text">{{ label() }}</span>
       &ngsp;
       <span class="kbd" aria-hidden="true">Alt N</span>

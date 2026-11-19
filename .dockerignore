@@ -6,6 +6,7 @@
 .github
 **/.env
 **/.env.*
+**/*.generated.ts
 *.pem
 *.key
 *.md

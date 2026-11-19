@@ -10,6 +10,9 @@ coverage/
 .env.*
 !.env.example
 
+# Written by apps/web/scripts/write-license.mjs with the PrimeUI license key
+*.generated.ts
+
 # Keys and certificates
 *.pem
 *.key

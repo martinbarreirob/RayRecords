@@ -9,5 +9,8 @@ const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
 );
 if (hashes.length === 0) throw new Error('No inline scripts found in index.html');
 
-const conf = readFileSync('deploy/nginx/nginx.conf', 'utf8').replace('__SCRIPT_HASHES__', hashes.join(' '));
+const conf = readFileSync('deploy/nginx/nginx.conf', 'utf8').replace(
+  '__SCRIPT_HASHES__',
+  hashes.join(' '),
+);
 writeFileSync('/tmp/default.conf', conf);

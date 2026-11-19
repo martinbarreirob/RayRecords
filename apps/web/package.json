@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --port 4300 --proxy-config proxy.conf.json",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test --no-watch",
-    "icons": "node scripts/generate-icons.mjs"
+    "license": "node scripts/write-license.mjs",
+    "start": "node scripts/write-license.mjs && ng serve --port 4300 --proxy-config proxy.conf.json",
+    "build": "node scripts/write-license.mjs && ng build",
+    "watch": "node scripts/write-license.mjs && ng build --watch --configuration development",
+    "test": "node scripts/write-license.mjs && ng test --no-watch",
+    "icons": "node scripts/generate-icons.mjs",
+    "icons:tabler": "node scripts/generate-tabler-icons.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^22.2.5",
@@ -30,6 +32,7 @@
     "@angular/build": "^22.2.5",
     "@angular/cli": "^22.2.5",
     "@angular/compiler-cli": "^22.2.0",
+    "@tabler/icons": "^3.52.0",
     "jsdom": "^30.0.0",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"

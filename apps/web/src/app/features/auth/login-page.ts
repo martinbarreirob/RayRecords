@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
+import { Icon } from '../../core/ui/icon';
 
 /** Internal paths only: keeps `?volver=` from working as an open redirect. */
 export function safeReturnUrl(value: string | undefined): string {
@@ -20,6 +21,7 @@ export function loginErrorMessage(error: unknown): string {
 
 @Component({
   selector: 'app-login-page',
+  imports: [Icon],
   template: `
     <div class="login">
       <p class="brand" aria-hidden="true">
@@ -72,12 +74,7 @@ export function loginErrorMessage(error: unknown): string {
               [attr.aria-pressed]="showPassword()"
               (click)="showPassword.set(!showPassword())"
             >
-              <i
-                class="pi"
-                [class.pi-eye]="!showPassword()"
-                [class.pi-eye-slash]="showPassword()"
-                aria-hidden="true"
-              ></i>
+              <app-icon [name]="!showPassword() ? 'eye' : 'eye-off'" />
             </button>
           </span>
         </label>
@@ -88,7 +85,7 @@ export function loginErrorMessage(error: unknown): string {
 
         <button type="submit" class="btn primary" [disabled]="busy()" [attr.aria-busy]="busy()">
           @if (busy()) {
-            <i class="pi pi-spinner pi-spin" aria-hidden="true"></i> Entrando…
+            <app-icon name="loader-2" class="spin" /> Entrando…
           } @else {
             Entrar
           }
@@ -106,6 +103,23 @@ export function loginErrorMessage(error: unknown): string {
       min-height: 100vh;
       min-height: 100dvh;
       padding: var(--space-6) var(--space-4);
+    }
+
+    /* The "signing in" spinner; it stays still for whoever asks for less motion. */
+    .spin {
+      animation: login-spin 0.9s linear infinite;
+    }
+
+    @keyframes login-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spin {
+        animation: none;
+      }
     }
 
     .brand {

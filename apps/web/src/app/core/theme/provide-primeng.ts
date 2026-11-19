@@ -6,6 +6,7 @@ import {
   provideEnvironmentInitializer,
 } from '@angular/core';
 import { providePrimeNG } from 'primeng/config';
+import { PRIMEUI_LICENSE } from './primeng-license.generated';
 import { RayRecordsPreset } from './primeng-preset';
 
 /**
@@ -17,10 +18,14 @@ import { RayRecordsPreset } from './primeng-preset';
  * app boots, not when a route injector is created. Without this step PrimeNG never gets the theme
  * and components render unstyled (transparent dialogs, shapeless dropdowns). Here the initializers
  * of this same injector run when the route is created; they are PrimeNG's own, unchanged.
+ *
+ * The license key is written at build time by `scripts/write-license.mjs` from `PRIMEUI_LICENSE`.
+ * An empty key is passed as `undefined` so PrimeNG reports "not configured" rather than "malformed".
  */
 export function providePrimeNgTheme(): EnvironmentProviders {
   return makeEnvironmentProviders([
     providePrimeNG({
+      license: PRIMEUI_LICENSE || undefined,
       theme: {
         preset: RayRecordsPreset,
         options: { darkModeSelector: '[data-theme="dark"]', cssLayer: false },

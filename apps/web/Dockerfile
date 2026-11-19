@@ -17,7 +17,11 @@ RUN pnpm install --frozen-lockfile --filter @rayrecords/web...
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/web apps/web
-RUN pnpm --filter @rayrecords/web build
+# PrimeUI license key. It ends up in the JavaScript the browser downloads, so a build argument is
+# enough; without it the image still builds and PrimeNG shows its license notice.
+#   docker build --build-arg PRIMEUI_LICENSE=<key> ...
+ARG PRIMEUI_LICENSE=""
+RUN PRIMEUI_LICENSE="$PRIMEUI_LICENSE" pnpm --filter @rayrecords/web build
 
 # Put the hashes of the inline scripts of index.html into the Content-Security-Policy.
 COPY deploy/nginx deploy/nginx

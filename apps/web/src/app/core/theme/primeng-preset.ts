@@ -10,8 +10,8 @@ export const RayRecordsPreset = definePreset(Aura, {
     primary: {
       50: '#fafafa',
       100: '#f3f3f3',
-      200: '#e4e4e4',
-      300: '#cbcbcb',
+      200: '#d8d8d8',
+      300: '#bcbcbc',
       400: '#a1a1a1',
       500: '#686868',
       600: '#4a4a4a',
