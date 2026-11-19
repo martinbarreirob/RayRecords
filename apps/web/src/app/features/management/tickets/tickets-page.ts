@@ -26,6 +26,8 @@ import {
 import { Icon } from '../../../core/ui/icon';
 import { AddButton } from '../../../core/ui/add-button';
 import { StockSearchService } from '../../../core/stock-search/stock-search.service';
+import { TicketPrinter } from '../../../core/print/ticket-printer';
+import { PrintSettingsDialog } from './print-settings-dialog';
 
 /**
  * The tickets generated in sales, newest first, with the chosen one opened next to the list as a
@@ -33,7 +35,7 @@ import { StockSearchService } from '../../../core/stock-search/stock-search.serv
  */
 @Component({
   selector: 'app-tickets-page',
-  imports: [Icon, FormsModule, AddButton, PageHeader, DateField],
+  imports: [Icon, FormsModule, AddButton, PageHeader, DateField, PrintSettingsDialog],
   host: { class: 'page' },
   styleUrl: './tickets-page.scss',
   template: `
@@ -77,6 +79,10 @@ import { StockSearchService } from '../../../core/stock-search/stock-search.serv
       }
       <span class="spacer"></span>
       <span class="shown muted" aria-live="polite">{{ shownLabel() }}</span>
+      <button type="button" class="btn edit-receipt" (click)="settingsOpen.set(true)">
+        <app-icon name="pencil" />
+        Editar ticket
+      </button>
     </div>
 
     <section
@@ -169,7 +175,7 @@ import { StockSearchService } from '../../../core/stock-search/stock-search.serv
           </p>
         } @else if (!rows().length) {
           <p class="empty">
-            Todavía no hay tickets. Se crean en «Ventas» con el botón «Generar ticket».
+            Todavía no hay tickets. Se crean en «Ventas» con el botón «Imprimir ticket».
           </p>
         } @else {
           <p class="empty">
@@ -184,6 +190,10 @@ import { StockSearchService } from '../../../core/stock-search/stock-search.serv
           <header class="receipt-head">
             <h2>Ticket n.º {{ ticket.number }}</h2>
             <span class="muted">{{ ticket.when }}</span>
+            <button type="button" class="btn sm print" (click)="printer.print(ticket)">
+              <app-icon name="printer" />
+              Imprimir
+            </button>
           </header>
           <ul class="lines">
             @for (line of ticket.lines; track line.productId) {
@@ -210,10 +220,14 @@ import { StockSearchService } from '../../../core/stock-search/stock-search.serv
         }
       </aside>
     </div>
+
+    <app-print-settings-dialog [open]="settingsOpen()" (closed)="settingsOpen.set(false)" />
   `,
 })
 export class TicketsPage {
   protected readonly stockSearch = inject(StockSearchService);
+  protected readonly printer = inject(TicketPrinter);
+  protected readonly settingsOpen = signal(false);
   private readonly api = inject(ApiClient);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 

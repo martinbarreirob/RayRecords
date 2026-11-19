@@ -5,6 +5,7 @@ import { NEVER, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClient, type TicketsQuery } from '../../../core/api/api-client';
 import { providePrimeNgTheme } from '../../../core/theme/provide-primeng';
+import { TicketPrinter } from '../../../core/print/ticket-printer';
 import { TicketsPage } from './tickets-page';
 
 function ticket(number: number, lines: [string, number, number][]): Ticket {
@@ -34,13 +35,19 @@ const tickets = [
 describe('TicketsPage', () => {
   function setup(load: () => unknown = () => of(tickets), opened?: string) {
     const api = { tickets: vi.fn((_query?: TicketsQuery) => load()) };
+    const printer = { print: vi.fn() };
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), providePrimeNgTheme(), { provide: ApiClient, useValue: api }],
+      providers: [
+        provideRouter([]),
+        providePrimeNgTheme(),
+        { provide: ApiClient, useValue: api },
+        { provide: TicketPrinter, useValue: printer },
+      ],
     });
     const fixture = TestBed.createComponent(TicketsPage);
     if (opened) fixture.componentRef.setInput('ticket', opened);
     fixture.detectChanges();
-    return { fixture, api };
+    return { fixture, api, printer };
   }
 
   const el = (fixture: ComponentFixture<TicketsPage>) => fixture.nativeElement as HTMLElement;
@@ -55,6 +62,25 @@ describe('TicketsPage', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
   }
+
+  it('prints the ticket that is open from its receipt', () => {
+    const { fixture, printer } = setup();
+    const button = [...el(fixture).querySelectorAll<HTMLButtonElement>('.receipt button')].find(
+      (node) => node.textContent?.trim() === 'Imprimir',
+    )!;
+    button.click();
+    expect(printer.print).toHaveBeenCalledWith(
+      expect.objectContaining({ id: tickets[0]!.id, number: 3 }),
+    );
+  });
+
+  it('opens the print settings from the toolbar', () => {
+    const { fixture } = setup();
+    expect(document.querySelector('.print-settings-dialog')).toBeNull();
+    el(fixture).querySelector<HTMLButtonElement>('.edit-receipt')!.click();
+    fixture.detectChanges();
+    expect(document.querySelector('.print-settings-dialog')).not.toBeNull();
+  });
 
   it('announces the loading until the tickets arrive', () => {
     const { fixture, api } = setup(() => NEVER);
@@ -143,7 +169,7 @@ describe('TicketsPage', () => {
 
   it('says where tickets come from when there are none', () => {
     const { fixture } = setup(() => of([]));
-    expect(el(fixture).querySelector('.list .empty')?.textContent).toContain('Generar ticket');
+    expect(el(fixture).querySelector('.list .empty')?.textContent).toContain('Imprimir ticket');
   });
 
   it('shows the error when the tickets cannot be loaded', () => {

@@ -171,6 +171,11 @@
   background: var(--surface);
 }
 
+/* The print button takes its own line at the end of the head. */
+.receipt-head .print {
+  margin-left: auto;
+}
+
 .receipt-head {
   display: flex;
   flex-wrap: wrap;
