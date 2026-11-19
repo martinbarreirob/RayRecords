@@ -8,6 +8,8 @@ import type {
   CreateEvent,
   UpdateEvent,
   Category,
+  CategoryUsage,
+  CreateCategory,
   ReviewApply,
   ReviewApplyResult,
   ReviewQueue,
@@ -16,7 +18,11 @@ import type {
   CreateAccount,
   CreateItem,
   CreateList,
+  CreateProduct,
   CreateRule,
+  CreateStockCategory,
+  CreateTicket,
+  Dashboard,
   ImportBatch,
   ImportResult,
   Item,
@@ -30,7 +36,11 @@ import type {
   NoteBoard,
   NoteCard,
   NoteGroup,
+  Product,
+  ProductSales,
   SetTransactionCategory,
+  StockCategory,
+  Ticket,
   Transaction,
   TransactionPage,
   TransactionQuery,
@@ -39,11 +49,15 @@ import type {
   UpdateList,
   UpdateNoteCard,
   UpdateNoteGroup,
+  UpdateProduct,
   UpdateRule,
+  UpdateCategory,
+  UpdateStockCategory,
+  UpdateUser,
   User,
 } from '@rayrecords/shared';
 import { map, type Observable } from 'rxjs';
-import { ApiClient, type ItemFilters } from './api-client';
+import { ApiClient, type ItemFilters, type TicketsQuery } from './api-client';
 
 /**
  * Implementation against the real API. Types come from `@rayrecords/shared`; the server validates
@@ -63,6 +77,10 @@ export class HttpApiClient extends ApiClient {
 
   override me(): Observable<User> {
     return this.http.get<User>('/api/auth/me');
+  }
+
+  override updateMe(input: UpdateUser): Observable<User> {
+    return this.http.patch<User>('/api/auth/me', input);
   }
 
   override lists(): Observable<List[]> {
@@ -173,8 +191,16 @@ export class HttpApiClient extends ApiClient {
     return this.http.get<Category[]>('/api/categories');
   }
 
-  override createCategory(input: Category): Observable<Category> {
+  override createCategory(input: CreateCategory): Observable<Category> {
     return this.http.post<Category>('/api/categories', input);
+  }
+
+  override updateCategory(key: string, input: UpdateCategory): Observable<Category> {
+    return this.http.patch<Category>(`/api/categories/${key}`, input);
+  }
+
+  override categoryUsage(): Observable<CategoryUsage> {
+    return this.http.get<CategoryUsage>('/api/categories/usage');
   }
 
   override deleteCategory(key: string): Observable<void> {
@@ -260,5 +286,57 @@ export class HttpApiClient extends ApiClient {
         Object.entries(params).filter(([, v]) => v !== undefined),
       ) as Record<string, string>,
     });
+  }
+
+  override products(): Observable<Product[]> {
+    return this.http.get<Product[]>('/api/stock/products');
+  }
+
+  override createProduct(input: CreateProduct): Observable<Product> {
+    return this.http.post<Product>('/api/stock/products', input);
+  }
+
+  override updateProduct(id: string, input: UpdateProduct): Observable<Product> {
+    return this.http.patch<Product>(`/api/stock/products/${id}`, input);
+  }
+
+  override deleteProduct(id: string): Observable<void> {
+    return this.http.delete<null>(`/api/stock/products/${id}`).pipe(map(() => undefined));
+  }
+
+  override stockCategories(): Observable<StockCategory[]> {
+    return this.http.get<StockCategory[]>('/api/stock/categories');
+  }
+
+  override createStockCategory(input: CreateStockCategory): Observable<StockCategory> {
+    return this.http.post<StockCategory>('/api/stock/categories', input);
+  }
+
+  override updateStockCategory(id: string, input: UpdateStockCategory): Observable<StockCategory> {
+    return this.http.patch<StockCategory>(`/api/stock/categories/${id}`, input);
+  }
+
+  override deleteStockCategory(id: string): Observable<void> {
+    return this.http.delete<null>(`/api/stock/categories/${id}`).pipe(map(() => undefined));
+  }
+
+  override createTicket(input: CreateTicket): Observable<Ticket> {
+    return this.http.post<Ticket>('/api/tickets', input);
+  }
+
+  override tickets(query: TicketsQuery = {}): Observable<Ticket[]> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== '') params = params.set(key, String(value));
+    }
+    return this.http.get<Ticket[]>('/api/tickets', { params });
+  }
+
+  override dashboard(days: number): Observable<Dashboard> {
+    return this.http.get<Dashboard>('/api/dashboard', { params: { days: String(days) } });
+  }
+
+  override topProducts(): Observable<ProductSales[]> {
+    return this.http.get<ProductSales[]>('/api/sales/top-products');
   }
 }

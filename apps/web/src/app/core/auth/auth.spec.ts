@@ -13,7 +13,7 @@ import { authGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthStore } from './auth.store';
 
-const USER = { id: 'a'.repeat(24), username: 'martin' };
+const USER = { id: 'a'.repeat(24), username: 'martin', theme: 'system' as const };
 
 function setup(api: Partial<ApiClient>) {
   TestBed.configureTestingModule({

@@ -6,6 +6,8 @@ import type {
   CreateEvent,
   UpdateEvent,
   Category,
+  CategoryUsage,
+  CreateCategory,
   ReviewApply,
   ReviewApplyResult,
   ReviewQueue,
@@ -14,7 +16,11 @@ import type {
   CreateAccount,
   CreateItem,
   CreateList,
+  CreateProduct,
   CreateRule,
+  CreateStockCategory,
+  CreateTicket,
+  Dashboard,
   ImportBatch,
   ImportResult,
   Item,
@@ -28,7 +34,11 @@ import type {
   NoteBoard,
   NoteCard,
   NoteGroup,
+  Product,
+  ProductSales,
   SetTransactionCategory,
+  StockCategory,
+  Ticket,
   Transaction,
   TransactionPage,
   TransactionQuery,
@@ -37,7 +47,11 @@ import type {
   UpdateList,
   UpdateNoteCard,
   UpdateNoteGroup,
+  UpdateProduct,
   UpdateRule,
+  UpdateCategory,
+  UpdateStockCategory,
+  UpdateUser,
   User,
 } from '@rayrecords/shared';
 import type { Observable } from 'rxjs';
@@ -47,6 +61,12 @@ export interface ItemFilters {
   tag?: string;
   q?: string;
   done?: boolean;
+}
+
+export interface TicketsQuery {
+  limit?: number;
+  from?: string;
+  to?: string;
 }
 
 /**
@@ -59,6 +79,8 @@ export abstract class ApiClient {
   abstract logout(): Observable<void>;
   /** Current session user; fails with 401 when there is no session. */
   abstract me(): Observable<User>;
+  /** Saves the user's own preferences (the theme) in the account. */
+  abstract updateMe(input: UpdateUser): Observable<User>;
 
   abstract lists(): Observable<List[]>;
   abstract createList(input: CreateList): Observable<List>;
@@ -98,7 +120,12 @@ export abstract class ApiClient {
   abstract updateAccount(id: string, input: UpdateAccount): Observable<AccountSummary>;
 
   abstract categories(): Observable<Category[]>;
-  abstract createCategory(input: Category): Observable<Category>;
+  /** Without a `key` the server makes one from the name. */
+  abstract createCategory(input: CreateCategory): Observable<Category>;
+  /** Partial: the name, the icon or either color. */
+  abstract updateCategory(key: string, input: UpdateCategory): Observable<Category>;
+  /** Transactions per category key (categories with none are left out). */
+  abstract categoryUsage(): Observable<CategoryUsage>;
   abstract deleteCategory(key: string): Observable<void>;
 
   abstract rules(): Observable<CategorizationRule[]>;
@@ -133,4 +160,31 @@ export abstract class ApiClient {
     accountId?: string;
     type?: 'expense' | 'income';
   }): Observable<MonthlyCategoryTotal[]>;
+
+  /** The whole stock, sorted by name. */
+  abstract products(): Observable<Product[]>;
+  abstract createProduct(input: CreateProduct): Observable<Product>;
+  /** `null` in `sku` or `notes` clears the field. */
+  abstract updateProduct(id: string, input: UpdateProduct): Observable<Product>;
+  abstract deleteProduct(id: string): Observable<void>;
+
+  abstract stockCategories(): Observable<StockCategory[]>;
+  abstract createStockCategory(input: CreateStockCategory): Observable<StockCategory>;
+  /** Partial: the name, the icon or either color. */
+  abstract updateStockCategory(id: string, input: UpdateStockCategory): Observable<StockCategory>;
+  /** Its products stay, without a category. */
+  abstract deleteStockCategory(id: string): Observable<void>;
+
+  /** Turns a cart into a ticket and takes the units out of the stock; 409 if there is not enough. */
+  abstract createTicket(input: CreateTicket): Observable<Ticket>;
+  /**
+   * Newest first; the server caps `limit` at 200. `from` and `to` are days (`YYYY-MM-DD`, both
+   * included) in the app's time zone.
+   */
+  abstract tickets(query?: TicketsQuery): Observable<Ticket[]>;
+  /** Units sold per product over every ticket, best seller first. */
+  abstract topProducts(): Observable<ProductSales[]>;
+
+  /** The management dashboard for the last 7, 30 or 90 days. */
+  abstract dashboard(days: number): Observable<Dashboard>;
 }
