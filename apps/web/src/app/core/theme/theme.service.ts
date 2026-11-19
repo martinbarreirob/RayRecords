@@ -9,9 +9,8 @@ export type Theme = 'light' | 'dark';
 export const THEME_CACHE_KEY = 'rayrecords.theme';
 
 /**
- * Light/dark theme. The default is the operating system's, followed live. Picking a theme saves
- * it in the user's account, so it comes back on every device; "system" goes back to following
- * the device.
+ * Light/dark theme. The default is the light one. Picking a theme saves it in the user's account,
+ * so it comes back on every device. "system" (follow the device live) is no longer offered, but accounts that saved it keep working.
  *
  * The account is the source of truth. The browser also keeps a copy, only so that
  * `theme-init.js` can paint the right theme before Angular boots and before the session is
@@ -49,7 +48,7 @@ export class ThemeService {
     // The account decides: when the user arrives (login or an existing session), use its theme.
     effect(() => {
       const user = this.auth.user();
-      if (user) untracked(() => this.apply(user.theme ?? 'system'));
+      if (user) untracked(() => this.apply(user.theme ?? 'light'));
     });
 
     effect(() => document.documentElement.setAttribute('data-theme', this.resolved()));
@@ -84,17 +83,16 @@ export class ThemeService {
 function readCache(): ThemePreference {
   try {
     const value = localStorage.getItem(THEME_CACHE_KEY);
-    return value === 'light' || value === 'dark' ? value : 'system';
+    return value === 'light' || value === 'dark' || value === 'system' ? value : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 }
 
-/** "system" is the absence of a choice: nothing is kept for it. */
+/** The last preference this browser saw, so the first paint matches it. */
 function writeCache(preference: ThemePreference): void {
   try {
-    if (preference === 'system') localStorage.removeItem(THEME_CACHE_KEY);
-    else localStorage.setItem(THEME_CACHE_KEY, preference);
+    localStorage.setItem(THEME_CACHE_KEY, preference);
   } catch {
     // Private mode or blocked storage: the account still remembers it.
   }

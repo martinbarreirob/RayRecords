@@ -105,7 +105,7 @@ export interface UserDoc {
    * users and sessions are shared and never prefixed.
    */
   dataPrefix?: string;
-  /** Missing until the user picks one: the device's theme is used. */
+  /** Missing until the user picks one: the light theme is used. */
   theme?: ThemePreference;
   createdAt: Date;
 }

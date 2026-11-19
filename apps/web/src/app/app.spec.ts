@@ -121,26 +121,19 @@ describe('App', () => {
 
   it('uses the theme saved in the account, whatever the system says', async () => {
     TestBed.inject(AuthStore).user.set({ id: 'a'.repeat(24), username: 'martin', theme: 'dark' });
-    const el = await render(false);
+    await render(false);
     TestBed.flushEffects();
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(updateMe).not.toHaveBeenCalled();
     // The browser keeps a copy so the next load paints it before the session is known.
     expect(localStorage.getItem('rayrecords.theme')).toBe('dark');
-
-    // Going back to the system theme is only offered while a fixed one is in use.
-    const system = el.querySelector<HTMLButtonElement>('header .theme-system')!;
-    system.click();
-    TestBed.flushEffects();
-    expect(updateMe).toHaveBeenCalledWith({ theme: 'system' });
-    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
-    expect(localStorage.getItem('rayrecords.theme')).toBeNull();
   });
 
-  it('does not offer the system theme while it is already the one in use', async () => {
+  it('has no button to go back to the system theme', async () => {
     const el = await render(true);
     expect(el.querySelector('header .theme-system')).toBeNull();
+    expect(el.textContent).not.toContain('Tema del sistema');
   });
 
   it('starts from the system theme when it is dark', async () => {

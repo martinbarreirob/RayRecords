@@ -88,12 +88,6 @@ export class App {
     this.menuOpen.set(false);
   }
 
-  /** Stops using a fixed theme and follows the device again. */
-  protected useSystemTheme(): void {
-    this.theme.set('system');
-    this.menuOpen.set(false);
-  }
-
   protected logout(): void {
     this.menuOpen.set(false);
     // On a network error the UI is left anyway; the session expires on its own on the server.

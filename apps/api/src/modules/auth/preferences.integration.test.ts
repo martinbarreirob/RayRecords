@@ -11,9 +11,9 @@ describe.skipIf(!h)('user preferences (integration)', () => {
     await h?.close();
   });
 
-  it('uses the system theme until the user picks one', async () => {
+  it('uses the light theme until the user picks one', async () => {
     const me = await call('GET', '/auth/me');
-    expect(me.body).toMatchObject({ username: 'martin', theme: 'system' });
+    expect(me.body).toMatchObject({ username: 'martin', theme: 'light' });
   });
 
   it('saves the chosen theme in the account, for every session', async () => {
@@ -33,7 +33,7 @@ describe.skipIf(!h)('user preferences (integration)', () => {
     expect(login.json()).toMatchObject({ theme: 'dark' });
   });
 
-  it('goes back to the system theme', async () => {
+  it('still accepts the system theme saved by older accounts', async () => {
     const back = await call('PATCH', '/auth/me', { theme: 'system' });
     expect(back.body).toMatchObject({ theme: 'system' });
   });

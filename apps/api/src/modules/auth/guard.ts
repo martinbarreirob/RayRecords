@@ -75,7 +75,7 @@ export function registerAuthGuard(
     request.user = {
       id: user._id.toHexString(),
       username: user.username,
-      theme: user.theme ?? 'system',
+      theme: user.theme ?? 'light',
       sessionId: resolved.session._id,
       ...(user.dataPrefix !== undefined && { dataPrefix: user.dataPrefix }),
     };

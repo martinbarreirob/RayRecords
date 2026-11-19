@@ -51,12 +51,6 @@
                   theme.resolved() === 'dark' ? 'Tema claro' : 'Tema oscuro'
                 }}</span>
               </button>
-              @if (theme.preference() !== 'system') {
-                <button type="button" class="btn ghost theme-system" (click)="useSystemTheme()">
-                  <app-icon name="device-desktop" />
-                  <span class="label">Tema del sistema</span>
-                </button>
-              }
               <button
                 type="button"
                 class="btn ghost logout"
