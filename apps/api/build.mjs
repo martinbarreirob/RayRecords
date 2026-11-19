@@ -9,6 +9,7 @@ await build({
   entryPoints: [
     'src/server.ts',
     'src/cli/create-user.ts',
+    'src/cli/create-demo.ts',
     'src/cli/migrate-notes.ts',
     'src/cli/sync-catalog.ts',
   ],
