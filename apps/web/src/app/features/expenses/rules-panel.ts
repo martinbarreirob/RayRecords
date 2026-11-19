@@ -19,7 +19,9 @@ import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { RefreshBus } from '../../core/refresh';
 import { FinanceStore } from './finance.store';
-import { categoryKeyError, keyFromName, patternError } from './rules-logic';
+import { patternError } from './rules-logic';
+import { CategoryLabel } from '../categories/category-label';
+import { CategorySelect, type CategoryOption } from '../categories/category-select';
 
 const MATCH_LABELS: Record<RuleMatchType, string> = {
   contains: 'contiene',
@@ -29,7 +31,14 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
 
 @Component({
   selector: 'app-rules-panel',
-  imports: [FormsModule, SelectModule, ToggleSwitchModule, InputNumberModule],
+  imports: [
+    CategoryLabel,
+    CategorySelect,
+    FormsModule,
+    SelectModule,
+    ToggleSwitchModule,
+    InputNumberModule,
+  ],
   styleUrl: './rules-panel.scss',
   template: `
     @if (error(); as message) {
@@ -76,7 +85,10 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
               <span class="pattern">«{{ rule.pattern }}»</span>
               <span class="badge">{{ labels[rule.matchType] }}</span>
               <span class="arrow" aria-hidden="true">→</span>
-              <span class="badge accent">{{ store.categoryName(rule.categoryKey) }}</span>
+              <app-category-label
+                [look]="store.category(rule.categoryKey)"
+                [name]="store.categoryName(rule.categoryKey)"
+              />
               <span class="muted priority" title="Las de mayor prioridad se evalúan antes">
                 prioridad {{ rule.priority }}
               </span>
@@ -140,16 +152,11 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
           </div>
           <div class="field">
             <span>Categoría</span>
-            <p-select
-              [options]="categoryOptions()"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="effectiveCategory()"
-              (ngModelChange)="categoryKey.set($event)"
-              [ngModelOptions]="{ standalone: true }"
+            <app-category-select
               ariaLabel="Categoría de la regla"
-              appendTo="body"
-              [filter]="categoryOptions().length > 8"
+              [options]="categoryOptions()"
+              [value]="effectiveCategory()"
+              (valueChange)="categoryKey.set($event ?? '')"
             />
           </div>
           <div class="field priority-field">
@@ -183,11 +190,18 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
     </section>
 
     <section class="card" aria-labelledby="cats-title">
-      <h2 id="cats-title">Categorías</h2>
-      <p class="muted">
-        La clave identifica la categoría y no se puede cambiar. Una categoría en uso por reglas o
-        movimientos no se puede borrar.
-      </p>
+      <div class="head">
+        <div>
+          <h2 id="cats-title">Categorías</h2>
+          <p class="muted">
+            Cada una con su icono y sus colores. Se crean, renombran y borran en el gestor; una
+            categoría en uso por reglas o movimientos no se puede borrar.
+          </p>
+        </div>
+        <button type="button" class="btn" (click)="store.categoriesOpen.set(true)">
+          Gestionar categorías
+        </button>
+      </div>
 
       @if (!store.ready()) {
         <div aria-busy="true">
@@ -202,67 +216,13 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
         <ul class="cats">
           @for (category of store.categories(); track category.key) {
             <li class="chip">
-              <span>{{ category.name }}</span>
-              <small class="muted">{{ category.key }}</small>
-              <button
-                type="button"
-                class="btn ghost sm icon-only"
-                [attr.aria-label]="'Borrar la categoría ' + category.name"
-                [disabled]="busy()"
-                (click)="removeCategory(category.key)"
-              >
-                <i class="pi pi-times" aria-hidden="true"></i>
-              </button>
+              <app-category-label [look]="category" [name]="category.name" />
             </li>
           }
         </ul>
       } @else {
         <p class="empty">Todavía no hay categorías.</p>
       }
-
-      <form class="add" (submit)="addCategory($event)" novalidate>
-        <h3>Nueva categoría</h3>
-        <div class="grid cat-grid">
-          <label class="field">
-            <span>Nombre</span>
-            <input
-              class="input"
-              type="text"
-              [ngModel]="catName()"
-              (ngModelChange)="onCatName($event)"
-              name="catName"
-              placeholder="p. ej. Mascotas"
-              autocomplete="off"
-            />
-          </label>
-          <label class="field">
-            <span>Clave</span>
-            <input
-              class="input"
-              type="text"
-              [ngModel]="catKey()"
-              (ngModelChange)="onCatKey($event)"
-              name="catKey"
-              placeholder="p. ej. mascotas"
-              autocomplete="off"
-              autocapitalize="none"
-              spellcheck="false"
-              [attr.aria-invalid]="keyProblem() ? 'true' : null"
-              aria-describedby="cat-key-help"
-            />
-            <small id="cat-key-help" class="help" [class.error]="keyProblem()">
-              {{ keyProblem() || 'Se propone a partir del nombre; sin espacios ni acentos.' }}
-            </small>
-          </label>
-          <button
-            type="submit"
-            class="btn primary submit"
-            [disabled]="busy() || !catKey().trim() || !catName().trim() || !!keyProblem()"
-          >
-            Añadir categoría
-          </button>
-        </div>
-      </form>
     </section>
   `,
 })
@@ -293,23 +253,13 @@ export class RulesPanel {
   protected readonly matchType = signal<RuleMatchType>('contains');
   protected readonly categoryKey = signal('');
   protected readonly priority = signal(0);
-  protected readonly catKey = signal('');
-  protected readonly catName = signal('');
-  /** Until edited by hand, the key is derived from the name. */
-  private keyEdited = false;
 
   protected readonly patternProblem = computed(() =>
     patternError(this.matchType(), this.pattern()),
   );
-  protected readonly keyProblem = computed(() =>
-    categoryKeyError(
-      this.catKey(),
-      this.store.categories().map((c) => c.key),
-    ),
-  );
 
-  protected readonly categoryOptions = computed(() =>
-    this.store.categories().map((c) => ({ label: c.name, value: c.key })),
+  protected readonly categoryOptions = computed<CategoryOption[]>(() =>
+    this.store.categories().map((c) => ({ value: c.key, label: c.name, look: c })),
   );
 
   protected effectiveCategory(): string {
@@ -417,32 +367,5 @@ export class RulesPanel {
         this.show('error', apiErrorMessage(error));
       },
     });
-  }
-
-  protected onCatName(value: string): void {
-    this.catName.set(value);
-    if (!this.keyEdited) this.catKey.set(keyFromName(value));
-  }
-
-  protected onCatKey(value: string): void {
-    this.catKey.set(value);
-    // Clearing the key gives control back to the name.
-    this.keyEdited = value.trim() !== '';
-  }
-
-  protected addCategory(event: Event): void {
-    event.preventDefault();
-    const key = this.catKey().trim();
-    const name = this.catName().trim();
-    if (this.busy() || !key || !name || this.keyProblem()) return;
-    this.run(this.api.createCategory({ key, name }), `Categoría «${name}» creada.`, () => {
-      this.catKey.set('');
-      this.catName.set('');
-      this.keyEdited = false;
-    });
-  }
-
-  protected removeCategory(key: string): void {
-    this.run(this.api.deleteCategory(key), `Categoría «${this.store.categoryName(key)}» borrada.`);
   }
 }

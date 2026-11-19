@@ -2,13 +2,13 @@ import { Component, computed, effect, inject, signal, untracked } from '@angular
 import { FormsModule } from '@angular/forms';
 import {
   DEFAULT_TIME_ZONE,
+  type Category,
   monthOf,
   todayIn,
   type Transaction,
   type TransactionQuery,
 } from '@rayrecords/shared';
-import { CheckboxModule } from 'primeng/checkbox';
-import { Select, SelectModule } from 'primeng/select';
+import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import {
   catchError,
@@ -32,7 +32,6 @@ import {
   filterMovements,
   formatDay,
   inPeriod,
-  periodLabel,
   periodTotals,
   sectionTotals,
   singleMonth,
@@ -41,6 +40,11 @@ import {
   type Period,
   type SectionFilter,
 } from './movements-logic';
+import { Icon } from '../../core/ui/icon';
+import { CategoryLabel } from '../categories/category-label';
+import { CategorySelect, type CategoryOption } from '../categories/category-select';
+import { MovementDialog } from './movement-dialog';
+import { NO_CATEGORY } from '../categories/uncategorized';
 
 /** Size of each API request (its maximum) and cap on movements loaded at once. */
 const FETCH_SIZE = 500;
@@ -52,16 +56,28 @@ interface SectionCard {
   id: string;
   key: string | null;
   name: string;
+  /** The category itself, for its badge; `null` for "Sin categoría" and for a deleted one. */
+  look: Category | null;
   totalCents: number;
   count: number;
 }
 
 @Component({
   selector: 'app-movements-panel',
-  imports: [FormsModule, TableModule, SelectModule, CheckboxModule, PeriodPicker],
+  imports: [
+    CategoryLabel,
+    CategorySelect,
+    MovementDialog,
+    Icon,
+    FormsModule,
+    TableModule,
+    SelectModule,
+    PeriodPicker,
+  ],
   styleUrls: ['./movements-panel.scss', './movements-table.scss', './movements-bulk.scss'],
   host: { '(document:keydown.escape)': 'onEscape($event)' },
   template: `
+    <!-- The period on the left, the text filter on the right (on a phone the options fold under it). -->
     <div class="topline">
       <div class="period" role="group" aria-label="Periodo">
         <app-period-picker
@@ -70,67 +86,6 @@ interface SectionCard {
           (periodChange)="setPeriod($event)"
         />
       </div>
-
-      <div class="grand" aria-live="polite" [attr.aria-busy]="pending()">
-        <div class="grand-label">Balance · {{ periodText() }}</div>
-        @if (pending()) {
-          <div class="skel-in" aria-hidden="true">
-            <div class="ghost-value"><span class="skeleton ghost-balance"></span></div>
-            <div class="ghost-detail"><span class="skeleton ghost-detail-bar"></span></div>
-          </div>
-        } @else {
-          <div class="grand-value num" [class.negative]="totals().balanceCents < 0">
-            {{ money(totals().balanceCents) }}
-          </div>
-          <div class="grand-detail num">
-            Gastos {{ money(totals().expensesCents) }} · Ingresos {{ money(totals().incomeCents) }}
-          </div>
-        }
-      </div>
-    </div>
-
-    @if (pending()) {
-      <div class="sections skel-in" aria-hidden="true">
-        @for (width of ghostSections; track $index) {
-          <span class="skeleton ghost-section" [style.width.px]="width"></span>
-        }
-      </div>
-    } @else {
-      <div class="sections" role="group" aria-label="Secciones por categoría">
-        <button
-          type="button"
-          class="section"
-          [class.active]="section() === 'all'"
-          [attr.aria-pressed]="section() === 'all'"
-          (click)="pick('all')"
-        >
-          <span class="section-name">Todas</span>
-          <span class="section-total num">{{ periodRows().length }} mov.</span>
-        </button>
-        @for (card of sections(); track card.id) {
-          <button
-            type="button"
-            class="section"
-            [class.active]="section() === card.id"
-            [class.is-empty]="card.count === 0"
-            [attr.aria-pressed]="section() === card.id"
-            (click)="pick(card.id)"
-          >
-            <span class="section-name">{{ card.name }}</span>
-            @if (card.count) {
-              <span class="section-total num" [class.positive]="card.totalCents > 0">
-                {{ money(card.totalCents) }}
-              </span>
-            } @else {
-              <span class="section-total muted">vacía</span>
-            }
-          </button>
-        }
-      </div>
-    }
-
-    <div class="toolbar">
-      <h2>{{ sectionTitle() }}</h2>
       <label class="search">
         <span class="sr-only">Filtrar por descripción</span>
         <input
@@ -151,19 +106,9 @@ interface SectionCard {
         [attr.aria-expanded]="options()"
         (click)="options.set(!options())"
       >
-        <i class="pi pi-sliders-h" aria-hidden="true"></i>
+        <app-icon name="adjustments-horizontal" />
       </button>
       <div id="mv-options" class="options" [class.open]="options()">
-        <label class="rule-toggle" for="mv-rule">
-          <p-checkbox
-            [binary]="true"
-            inputId="mv-rule"
-            [ngModel]="createRule()"
-            (ngModelChange)="createRule.set($event)"
-          />
-          <span>Crear regla al cambiar una categoría</span>
-        </label>
-        <span class="spacer"></span>
         <p-select
           class="sort-select"
           [options]="sortChoices"
@@ -177,156 +122,246 @@ interface SectionCard {
       </div>
     </div>
 
-    @if (error(); as message) {
-      <p class="alert" role="alert">{{ message }}</p>
-    }
-    @if (notice(); as message) {
-      <p class="alert success" role="status">{{ message }}</p>
-    }
-
-    <div
-      class="table-card"
-      [class.is-refreshing]="loading() && visible().length > 0"
-      [attr.aria-busy]="loading()"
-    >
-      <p-table
-        [value]="visible()"
-        dataKey="id"
-        [selection]="selection()"
-        (selectionChange)="selection.set($event)"
-        [sortField]="sortField()"
-        [sortOrder]="sortOrder()"
-        (onSort)="onSort($event)"
-        editMode="cell"
-        [paginator]="visible().length > pageSize()"
-        [rows]="pageSize()"
-        [first]="first()"
-        (onPage)="onPage($event)"
-        [rowsPerPageOptions]="[25, 50, 100]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="{first}–{last} de {totalRecords}"
-        [rowHover]="true"
-        styleClass="movements-table"
-      >
-        <ng-template #header>
-          <tr>
-            <th class="c-check">
-              <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
-            </th>
-            <th class="c-date" pSortableColumn="date">
-              <span class="th-sort">Fecha <p-sorticon field="date" /></span>
-            </th>
-            <th class="c-desc" pSortableColumn="description">
-              <span class="th-sort">Descripción <p-sorticon field="description" /></span>
-            </th>
-            <th class="c-amount num" pSortableColumn="amountCents">
-              <span class="th-sort">Importe <p-sorticon field="amountCents" /></span>
-            </th>
-            <th class="c-cat" pSortableColumn="categoryName">
-              <span class="th-sort">Categoría <p-sorticon field="categoryName" /></span>
-            </th>
-          </tr>
-        </ng-template>
-
-        <ng-template #body let-row>
-          <tr class="mv-row" [class.row-selected]="isSelected(row.id)">
-            <td class="c-check">
-              <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
-            </td>
-            <td class="c-date">{{ day(row.date) }}</td>
-            <td class="c-desc" [title]="row.description">{{ row.description }}</td>
-            <td class="c-amount num" [class.positive]="row.amountCents > 0">
-              {{ money(row.amountCents) }}
-            </td>
-            <td class="c-cat" [pEditableColumn]="row" pEditableColumnField="category">
-              <p-celleditor>
-                <ng-template #input>
-                  <p-select
-                    #cs
-                    [options]="categoryOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    [ngModel]="row.category ?? ''"
-                    (onChange)="assign(row, $event.value)"
-                    (onFocus)="openOnFocus(cs)"
-                    [ariaLabel]="'Categoría de ' + row.description"
-                    appendTo="body"
-                    [filter]="categoryOptions().length > 8"
-                    filterPlaceholder="Buscar categoría"
-                    styleClass="cat-select"
-                  />
-                </ng-template>
-                <ng-template #output>
-                  <span
-                    class="cat"
-                    [class.cat-none]="row.category === null"
-                    title="Pulsa para cambiar la categoría"
-                  >
-                    {{ row.categoryName }}
-                    @if (row.categorySource === 'manual') {
-                      <i class="pi pi-pencil manual" aria-hidden="true"></i>
-                      <span class="sr-only">(corregida a mano)</span>
-                    }
-                    <i class="pi pi-chevron-down caret" aria-hidden="true"></i>
-                  </span>
-                </ng-template>
-              </p-celleditor>
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template #footer>
-          @if (visible().length) {
-            <tr class="mv-foot">
-              <td class="f-label" colspan="4">
-                {{ visible().length }} {{ visible().length === 1 ? 'movimiento' : 'movimientos' }} ·
-                Total {{ section() === 'all' ? 'visible' : 'sección' }}
-              </td>
-              <td class="c-amount num f-total" [class.positive]="visibleTotal() > 0">
-                {{ money(visibleTotal()) }}
-              </td>
-              <td class="f-end"></td>
-            </tr>
+    <div class="layout">
+      <!-- Left: the totals of the period over the categories, which also filter the table. -->
+      <aside class="side">
+        <section
+          class="card balance"
+          aria-label="Totales del periodo"
+          aria-live="polite"
+          [attr.aria-busy]="pending()"
+        >
+          @if (pending()) {
+            <div class="skel-in" aria-hidden="true">
+              <span class="skeleton ghost-balance"></span>
+              <span class="skeleton ghost-split"></span>
+            </div>
+          } @else {
+            <div class="balance-main">
+              <span class="balance-label">Balance</span>
+              <span class="balance-value num" [class.negative]="totals().balanceCents < 0">
+                {{ money(totals().balanceCents) }}
+              </span>
+            </div>
+            <dl class="balance-split">
+              <div>
+                <dt>Gastos</dt>
+                <dd class="num">{{ money(totals().expensesCents) }}</dd>
+              </div>
+              <div>
+                <dt>Ingresos</dt>
+                <dd class="num positive">{{ money(totals().incomeCents) }}</dd>
+              </div>
+            </dl>
           }
-        </ng-template>
+        </section>
 
-        <ng-template #emptymessage>
-          @if (loading()) {
-            <tr class="ghost-status">
-              <td colspan="6"><span class="sr-only" role="status">Cargando movimientos…</span></td>
-            </tr>
-            @for (row of ghostRows; track $index) {
-              <tr class="mv-row skel-in" aria-hidden="true">
-                <td class="c-check"><span class="skeleton ghost-box"></span></td>
-                <td class="c-date"><span class="skeleton ghost-date"></span></td>
-                <td class="c-desc">
-                  <span class="skeleton ghost-desc" [style.width.%]="row"></span>
+        <section class="card cats" aria-label="Categorías">
+          @if (pending()) {
+            <div class="sections skel-in" aria-hidden="true">
+              @for (row of ghostSections; track $index) {
+                <span class="skeleton ghost-section"></span>
+              }
+            </div>
+          } @else {
+            <div class="sections" role="group" aria-label="Filtrar por categoría">
+              <button
+                type="button"
+                class="section"
+                [class.active]="section() === 'all'"
+                [attr.aria-pressed]="section() === 'all'"
+                (click)="pick('all')"
+              >
+                <span class="section-row">
+                  <span class="section-name">Todas</span>
+                  <span class="section-total num">{{ periodRows().length }} mov.</span>
+                </span>
+              </button>
+              @for (card of sections(); track card.id) {
+                <button
+                  type="button"
+                  class="section"
+                  [class.active]="section() === card.id"
+                  [attr.aria-pressed]="section() === card.id"
+                  (click)="pick(card.id)"
+                >
+                  <span class="section-row">
+                    <app-category-label
+                      class="section-name"
+                      size="sm"
+                      [look]="card.look"
+                      [name]="card.name"
+                    />
+                    @if (card.count) {
+                      <span class="section-total num" [class.positive]="card.totalCents > 0">
+                        {{ money(card.totalCents) }}
+                      </span>
+                    } @else {
+                      <span class="section-total muted">vacía</span>
+                    }
+                  </span>
+                  <span class="section-bar" aria-hidden="true">
+                    <i [style.width.%]="bar(card)"></i>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </section>
+      </aside>
+
+      <!-- Right: the movements. -->
+      <div class="main">
+        <h2 class="main-title">{{ sectionTitle() }}</h2>
+
+        @if (error(); as message) {
+          <p class="alert" role="alert">{{ message }}</p>
+        }
+        @if (notice(); as message) {
+          <p class="alert success" role="status">{{ message }}</p>
+        }
+
+        <div
+          class="table-card"
+          [class.is-refreshing]="loading() && visible().length > 0"
+          [attr.aria-busy]="loading()"
+        >
+          <p-table
+            [value]="visible()"
+            dataKey="id"
+            [selection]="selection()"
+            (selectionChange)="selection.set($event)"
+            [sortField]="sortField()"
+            [sortOrder]="sortOrder()"
+            (onSort)="onSort($event)"
+            [paginator]="visible().length > pageSize()"
+            [rows]="pageSize()"
+            [first]="first()"
+            (onPage)="onPage($event)"
+            [rowsPerPageOptions]="[25, 50, 100]"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="{first}–{last} de {totalRecords}"
+            [rowHover]="true"
+            styleClass="movements-table"
+          >
+            <ng-template #header>
+              <tr>
+                <th class="c-check">
+                  <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
+                </th>
+                <th class="c-date" pSortableColumn="date">
+                  <span class="th-sort">Fecha <p-sorticon field="date" /></span>
+                </th>
+                <th class="c-desc" pSortableColumn="description">
+                  <span class="th-sort">Descripción <p-sorticon field="description" /></span>
+                </th>
+                <th class="c-amount num" pSortableColumn="amountCents">
+                  <span class="th-sort">Importe <p-sorticon field="amountCents" /></span>
+                </th>
+                <th class="c-cat" pSortableColumn="categoryName">
+                  <span class="th-sort">Categoría <p-sorticon field="categoryName" /></span>
+                </th>
+                <th class="c-edit"><span class="sr-only">Editar</span></th>
+              </tr>
+            </ng-template>
+
+            <ng-template #body let-row>
+              <tr class="mv-row" [class.row-selected]="isSelected(row.id)">
+                <td class="c-check">
+                  <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
                 </td>
-                <td class="c-acc"><span class="skeleton ghost-acc"></span></td>
-                <td class="c-amount num"><span class="skeleton ghost-amount"></span></td>
+                <td class="c-date">{{ day(row.date) }}</td>
+                <td class="c-desc" [title]="row.description">{{ row.description }}</td>
+                <td class="c-amount num" [class.positive]="row.amountCents > 0">
+                  {{ money(row.amountCents) }}
+                </td>
                 <td class="c-cat">
-                  <span class="ghost-cat"><span class="skeleton ghost-pill"></span></span>
+                  <span class="cat" [class.cat-none]="row.category === null">
+                    <app-category-label
+                      size="sm"
+                      [look]="row.categoryLook"
+                      [name]="row.categoryName"
+                    />
+                    @if (row.categorySource === 'manual') {
+                      <app-icon
+                        name="lock"
+                        class="manual"
+                        title="Elegida a mano: las reglas no la cambian"
+                      />
+                      <span class="sr-only">(elegida a mano)</span>
+                    }
+                  </span>
+                </td>
+                <td class="c-edit">
+                  <button
+                    type="button"
+                    class="btn ghost icon"
+                    [attr.aria-label]="'Editar el movimiento ' + row.description"
+                    (click)="edit(row)"
+                  >
+                    <app-icon name="pencil" />
+                  </button>
                 </td>
               </tr>
-            }
-          } @else {
-            <tr>
-              <td colspan="6" class="empty-cell">
-                @if (periodRows().length === 0) {
-                  <strong>Sin movimientos en este periodo.</strong>
-                  Cambia el periodo o importa un extracto en la pestaña «Importar».
-                } @else {
-                  <strong>Filtro sin resultados.</strong>
-                  {{ noResults() }}
-                  <button type="button" class="btn sm" (click)="clearFilters()">
-                    Quitar filtros
-                  </button>
+            </ng-template>
+
+            <ng-template #footer>
+              @if (visible().length) {
+                <tr class="mv-foot">
+                  <td class="f-label" colspan="3">
+                    {{ visible().length }}
+                    {{ visible().length === 1 ? 'movimiento' : 'movimientos' }} · Total
+                    {{ section() === 'all' ? 'visible' : 'sección' }}
+                  </td>
+                  <td class="c-amount num f-total" [class.positive]="visibleTotal() > 0">
+                    {{ money(visibleTotal()) }}
+                  </td>
+                  <td class="f-end" colspan="2"></td>
+                </tr>
+              }
+            </ng-template>
+
+            <ng-template #emptymessage>
+              @if (loading()) {
+                <tr class="ghost-status">
+                  <td colspan="6">
+                    <span class="sr-only" role="status">Cargando movimientos…</span>
+                  </td>
+                </tr>
+                @for (row of ghostRows; track $index) {
+                  <tr class="mv-row skel-in" aria-hidden="true">
+                    <td class="c-check"><span class="skeleton ghost-box"></span></td>
+                    <td class="c-date"><span class="skeleton ghost-date"></span></td>
+                    <td class="c-desc">
+                      <span class="skeleton ghost-desc" [style.width.%]="row"></span>
+                    </td>
+                    <td class="c-amount num"><span class="skeleton ghost-amount"></span></td>
+                    <td class="c-cat">
+                      <span class="ghost-cat"><span class="skeleton ghost-pill"></span></span>
+                    </td>
+                    <td class="c-edit"><span class="skeleton ghost-edit"></span></td>
+                  </tr>
                 }
-              </td>
-            </tr>
-          }
-        </ng-template>
-      </p-table>
+              } @else {
+                <tr>
+                  <td colspan="6" class="empty-cell">
+                    @if (periodRows().length === 0) {
+                      <strong>Sin movimientos en este periodo.</strong>
+                      Cambia el periodo o importa un extracto en la pestaña «Importar».
+                    } @else {
+                      <strong>Filtro sin resultados.</strong>
+                      {{ noResults() }}
+                      <button type="button" class="btn sm" (click)="clearFilters()">
+                        Quitar filtros
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
     </div>
 
     @if (selection().length) {
@@ -339,19 +374,14 @@ interface SectionCard {
           >
           · <span class="num">{{ money(selectedTotal()) }}</span>
         </span>
-        <p-select
+        <app-category-select
           class="bulk-select"
-          [options]="categoryOptions()"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="bulkValue()"
-          (onChange)="bulkAssign($event.value)"
-          [disabled]="busy()"
           placeholder="Mover a categoría"
           ariaLabel="Mover las seleccionadas a una categoría"
-          appendTo="body"
-          [filter]="categoryOptions().length > 8"
-          filterPlaceholder="Buscar categoría"
+          [options]="categoryOptions()"
+          [value]="bulkValue()"
+          [disabled]="busy()"
+          (valueChange)="bulkAssign($event ?? '')"
         />
         <button type="button" class="btn ghost sm bulk-clear" (click)="clearSelection()">
           @if (busy()) {
@@ -362,6 +392,14 @@ interface SectionCard {
         </button>
       </div>
     }
+
+    <app-movement-dialog
+      [movement]="editing()"
+      [categories]="store.categories()"
+      [accountName]="editingAccount()"
+      (saved)="onEdited($event)"
+      (closed)="editing.set(null)"
+    />
   `,
 })
 export class MovementsPanel {
@@ -377,8 +415,9 @@ export class MovementsPanel {
   protected readonly period = signal<Period>(this.currentMonthPeriod());
   protected readonly section = signal<SectionFilter>('all');
   protected readonly query = signal('');
-  protected readonly createRule = signal(false);
-  /** Phone only: sorting and «create rule» stay folded away until asked for. */
+  /** The movement open in the edit dialog. */
+  protected readonly editing = signal<MovementRow | null>(null);
+  /** Phone only: sorting stays folded away until asked for. */
   protected readonly options = signal(false);
 
   // Sorting and paging
@@ -400,6 +439,7 @@ export class MovementsPanel {
     return this.loaded().map((tx) => ({
       ...tx,
       categoryName: this.store.categoryName(tx.category),
+      categoryLook: this.store.category(tx.category),
     }));
   });
 
@@ -415,7 +455,8 @@ export class MovementsPanel {
   /** Nothing to show for the period yet: skeleton instead of zeros or the empty state. */
   protected readonly pending = computed(() => this.loading() && this.periodRows().length === 0);
 
-  protected readonly ghostSections = [120, 148, 134, 126, 140];
+  /** One ghost row per category while the first load is on its way. */
+  protected readonly ghostSections = [1, 2, 3, 4, 5, 6];
   protected readonly ghostRows = [72, 54, 66, 48, 78, 60, 70, 52];
 
   protected readonly visibleTotal = computed(() => sumCents(this.visible()));
@@ -433,6 +474,7 @@ export class MovementsPanel {
         id: category.key,
         key: category.key,
         name: category.name,
+        look: category,
         totalCents: total?.totalCents ?? 0,
         count: total?.count ?? 0,
       };
@@ -440,26 +482,46 @@ export class MovementsPanel {
     // Categories that no longer exist but are still on some movement.
     for (const [key, total] of totals) {
       if (key !== null && !known.has(key)) {
-        cards.push({ id: key, key, name: key, totalCents: total.totalCents, count: total.count });
+        cards.push({
+          id: key,
+          key,
+          name: key,
+          look: null,
+          totalCents: total.totalCents,
+          count: total.count,
+        });
       }
     }
-    // Categories with movements first (largest amount first), empty ones last.
-    cards.sort(
-      (a, b) =>
-        Number(b.count > 0) - Number(a.count > 0) ||
-        Math.abs(b.totalCents) - Math.abs(a.totalCents) ||
-        a.name.localeCompare(b.name, 'es'),
-    );
+    // A category with no movements in the period has nothing to filter: it only stays on screen
+    // while it is the chosen one, so the row holds just what there is to look at.
+    const active = this.section();
     const none = totals.get(null);
     cards.unshift({
       id: 'none',
       key: null,
-      name: 'Sin categoría',
+      name: NO_CATEGORY,
+      look: null,
       totalCents: none?.totalCents ?? 0,
       count: none?.count ?? 0,
     });
-    return cards;
+    // Largest amount first; "Sin categoría", which is not one of the user's own, goes last.
+    const shown = cards.filter((card) => card.count > 0 || card.id === active);
+    const byAmount = (a: SectionCard, b: SectionCard) =>
+      Math.abs(b.totalCents) - Math.abs(a.totalCents) || a.name.localeCompare(b.name, 'es');
+    return [
+      ...shown.filter((card) => card.id !== 'none').sort(byAmount),
+      ...shown.filter((card) => card.id === 'none'),
+    ];
   });
+
+  private readonly maxSection = computed(() =>
+    Math.max(1, ...this.sections().map((card) => Math.abs(card.totalCents))),
+  );
+
+  /** Width of a category's bar: its amount against the largest one. */
+  protected bar(card: SectionCard): number {
+    return Math.round((Math.abs(card.totalCents) / this.maxSection()) * 100);
+  }
 
   protected readonly sectionTitle = computed(() => {
     const section = this.section();
@@ -475,12 +537,16 @@ export class MovementsPanel {
     return `Ningún movimiento coincide ${parts.join(' ')}.`.replace(' .', '.');
   });
 
-  protected readonly periodText = computed(() => periodLabel(this.period()));
-
-  protected readonly categoryOptions = computed(() => [
-    { label: 'Sin categoría', value: '' },
-    ...this.store.categories().map((c) => ({ label: c.name, value: c.key })),
+  /** The entries of the dropdown that moves the selection: "Sin categoría" first, then each one. */
+  protected readonly categoryOptions = computed<CategoryOption[]>(() => [
+    { value: '', label: NO_CATEGORY, look: null },
+    ...this.store.categories().map((c) => ({ value: c.key, label: c.name, look: c })),
   ]);
+
+  protected readonly editingAccount = computed(() => {
+    const id = this.editing()?.accountId;
+    return this.store.accounts()?.find((account) => account.id === id)?.name ?? '';
+  });
 
   protected readonly sortId = computed(
     () =>
@@ -602,19 +668,17 @@ export class MovementsPanel {
 
   // Category changes
 
-  protected assign(row: MovementRow, value: string): void {
-    const category = value === '' ? null : value;
-    if (category === row.category) return;
+  protected edit(row: MovementRow): void {
     this.error.set('');
     this.notice.set('');
-    this.api.setCategory(row.id, { category, createRule: this.createRule() }).subscribe({
-      next: (updated) => {
-        this.patchLoaded([updated]);
-        // A new rule can affect other screens (rules, summary), so notify them all.
-        this.bus.changed();
-      },
-      error: (error: unknown) => this.error.set(apiErrorMessage(error)),
-    });
+    this.editing.set(row);
+  }
+
+  /** Shows the saved movement at once and tells the other screens (the totals, the review). */
+  protected onEdited(updated: Transaction): void {
+    this.patchLoaded([updated]);
+    this.editing.set(null);
+    this.bus.changed();
   }
 
   protected bulkAssign(value: string): void {
@@ -668,15 +732,6 @@ export class MovementsPanel {
     if (!updated.length) return;
     const byId = new Map(updated.map((tx) => [tx.id, tx]));
     this.loaded.update((items) => items.map((tx) => byId.get(tx.id) ?? tx));
-  }
-
-  /** When editing a category the dropdown opens by itself, so one click on the cell is enough. */
-  private readonly autoOpened = new WeakSet<Select>();
-
-  protected openOnFocus(select: Select): void {
-    if (this.autoOpened.has(select)) return;
-    this.autoOpened.add(select);
-    select.show();
   }
 
   protected clearSelection(): void {

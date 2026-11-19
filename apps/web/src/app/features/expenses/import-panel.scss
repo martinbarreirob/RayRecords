@@ -219,7 +219,7 @@ h2 {
   /* Pointer devices only: on touch the highlight would stick after a tap. */
   @media (hover: hover) {
     tbody tr:hover td {
-      background: var(--surface-2);
+      background: var(--row-hover);
     }
   }
 }

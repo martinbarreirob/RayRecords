@@ -28,6 +28,8 @@ import {
   sourceLabel,
   suggestionIndex,
 } from './review-logic';
+import { Icon } from '../../core/ui/icon';
+import { CategoryBadge } from '../categories/category-badge';
 
 /** How many groups to fetch at once and when to fetch more. */
 const PAGE = 20;
@@ -47,7 +49,7 @@ interface Decision {
  */
 @Component({
   selector: 'app-review-panel',
-  imports: [FormsModule],
+  imports: [CategoryBadge, Icon, FormsModule],
   styleUrl: './review-panel.scss',
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
@@ -110,7 +112,7 @@ interface Decision {
           <div class="rv-chips" role="group" aria-label="Categoría">
             @for (c of ordered(); track c.key; let i = $index) {
               <button type="button" class="rv-chip" [title]="c.name" (click)="choose(c.key)">
-                <span class="dot" [style.background]="c.color" aria-hidden="true"></span>
+                <app-category-badge [look]="c" />
                 <span class="chip-name">{{ c.name }}</span>
                 @if (shortcut(i); as key) {
                   <span class="kbd" aria-hidden="true">{{ key }}</span>
@@ -149,7 +151,7 @@ interface Decision {
                       [class.is-first]="i === 0"
                       (click)="choose(c.key)"
                     >
-                      <span class="dot" [style.background]="c.color" aria-hidden="true"></span>
+                      <app-category-badge [look]="c" />
                       {{ c.name }}
                     </button>
                   </li>
@@ -158,7 +160,7 @@ interface Decision {
             }
             @if (newCategory(); as created) {
               <button type="button" class="rv-match rv-create" (click)="createAndChoose(created)">
-                <i class="pi pi-plus" aria-hidden="true"></i>
+                <app-icon name="plus" />
                 Crear categoría «{{ created.name }}» y usarla
                 <span class="kbd" aria-hidden="true">Intro</span>
               </button>

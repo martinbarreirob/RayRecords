@@ -24,6 +24,7 @@ function row(partial: Partial<MovementRow> & { amountCents: number }): MovementR
     category: null,
     categorySource: 'none',
     categoryName: 'Sin categoría',
+    categoryLook: null,
     ...partial,
   };
 }

@@ -12,11 +12,20 @@ import {
   suggestionIndex,
 } from './review-logic';
 
+/** A category with the default look: these tests are about names and order, not about looks. */
+const category = (key: string, name: string): Category => ({
+  key,
+  name,
+  icon: 'tag',
+  color: '#ededed',
+  iconColor: '#2b2b2b',
+});
+
 const categories: Category[] = [
-  { key: 'cafeteria', name: 'Cafetería' },
-  { key: 'restaurantes', name: 'Restaurantes' },
-  { key: 'ropa', name: 'Ropa' },
-  { key: 'compras-online', name: 'Compras online' },
+  category('cafeteria', 'Cafetería'),
+  category('restaurantes', 'Restaurantes'),
+  category('ropa', 'Ropa'),
+  category('compras-online', 'Compras online'),
 ];
 
 const group = (ids: string[], merchantKey: string | null = 'x'): ReviewGroup => ({
@@ -95,11 +104,11 @@ describe('review-logic', () => {
 
   it('orderByUsage sorts by usage, keeps Otros last and breaks ties by series order', () => {
     const list: Category[] = [
-      { key: 'otros', name: 'Otros' },
-      { key: 'ocio', name: 'Ocio' },
-      { key: 'coche', name: 'Coche' },
-      { key: 'zumos', name: 'Zumos' },
-      { key: 'hogar', name: 'Hogar' },
+      category('otros', 'Otros'),
+      category('ocio', 'Ocio'),
+      category('coche', 'Coche'),
+      category('zumos', 'Zumos'),
+      category('hogar', 'Hogar'),
     ];
     const usage = [
       { category: 'otros', count: 99 },

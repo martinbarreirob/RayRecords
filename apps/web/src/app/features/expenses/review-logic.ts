@@ -4,7 +4,7 @@ import {
   type ReviewGroup,
   type Suggestion,
 } from '@rayrecords/shared';
-import { normalizeText } from './movements-logic';
+import { normalizeText } from '../../core/text';
 import { keyFromName } from './rules-logic';
 
 /** Number key to category position: `1`-`9` are the first nine and `0` the tenth; `null` if not a digit. */

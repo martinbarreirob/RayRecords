@@ -56,44 +56,26 @@
   }
 }
 
-/* Category tag: the thin border keeps it visible on the highlighted row (which uses --surface-2). */
+/* The category as the stock table draws it: its badge and its name. */
 .cat {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
-  color: var(--text);
+  gap: var(--space-2);
+  max-width: 100%;
   font-size: var(--text-sm);
-  cursor: pointer;
-  transition: background-color 0.12s;
+  vertical-align: middle;
 
   &.cat-none {
-    background: var(--warning-soft);
-    box-shadow: none;
-    color: var(--warning);
+    color: var(--muted);
   }
 }
 
-.caret {
-  color: var(--muted);
-  font-size: 9px;
-  opacity: 0.7;
-}
-
-.c-cat:focus-visible .cat {
-  box-shadow: inset 0 0 0 1px var(--accent);
+.c-edit {
+  width: 56px;
+  text-align: right;
 }
 
 /* Hover highlight. Pointer devices only: on touch :hover would stick after a tap. */
-@media (hover: hover) {
-  .mv-row:hover .cat:not(.cat-none) {
-    background: var(--surface);
-  }
-}
-
 @media (hover: none) {
   :host ::ng-deep .p-datatable-hoverable .p-datatable-tbody > tr.mv-row:not(.row-selected):hover {
     background: var(--p-datatable-row-background);
@@ -139,14 +121,9 @@
     border-top: 1px solid var(--line);
   }
 
-  .p-datatable-tbody > tr > td.c-cat .p-select {
-    width: 100%;
-    min-height: 32px;
-  }
-
-  .p-datatable-tbody > tr > td.c-cat {
-    padding-top: 6px;
-    padding-bottom: 6px;
+  .p-datatable-tbody > tr > td.c-edit {
+    padding-top: 2px;
+    padding-bottom: 2px;
   }
 }
 
@@ -180,10 +157,10 @@
 
     .p-datatable-tbody > tr.mv-row {
       display: grid;
-      grid-template-columns: 44px auto minmax(0, 1fr) auto;
+      grid-template-columns: 44px auto minmax(0, 1fr) auto auto;
       grid-template-areas:
-        'check desc desc amount'
-        'check date cat amount';
+        'check desc desc amount edit'
+        'check date cat amount edit';
       column-gap: var(--space-2);
       align-items: center;
       min-height: 64px;
@@ -218,6 +195,12 @@
         min-width: 0;
         padding: 0;
         font-size: var(--text-xs);
+      }
+
+      > td.c-edit {
+        grid-area: edit;
+        width: auto;
+        padding: 0;
       }
 
       > td.c-amount {
@@ -288,11 +271,6 @@
   height: 12px;
 }
 
-.ghost-acc {
-  width: 84px;
-  height: 10px;
-}
-
 .ghost-amount {
   width: 64px;
   height: 12px;
@@ -303,6 +281,13 @@
   display: flex;
   align-items: center;
   height: 32px;
+}
+
+.ghost-edit {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
 }
 
 .ghost-pill {

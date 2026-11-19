@@ -6,7 +6,6 @@ import { ApiClient } from '../../core/api/api-client';
 import { ImportPanel } from './import-panel';
 import { MovementsPanel } from './movements-panel';
 import { RulesPanel } from './rules-panel';
-import { SummaryPanel } from './summary-panel';
 
 /** Loading is not the same as empty: the skeleton shows while data arrives and the empty state only after. */
 describe('Expenses: loading states', () => {
@@ -39,7 +38,9 @@ describe('Expenses: loading states', () => {
       await settle(fixture);
 
       expect(q(fixture, 'tr.mv-row.skel-in').length).toBeGreaterThanOrEqual(6);
-      expect(q(fixture, '.grand .skel-in').length).toBe(1);
+      // The totals card and the category list show their ghosts, not zeros.
+      expect(q(fixture, '.balance .skel-in').length).toBe(1);
+      expect(q(fixture, '.balance-value').length).toBe(0);
       expect(q(fixture, '.sections.skel-in').length).toBe(1);
       expect(q(fixture, '.sections [aria-pressed]').length).toBe(0);
       expect(text(fixture)).toContain('Cargando movimientos');
@@ -59,26 +60,7 @@ describe('Expenses: loading states', () => {
       expect(q(fixture, '.skel-in').length).toBe(0);
       expect(text(fixture)).toContain('Sin movimientos en este periodo');
       expect(text(fixture)).not.toContain('Cargando movimientos');
-      expect(q(fixture, '.grand-value').length).toBe(1);
-    });
-  });
-
-  describe('Summary', () => {
-    it('shows the skeleton until data arrives, then the empty state', async () => {
-      const rows = new Subject<never[]>();
-      const fixture = mount(SummaryPanel, { summary: () => rows });
-      await settle(fixture);
-
-      expect(q(fixture, '.skel-in').length).toBe(1);
-      expect(text(fixture)).toContain('Cargando resumen');
-      expect(text(fixture)).not.toContain('No hay gastos en este periodo');
-
-      rows.next([]);
-      rows.complete();
-      await settle(fixture);
-
-      expect(q(fixture, '.skel-in').length).toBe(0);
-      expect(text(fixture)).toContain('No hay gastos en este periodo');
+      expect(q(fixture, '.balance-value').length).toBe(1);
     });
   });
 

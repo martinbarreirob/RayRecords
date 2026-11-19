@@ -26,11 +26,11 @@ describe('ExpensesPage', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it('lists the views as movements, summary, review, import and rules', () => {
+  it('lists the views as movements, review, import and rules', () => {
     const labels = [...el(setup()).querySelectorAll('.tabs button')].map((b) =>
       b.textContent?.trim(),
     );
-    expect(labels).toEqual(['Movimientos', 'Resumen', 'Revisar', 'Importar', 'Reglas']);
+    expect(labels).toEqual(['Movimientos', 'Revisar', 'Importar', 'Reglas']);
   });
 
   it('opens on movements, with no placeholder', () => {
@@ -42,10 +42,10 @@ describe('ExpensesPage', () => {
   it('shows the placeholder for a second when the view changes, then the new view', () => {
     const fixture = setup();
 
-    fixture.componentRef.setInput('vista', 'resumen');
+    fixture.componentRef.setInput('vista', 'importar');
     fixture.detectChanges();
     expect(el(fixture).querySelector('app-expenses-skeleton')).not.toBeNull();
-    expect(el(fixture).querySelector('app-summary-panel')).toBeNull();
+    expect(el(fixture).querySelector('app-import-panel')).toBeNull();
 
     vi.advanceTimersByTime(VIEW_SWITCH_MS - 1);
     fixture.detectChanges();
@@ -54,13 +54,25 @@ describe('ExpensesPage', () => {
     vi.advanceTimersByTime(1);
     fixture.detectChanges();
     expect(el(fixture).querySelector('app-expenses-skeleton')).toBeNull();
-    expect(el(fixture).querySelector('app-summary-panel')).not.toBeNull();
+    expect(el(fixture).querySelector('app-import-panel')).not.toBeNull();
+  });
+
+  it('draws the placeholder of the view being opened', () => {
+    const fixture = setup();
+    for (const view of ['importar', 'reglas', 'revisar'] as const) {
+      fixture.componentRef.setInput('vista', view);
+      fixture.detectChanges();
+      const skeleton = el(fixture).querySelector('app-expenses-skeleton')!;
+      const expected = { importar: '.form', reglas: '.stack', revisar: '.review' }[view];
+      expect(skeleton.querySelector(expected)).not.toBeNull();
+      expect(skeleton.querySelector('.layout')).toBeNull();
+    }
   });
 
   it('a second change restarts the wait instead of stacking timers', () => {
     const fixture = setup();
 
-    fixture.componentRef.setInput('vista', 'resumen');
+    fixture.componentRef.setInput('vista', 'importar');
     fixture.detectChanges();
     vi.advanceTimersByTime(VIEW_SWITCH_MS * 0.6);
     fixture.componentRef.setInput('vista', 'reglas');

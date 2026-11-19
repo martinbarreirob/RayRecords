@@ -10,11 +10,19 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { PrimeNG } from 'primeng/config';
 import { catchError, map, of, switchMap } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { RefreshBus } from '../../core/refresh';
 import { PageHeader } from '../../core/ui/page-header';
+import {
+  CategoriesDialog,
+  type CategoryOps,
+  type CategoryTexts,
+  type ManagedCategory,
+} from '../categories/categories-dialog';
 import { formatNoteDate } from '../notes/note-board.logic';
 import { ExpensesSkeleton } from './expenses-skeleton';
 import { ImportPanel } from './import-panel';
@@ -23,40 +31,36 @@ import { MovementsPanel } from './movements-panel';
 import { useSpanishTexts } from './primeng-es';
 import { ReviewPanel } from './review-panel';
 import { RulesPanel } from './rules-panel';
-import { SummaryPanel } from './summary-panel';
 
-type View = 'review' | 'movements' | 'summary' | 'import' | 'rules';
+type View = 'review' | 'movements' | 'import' | 'rules';
 
 /** How long the placeholder shows when switching views (a simulated load, so the change is felt). */
-export const VIEW_SWITCH_MS = 500;
+export const VIEW_SWITCH_MS = 300;
 
 const VIEWS: readonly { id: View; slug: string; label: string }[] = [
   { id: 'movements', slug: 'movimientos', label: 'Movimientos' },
-  { id: 'summary', slug: 'resumen', label: 'Resumen' },
   { id: 'review', slug: 'revisar', label: 'Revisar' },
   { id: 'import', slug: 'importar', label: 'Importar' },
   { id: 'rules', slug: 'reglas', label: 'Reglas' },
 ];
 
-/** Expenses: movements by category, monthly summary, statement import and rules. */
+/** Expenses: movements with their totals and categories, review, statement import and rules. */
 @Component({
   selector: 'app-expenses-page',
+  providers: [ConfirmationService],
   imports: [
+    CategoriesDialog,
+    ConfirmDialogModule,
     ExpensesSkeleton,
     ImportPanel,
     MovementsPanel,
     PageHeader,
     ReviewPanel,
     RulesPanel,
-    SummaryPanel,
   ],
   styles: `
     :host {
       display: block;
-    }
-
-    .tabs {
-      margin-bottom: var(--space-5);
     }
 
     .alert {
@@ -82,11 +86,13 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
     /* The five views fit at 375 px: full width, centred and easy to tap. The pending count
        floats over the corner of «Revisar» so the tab keeps a single line. */
     @media (width <= 767px) {
+      /* On a phone the header lays its actions out as items of its own row (split): the views
+         take a full row of their own under the title. */
       .tabs {
         display: flex;
+        flex: 1 1 100%;
         justify-content: center;
         width: 100%;
-        margin-bottom: var(--space-4);
       }
 
       .tabs > button {
@@ -109,39 +115,40 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
   `,
   template: `
     <div class="page">
-      <app-page-header title="Gastos" [eyebrow]="today" />
-
-      <div class="segmented tabs" role="group" aria-label="Vista de gastos">
-        @for (entry of views; track entry.id) {
-          <button
-            type="button"
-            [attr.aria-pressed]="view() === entry.id"
-            (click)="show(entry.slug)"
-          >
-            {{ entry.label }}
-            @if (entry.id === 'review' && pending() > 0) {
-              <span class="badge warning" [attr.aria-label]="pending() + ' pendientes'">
-                {{ pending() }}
-              </span>
-            }
-          </button>
-        }
-      </div>
+      <!-- The views sit in the header, on the title's own row: one band less above the content. -->
+      <app-page-header title="Gastos" [eyebrow]="today" [split]="true">
+        <button type="button" class="btn" (click)="store.categoriesOpen.set(true)">
+          Categorías
+        </button>
+        <div class="segmented tabs" role="group" aria-label="Vista de gastos">
+          @for (entry of views; track entry.id) {
+            <button
+              type="button"
+              [attr.aria-pressed]="view() === entry.id"
+              (click)="show(entry.slug)"
+            >
+              {{ entry.label }}
+              @if (entry.id === 'review' && pending() > 0) {
+                <span class="badge warning" [attr.aria-label]="pending() + ' pendientes'">
+                  {{ pending() }}
+                </span>
+              }
+            </button>
+          }
+        </div>
+      </app-page-header>
 
       @if (store.error(); as message) {
         <p class="alert" role="alert">{{ message }}</p>
       }
 
       @if (switching()) {
-        <app-expenses-skeleton />
+        <app-expenses-skeleton [view]="view()" />
       } @else {
         <div class="view-in">
           @switch (view()) {
             @case ('movements') {
               <app-movements-panel />
-            }
-            @case ('summary') {
-              <app-summary-panel />
             }
             @case ('review') {
               <app-review-panel />
@@ -156,6 +163,17 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
         </div>
       }
     </div>
+
+    <app-categories-dialog
+      [open]="store.categoriesOpen()"
+      [categories]="managed()"
+      [counts]="usage()"
+      [ops]="categoryOps"
+      [texts]="categoryTexts"
+      (changed)="categoriesChanged()"
+      (closed)="store.categoriesOpen.set(false)"
+    />
+    <p-confirmdialog />
   `,
 })
 export class ExpensesPage {
@@ -169,6 +187,29 @@ export class ExpensesPage {
   private readonly router = inject(Router);
   private readonly api = inject(ApiClient);
   private readonly bus = inject(RefreshBus);
+
+  /** The categories as the manager takes them (the key is their id). */
+  protected readonly managed = computed<ManagedCategory[]>(() =>
+    this.store.categories().map(({ key, ...category }) => ({ id: key, ...category })),
+  );
+  /** Movements per category, loaded each time the manager opens. */
+  protected readonly usage = signal<ReadonlyMap<string, number>>(new Map());
+
+  protected readonly categoryOps: CategoryOps = {
+    create: (input) =>
+      this.api
+        .createCategory(input)
+        .pipe(map(({ key, ...category }) => ({ id: key, ...category }))),
+    update: (id, changes) => this.api.updateCategory(id, changes),
+    remove: (id) => this.api.deleteCategory(id),
+  };
+  protected readonly categoryTexts: CategoryTexts = {
+    count: (n) => (n === 0 ? 'sin movimientos' : n === 1 ? '1 movimiento' : `${n} movimientos`),
+    deleteEffect: (n) =>
+      n === 0
+        ? 'No tiene movimientos. Si tiene reglas, tampoco se podrá borrar.'
+        : `Tiene ${n} movimientos: no se puede borrar hasta pasarlos a otra categoría.`,
+  };
 
   /** Uncategorised movements, for the counter on the "Revisar" tab. */
   protected readonly pending = toSignal(
@@ -200,6 +241,24 @@ export class ExpensesPage {
       });
     });
     inject(DestroyRef).onDestroy(() => clearTimeout(this.switchTimer));
+
+    // What each category holds is only asked for while the manager is open.
+    effect(() => {
+      if (this.store.categoriesOpen()) untracked(() => this.loadUsage());
+    });
+  }
+
+  private loadUsage(): void {
+    this.api.categoryUsage().subscribe({
+      next: (usage) => this.usage.set(new Map(Object.entries(usage))),
+      error: () => this.usage.set(new Map()),
+    });
+  }
+
+  /** Every screen shows the categories, so all of them reload. */
+  protected categoriesChanged(): void {
+    this.store.changed();
+    this.loadUsage();
   }
 
   private simulateLoad(): void {

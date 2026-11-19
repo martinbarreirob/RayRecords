@@ -4,6 +4,7 @@ import { forkJoin } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { RefreshBus } from '../../core/refresh';
+import { NO_CATEGORY } from '../categories/uncategorized';
 
 /** Accounts and categories, shared by the expenses and accounts screens. */
 @Injectable({ providedIn: 'root' })
@@ -13,7 +14,12 @@ export class FinanceStore {
 
   readonly accounts = signal<AccountSummary[] | null>(null);
   readonly categories = signal<Category[]>([]);
+  private readonly categoryByKey = computed(
+    () => new Map(this.categories().map((c) => [c.key, c])),
+  );
   readonly error = signal('');
+  /** The category manager is open; any panel can ask for it, the expenses page hosts it. */
+  readonly categoriesOpen = signal(false);
 
   /** Accounts and categories have loaded (or failed); before that, "no accounts" would be wrong. */
   readonly ready = computed(() => this.accounts() !== null || this.error() !== '');
@@ -37,8 +43,13 @@ export class FinanceStore {
   }
 
   categoryName(key: string | null): string {
-    if (key === null) return 'Sin categoría';
-    return this.categories().find((c) => c.key === key)?.name ?? key;
+    if (key === null) return NO_CATEGORY;
+    return this.categoryByKey().get(key)?.name ?? key;
+  }
+
+  /** The category a transaction or a rule points at, with its look; `null` if there is none. */
+  category(key: string | null): Category | null {
+    return key === null ? null : (this.categoryByKey().get(key) ?? null);
   }
 
   /** Tells every screen that the expenses data changed. */

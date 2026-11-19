@@ -9,6 +9,7 @@ import {
   wholeYear,
   yearPeriod,
 } from './period-logic';
+import { Icon } from '../../core/ui/icon';
 
 const MONTH_NAMES = [
   'ene',
@@ -32,6 +33,7 @@ const MONTH_NAMES = [
  */
 @Component({
   selector: 'app-period-picker',
+  imports: [Icon],
   styleUrl: './period-picker.scss',
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -46,7 +48,7 @@ const MONTH_NAMES = [
         [disabled]="!canShift()"
         (click)="shift(-1)"
       >
-        <i class="pi pi-chevron-left" aria-hidden="true"></i>
+        <app-icon name="chevron-left" />
       </button>
 
       <button
@@ -56,9 +58,9 @@ const MONTH_NAMES = [
         [attr.aria-expanded]="open()"
         (click)="toggle()"
       >
-        <i class="pi pi-calendar" aria-hidden="true"></i>
+        <app-icon name="calendar" />
         <span>{{ label() }}</span>
-        <i class="pi pi-angle-down" aria-hidden="true"></i>
+        <app-icon name="chevron-down" />
       </button>
 
       <button
@@ -68,7 +70,7 @@ const MONTH_NAMES = [
         [disabled]="!canShift()"
         (click)="shift(1)"
       >
-        <i class="pi pi-chevron-right" aria-hidden="true"></i>
+        <app-icon name="chevron-right" />
       </button>
 
       @if (open()) {
@@ -88,7 +90,7 @@ const MONTH_NAMES = [
               aria-label="Año anterior"
               (click)="year.set(year() - 1)"
             >
-              <i class="pi pi-chevron-left" aria-hidden="true"></i>
+              <app-icon name="chevron-left" />
             </button>
             <strong class="num">{{ year() }}</strong>
             <button
@@ -97,7 +99,7 @@ const MONTH_NAMES = [
               aria-label="Año siguiente"
               (click)="year.set(year() + 1)"
             >
-              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+              <app-icon name="chevron-right" />
             </button>
             <button type="button" class="btn sm" (click)="apply(yearOf())">Todo el año</button>
           </div>

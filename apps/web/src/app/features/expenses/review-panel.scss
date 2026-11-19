@@ -102,7 +102,7 @@
   min-height: var(--touch-target);
   padding: 0 var(--space-3);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm); /* same rounding as the form fields */
+  border-radius: var(--radius-control); /* same rounding as the form fields */
   background: var(--surface);
   color: var(--text);
   font: inherit;

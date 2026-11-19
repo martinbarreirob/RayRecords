@@ -1,4 +1,5 @@
-import { TRANSFER_CATEGORY, type Transaction } from '@rayrecords/shared';
+import { normalizeText } from '../../core/text';
+import { TRANSFER_CATEGORY, type Category, type Transaction } from '@rayrecords/shared';
 
 /** A section of the design: a category, or `null` for uncategorised movements. */
 export type SectionKey = string | null;
@@ -15,6 +16,8 @@ export interface Period {
 /** Movement with names already resolved, so sorting and filtering need no lookups. */
 export interface MovementRow extends Transaction {
   categoryName: string;
+  /** The category itself, for its badge; `null` when there is none or it no longer exists. */
+  categoryLook: Category | null;
 }
 
 export interface SectionTotal {
@@ -29,10 +32,7 @@ export interface PeriodTotals {
   balanceCents: number;
 }
 
-/** Lowercase and accent-free, so "cafe" finds "Café". */
-export function normalizeText(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
+export { normalizeText };
 
 export function sumCents(rows: readonly { amountCents: number }[]): number {
   return rows.reduce((sum, row) => sum + row.amountCents, 0);

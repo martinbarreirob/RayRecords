@@ -25,10 +25,12 @@ import { RefreshBus } from '../../core/refresh';
 import { FinanceStore } from './finance.store';
 import { fileProblem, formatFileSize } from './import-logic';
 import { formatDay } from './movements-logic';
+import { Icon } from '../../core/ui/icon';
+import { CategoryLabel } from '../categories/category-label';
 
 @Component({
   selector: 'app-import-panel',
-  imports: [RouterLink, ConfirmDialogModule],
+  imports: [CategoryLabel, Icon, RouterLink, ConfirmDialogModule],
   providers: [ConfirmationService],
   styleUrl: './import-panel.scss',
   template: `
@@ -77,7 +79,7 @@ import { formatDay } from './movements-logic';
             (change)="pick($any($event.target).files)"
           />
           @if (file(); as current) {
-            <i class="pi pi-file drop-icon" aria-hidden="true"></i>
+            <app-icon name="file" class="drop-icon" />
             <div class="drop-text">
               <strong class="drop-name" [title]="current.name">{{ current.name }}</strong>
               <span class="muted">{{ size(current) }}</span>
@@ -91,7 +93,7 @@ import { formatDay } from './movements-logic';
               </button>
             </div>
           } @else {
-            <i class="pi pi-upload drop-icon" aria-hidden="true"></i>
+            <app-icon name="upload" class="drop-icon" />
             <div class="drop-text">
               <strong>Extracto del banco (CSV)</strong>
               <span class="muted">Arrástralo aquí o elígelo desde tu dispositivo</span>
@@ -169,7 +171,10 @@ import { formatDay } from './movements-logic';
                   </td>
                   <td>
                     <span class="badge" [class.warning]="row.category === null">
-                      {{ store.categoryName(row.category) }}
+                      <app-category-label
+                        [look]="store.category(row.category)"
+                        [name]="store.categoryName(row.category)"
+                      />
                     </span>
                   </td>
                   <td>
