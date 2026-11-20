@@ -91,7 +91,6 @@
   &:focus-visible {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 }
 
@@ -284,6 +283,7 @@
   th {
     padding: var(--space-2) var(--space-3);
     background: var(--surface-2);
+    border-bottom: 1px solid var(--line-soft);
     color: var(--muted);
     font-size: var(--text-xs);
     font-weight: 500;
@@ -421,5 +421,23 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
+  }
+}
+
+/* Screen entrance: the routed component is inserted as the sibling that follows the router outlet
+   in the scroller, so it is created (and animates) only on navigation, never on data refreshes.
+   Compositor-only properties; the global reduced-motion rule in _base.scss shortens it to nothing. */
+main > :not(router-outlet) {
+  /* A transform does nothing on an inline box, and a page host is one unless it says otherwise. */
+  display: block;
+  animation: screen-in 200ms ease-out;
+}
+
+/* Sideways, from where the screen lies among its siblings (set by the shell as --nav-shift); with no
+   shift (another area, first load) it just fades in. */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--nav-shift, 0px));
   }
 }

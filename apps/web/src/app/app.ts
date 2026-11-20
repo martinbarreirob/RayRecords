@@ -1,15 +1,33 @@
 import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import {
+  NavigationEnd,
+  RoutesRecognized,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthStore } from './core/auth/auth.store';
-import { AREAS, areaById, areaOf, sectionOf, type AreaId } from './core/nav/areas';
+import {
+  AREAS,
+  areaById,
+  areaOf,
+  navDirection,
+  sectionOf,
+  type AreaId,
+  type NavDirection,
+} from './core/nav/areas';
 import { adjacentSection } from './core/palette/go-shortcuts';
 import { PaletteService } from './core/palette/palette.service';
 import { ThemeService } from './core/theme/theme.service';
 import { PAGE_SCROLLER_ID } from './core/ui/page-scroll';
 import { CommandPalette } from './features/palette/command-palette';
 import { Icon } from './core/ui/icon';
+
+/** How far a screen travels while it enters, by direction; the stylesheet reads it as `--nav-shift`. */
+const ENTER_SHIFT: Record<NavDirection, string> = { forward: '16px', back: '-16px', fade: '0px' };
 
 /** App shell: top navigation, command palette (only with a session) and the active screen. */
 @Component({
@@ -56,6 +74,18 @@ export class App {
   private readonly path = computed(() => this.url().split(/[?#]/)[0] ?? '');
 
   constructor() {
+    // The direction a screen enters from is set before it is created (the routes are recognised
+    // first), as a property the stylesheet reads: changing it later restarts no animation.
+    this.router.events
+      .pipe(
+        filter((event): event is RoutesRecognized => event instanceof RoutesRecognized),
+        takeUntilDestroyed(),
+      )
+      .subscribe((event) => {
+        const direction = navDirection(this.router.url, event.urlAfterRedirects);
+        this.content()?.nativeElement.style.setProperty('--nav-shift', ENTER_SHIFT[direction]);
+      });
+
     // A new screen starts at its top: the scroller is shared and would keep the old position.
     effect(() => {
       this.path();

@@ -75,7 +75,6 @@ const VIEWS: readonly { id: View; slug: string; label: string }[] = [
     @keyframes view-in {
       from {
         opacity: 0;
-        transform: translateY(6px);
       }
     }
 

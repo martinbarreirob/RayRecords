@@ -64,3 +64,25 @@ export function areaById(id: AreaId): Area {
 
 /** The sections of the management area, for the places that list them (the command palette). */
 export const MANAGEMENT_SECTIONS: readonly Section[] = areaById('gestion').sections;
+
+/** How a screen enters: from the side it lies on, or just fading in. */
+export type NavDirection = 'forward' | 'back' | 'fade';
+
+/**
+ * How the screen of `to` should enter when coming from `from`. Between the sections of one area
+ * (the tabs of the second bar) it follows the tab order: a section further along enters from the
+ * right (`forward`), an earlier one from the left (`back`). Anything else (another area, the same
+ * section, an address that is no section) just fades in.
+ */
+export function navDirection(from: string, to: string): NavDirection {
+  const origin = sectionOf(from);
+  const target = sectionOf(to);
+  if (!origin || !target || origin.url === target.url) return 'fade';
+  const area = areaOf(origin.url);
+  if (area !== areaOf(target.url)) return 'fade';
+  const sections = areaById(area).sections;
+  return sections.findIndex((s) => s.url === target.url) >
+    sections.findIndex((s) => s.url === origin.url)
+    ? 'forward'
+    : 'back';
+}

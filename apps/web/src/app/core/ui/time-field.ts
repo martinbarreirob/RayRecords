@@ -55,10 +55,6 @@ const COMPLETE = /^(\d{1,2}[:.hH]\d{2}|\d{4})$/;
     .rr-time-field input[aria-invalid='true'] {
       border-color: var(--danger);
     }
-
-    .rr-time-field input[aria-invalid='true']:focus-visible {
-      box-shadow: 0 0 0 3px var(--danger-soft);
-    }
   `,
   template: `
     @if (native) {

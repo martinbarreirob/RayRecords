@@ -111,10 +111,6 @@ h2 + p {
 
 .field .input[aria-invalid='true'] {
   border-color: var(--danger);
-
-  &:focus-visible {
-    box-shadow: 0 0 0 3px var(--danger-soft);
-  }
 }
 
 /* Number field: minus and plus buttons using our own tokens, value centred. */

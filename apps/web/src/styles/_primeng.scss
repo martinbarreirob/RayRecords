@@ -33,6 +33,8 @@
   --p-overlay-modal-border-color: var(--line);
   --p-mask-background: var(--overlay);
   --p-focus-ring-color: var(--accent);
+  --p-focus-ring-shadow: none;
+  --p-form-field-focus-ring-shadow: none;
   --p-list-option-selected-background: var(--accent-soft);
   --p-list-option-selected-color: var(--accent);
   --p-list-option-focus-background: var(--surface-2);
@@ -120,7 +122,6 @@
   &.p-focus,
   &:not(.p-disabled):focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   &.w-full {
@@ -172,7 +173,9 @@
   font-size: var(--text-base);
 
   .p-datatable-thead > tr > th {
-    border-bottom: 1px solid var(--line-soft);
+    border-width: 0 0 1px;
+    border-style: solid;
+    border-color: var(--line-soft);
     font-size: var(--text-xs);
     font-weight: 500;
     vertical-align: middle;
@@ -214,4 +217,36 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* A destructive option of a menu (add `styleClass: 'menu-danger'` to the item). */
+.p-menu .menu-danger {
+  /* The theme greys the label and icon of the hovered or focused option: a destructive one keeps its
+     colour in every state, with a soft red background instead. */
+  --p-menu-item-color: var(--danger);
+  --p-menu-item-icon-color: var(--danger);
+  --p-menu-item-focus-color: var(--danger);
+  --p-menu-item-icon-focus-color: var(--danger);
+  --p-menu-item-focus-background: var(--danger-soft);
+}
+
+.p-menu .menu-danger .p-menu-item-label,
+.p-menu .menu-danger .p-menu-item-icon {
+  color: var(--danger);
+}
+
+/* Menu options are links to nothing: no underline (the global link style adds one on hover). */
+.p-menu a,
+.p-menu a:hover {
+  text-decoration: none;
+}
+
+.p-menu .p-menu-item-link {
+  gap: var(--space-2);
+}
+
+.p-menu .p-menu-item-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }

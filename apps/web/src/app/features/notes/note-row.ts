@@ -121,7 +121,6 @@ import { NoteEditor } from './note-editor';
 
     .editor:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     /* Two equal, wide buttons side by side (never a narrow tall pair). */

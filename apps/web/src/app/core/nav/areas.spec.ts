@@ -1,4 +1,4 @@
-import { AREAS, areaById, areaOf, sectionOf } from './areas';
+import { AREAS, areaById, areaOf, navDirection, sectionOf } from './areas';
 
 describe('sectionOf', () => {
   it('finds the section, including its sub-pages and ignoring the query', () => {
@@ -48,5 +48,22 @@ describe('AREAS', () => {
 
   it('areaById finds the area', () => {
     expect(areaById('gestion').label).toBe('Gestión');
+  });
+});
+
+describe('navDirection', () => {
+  it('goes forward or back along the tabs of the same area', () => {
+    expect(navDirection('/notas', '/listas')).toBe('forward');
+    expect(navDirection('/gastos', '/calendario')).toBe('back');
+    expect(navDirection('/gestion/dashboard', '/gestion/tickets')).toBe('forward');
+    expect(navDirection('/gestion/ventas', '/gestion/stock')).toBe('back');
+  });
+
+  it('just fades between areas, within one section and for unknown addresses', () => {
+    expect(navDirection('/notas', '/gestion/dashboard')).toBe('fade');
+    expect(navDirection('/gestion/stock', '/gastos')).toBe('fade');
+    expect(navDirection('/listas', '/listas/compras')).toBe('fade');
+    expect(navDirection('/', '/notas')).toBe('fade');
+    expect(navDirection('/login', '/notas')).toBe('fade');
   });
 });
