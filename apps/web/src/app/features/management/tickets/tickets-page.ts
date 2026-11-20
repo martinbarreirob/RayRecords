@@ -1,4 +1,13 @@
-import { Component, ElementRef, computed, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DEFAULT_TIME_ZONE, todayIn, type Ticket } from '@rayrecords/shared';
 import type { Subscription } from 'rxjs';
@@ -47,15 +56,25 @@ import { PrintSettingsDialog } from './print-settings-dialog';
     ConfirmDialogModule,
   ],
   providers: [ConfirmationService],
-  host: { class: 'page' },
+  host: {
+    class: 'page',
+    '[class.sheet-open]': 'sheetOpen()',
+    '(document:keydown.escape)': 'onEscape()',
+    '(document:click)': 'onDocumentClick($event)',
+  },
   styleUrl: './tickets-page.scss',
   template: `
-    <app-page-header title="Tickets" eyebrow="Gestión">
+    <app-page-header
+      title="Tickets"
+      eyebrow="Gestión"
+      [hideEyebrowOnMobile]="true"
+      [stretchActions]="true"
+    >
       <button type="button" class="btn edit-receipt" (click)="settingsOpen.set(true)">
         <app-icon name="pencil" />
         Formato de ticket
       </button>
-      <app-add-button label="Nueva venta" [iconOnMobile]="true" (pressed)="stockSearch.show()" />
+      <app-add-button label="Nueva venta" (pressed)="stockSearch.show()" />
     </app-page-header>
 
     @if (error(); as message) {
@@ -80,20 +99,23 @@ import { PrintSettingsDialog } from './print-settings-dialog';
         class="btn filters-toggle"
         aria-controls="tickets-filters"
         [attr.aria-expanded]="filtersOpen()"
+        [attr.aria-label]="rangeActive() ? 'Filtros (1 activo)' : 'Filtros'"
         (click)="filtersOpen.set(!filtersOpen())"
       >
         <app-icon name="adjustments-horizontal" />
-        Filtros
+        <span class="label">Filtros</span>
         @if (rangeActive()) {
           <span class="badge accent">1</span>
         }
         <app-icon class="caret" [name]="!filtersOpen() ? 'chevron-down' : 'chevron-up'" />
       </button>
       @if (rangeActive() || query()) {
-        <button type="button" class="btn ghost" (click)="clearFilters()">Quitar filtros</button>
+        <button type="button" class="btn ghost clear-toolbar" (click)="clearFilters()">
+          Quitar filtros
+        </button>
       }
       <span class="spacer"></span>
-      <span class="shown muted" aria-live="polite">{{ shownLabel() }}</span>
+      <span class="shown desk-only muted" aria-live="polite">{{ shownLabel() }}</span>
     </div>
 
     <section
@@ -134,6 +156,11 @@ import { PrintSettingsDialog } from './print-settings-dialog';
           (valueChange)="setRange({ from: range().from, to: $event })"
         />
       </div>
+      @if (rangeActive() || query()) {
+        <button type="button" class="btn ghost clear-panel" (click)="clearFilters()">
+          Quitar filtros
+        </button>
+      }
     </section>
 
     <div class="layout">
@@ -179,6 +206,7 @@ import { PrintSettingsDialog } from './print-settings-dialog';
           @if (capped()) {
             <p class="capped muted">Se muestran los {{ limit }} tickets más recientes.</p>
           }
+          <p class="summary muted" aria-live="polite">{{ shownLabel() }}</p>
         } @else if (!rows().length && rangeActive()) {
           <p class="empty">
             No hay tickets en esas fechas.
@@ -196,14 +224,32 @@ import { PrintSettingsDialog } from './print-settings-dialog';
         }
       </section>
 
-      <aside class="receipt" aria-live="polite" aria-label="Ticket seleccionado">
+      @if (sheetOpen()) {
+        <div class="sheet-backdrop" aria-hidden="true" (click)="closeSheet()"></div>
+      }
+      <aside
+        class="receipt"
+        aria-live="polite"
+        aria-label="Ticket seleccionado"
+        [class.open]="sheetOpen()"
+        [attr.inert]="phone() && !sheetOpen() ? '' : null"
+      >
         @if (selected(); as ticket) {
           <header class="receipt-head">
+            <span class="sheet-grip" aria-hidden="true"></span>
             <h2>Ticket n.º {{ ticket.number }}</h2>
             <span class="muted">{{ ticket.when }}</span>
             <button type="button" class="btn sm print" (click)="printer.print(ticket)">
               <app-icon name="printer" />
               Imprimir
+            </button>
+            <button
+              type="button"
+              class="btn ghost icon sm sheet-close"
+              aria-label="Cerrar el ticket"
+              (click)="closeSheet()"
+            >
+              <app-icon name="x" />
             </button>
           </header>
           <ul class="lines">
@@ -241,7 +287,6 @@ export class TicketsPage {
   protected readonly printer = inject(TicketPrinter);
   protected readonly settingsOpen = signal(false);
   private readonly api = inject(ApiClient);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Query parameter: the ticket to open. */
   readonly ticket = input<string>();
@@ -282,8 +327,45 @@ export class TicketsPage {
     return `${visible.length} ${noun} · ${formatCents(ticketsTotal(visible))}`;
   });
 
+  /** Phone only: the chosen ticket rises from the bottom edge as a sheet. */
+  protected readonly sheetOpen = signal(false);
+  private deepLinkOpened = false;
+
   constructor() {
     this.load();
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const query = window.matchMedia('(width <= 767px)');
+      const sync = () => {
+        this.phone.set(query.matches);
+        if (!query.matches) this.sheetOpen.set(false);
+      };
+      sync();
+      query.addEventListener?.('change', sync);
+      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', sync));
+    }
+    // The sheet shows the ticket that was picked: if that one leaves the list, it closes.
+    effect(() => {
+      const picked = this.pickedId();
+      if (!picked || !this.sheetOpen()) return;
+      if (!this.visible().some((row) => row.id === picked))
+        untracked(() => this.sheetOpen.set(false));
+    });
+    // A ticket named in the address (coming from a sale) opens its sheet once.
+    effect(() => {
+      if (!this.ticket() || !this.visible().length) return;
+      untracked(() => {
+        if (this.deepLinkOpened || !this.phone()) return;
+        this.deepLinkOpened = true;
+        this.sheetOpen.set(true);
+      });
+    });
+  }
+
+  /** Follows the window, so the sheet is dropped when it grows past a phone. */
+  protected readonly phone = signal(false);
+
+  protected closeSheet(): void {
+    this.sheetOpen.set(false);
   }
 
   /** The server filters by date, so the newest-200 cap applies inside the chosen days. */
@@ -306,6 +388,20 @@ export class TicketsPage {
       });
   }
 
+  /** On a phone the panel folds with Escape or a tap outside it (the date panel is outside the host). */
+  protected onEscape(): void {
+    if (this.sheetOpen()) this.closeSheet();
+    else if (this.phone()) this.filtersOpen.set(false);
+  }
+
+  protected onDocumentClick(event: MouseEvent): void {
+    if (!this.filtersOpen() || !this.phone()) return;
+    const target = event.target as Element | null;
+    if (!target?.isConnected) return;
+    if (target.closest('.toolbar, .filters, .rr-date-panel, .p-datepicker')) return;
+    this.filtersOpen.set(false);
+  }
+
   protected setRange(range: DateRange): void {
     const next = orderedRange(range);
     const current = this.range();
@@ -325,11 +421,6 @@ export class TicketsPage {
 
   protected select(row: TicketRow): void {
     this.pickedId.set(row.id);
-    // On a phone the receipt is below the list: bring it into view.
-    if (window.matchMedia?.('(width <= 767px)').matches) {
-      this.host.nativeElement
-        .querySelector('.receipt')
-        ?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    }
+    if (this.phone()) this.sheetOpen.set(true);
   }
 }

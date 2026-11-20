@@ -116,8 +116,21 @@ const PREVIEW_MM: Record<PaperWidth, number> = { 58: 56, 80: 80 };
         grid-template-columns: 1fr;
       }
 
+      .preview {
+        min-width: 0;
+        align-items: center;
+      }
+
       iframe {
-        width: 100%;
+        max-width: 100%;
+      }
+
+      .logo-row .btn {
+        min-height: var(--control-height);
+      }
+
+      .foot .btn {
+        flex: 1;
       }
     }
   `,

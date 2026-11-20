@@ -265,51 +265,277 @@
   }
 }
 
+/* Phone-only pieces are hidden on desktop. */
+.summary,
+.clear-panel,
+.sheet-grip,
+.sheet-close,
+.sheet-backdrop {
+  display: none;
+}
+
 @media (width <= 767px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Search and filters button share one row at the height of every control. */
+  .toolbar {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+
   .search {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
     width: auto;
+    min-width: 0;
   }
 
-  .search .input,
-  .toolbar .btn {
-    min-height: var(--touch-target);
+  .desk-only,
+  .spacer,
+  .clear-toolbar {
+    display: none;
   }
 
+  .filters-toggle {
+    position: relative;
+    flex: 0 0 var(--control-height);
+    width: var(--control-height);
+    padding: 0;
+
+    .label,
+    .caret {
+      display: none;
+    }
+
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 18px;
+      padding: 0 var(--space-1);
+      border: 1px solid var(--accent);
+      text-align: center;
+      line-height: 16px;
+    }
+  }
+
+  /* The panel opens below the row, full width and inside the screen. */
   .filters {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    gap: var(--space-3);
+    padding: var(--space-3);
+
+    &[hidden] {
+      display: none;
+    }
+
+    .field:first-child {
+      grid-column: 1 / -1;
+    }
 
     .date {
       width: auto;
     }
 
     .segmented {
-      display: flex;
-      overflow-x: auto;
-      scrollbar-width: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      width: 100%;
+      box-sizing: border-box;
 
       > button {
-        flex: 1 0 auto;
-        min-height: calc(var(--touch-target) - 6px);
+        min-width: 0;
+        padding: 0 var(--space-2);
+        white-space: nowrap;
       }
+    }
+
+    .clear-panel {
+      display: inline-flex;
+      grid-column: 1 / -1;
     }
   }
 
-  .c-units {
-    display: none;
+  /* Same box as .input, also the native date input that overflows its cell. */
+  :host ::ng-deep .rr-date-field {
+    display: block;
+    min-width: 0;
+  }
+
+  :host ::ng-deep .rr-date-field input {
+    min-width: 0;
+    max-width: 100%;
+    min-height: var(--control-height);
+    box-sizing: border-box;
+    font: inherit;
+    font-size: var(--text-sm);
   }
 
   .table tbody td {
     height: var(--touch-target);
   }
 
+  .c-units {
+    display: none;
+  }
+
+  .c-when {
+    font-size: var(--text-sm);
+  }
+
+  /* Count and total live under the list on a phone, not above it. */
+  .summary {
+    display: block;
+    margin: 0;
+    padding: var(--space-3);
+    border-top: 1px solid var(--line);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+
+  /* The list runs edge to edge: no side margins or rounded corners. */
+  .list {
+    margin: 0 calc(-1 * var(--page-gutter));
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  /* Without an open sheet no row looks picked: the newest ticket is only the desktop default. */
+  :host(:not(.sheet-open)) {
+    .table tbody tr.selected > td {
+      background: transparent;
+    }
+
+    .open[aria-pressed='true'] {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+  }
+
+  /* The ticket is a sheet over the bottom edge, opened by picking a row. */
   .receipt {
-    position: static;
-    scroll-margin-top: var(--space-3);
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    max-height: min(80dvh, 640px);
+    border-width: 1px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(100%);
+    visibility: hidden;
+    transition:
+      transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s linear 0.3s;
+
+    &.open {
+      transform: none;
+      visibility: visible;
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+  }
+
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    display: block;
+    background: color-mix(in srgb, var(--text) 40%, transparent);
+    animation: backdrop-in 0.25s ease-out;
+  }
+
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Title over the date on the left; print and close on the right. */
+  .receipt-head {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'title print close'
+      'when print close';
+    align-items: center;
+    column-gap: var(--space-2);
+    padding-top: var(--space-5);
+
+    h2 {
+      grid-area: title;
+    }
+
+    .muted {
+      grid-area: when;
+    }
+  }
+
+  .sheet-grip {
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--line-strong);
+    transform: translateX(-50%);
+  }
+
+  .receipt-head .print {
+    grid-area: print;
+  }
+
+  .sheet-close {
+    display: inline-flex;
+    grid-area: close;
+  }
+
+  .lines {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .receipt-foot {
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .receipt,
+    .receipt.open {
+      transition: none;
+    }
+
+    .sheet-backdrop {
+      animation: none;
+    }
+  }
+
+  .receipt-head .print {
+    min-height: var(--control-height);
+  }
+
+  .line-name {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Phone: the format button takes all the free width of the header row, the add button keeps its text. */
+@media (width <= 767px) {
+  .edit-receipt {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: var(--control-height);
+    justify-content: center;
   }
 }

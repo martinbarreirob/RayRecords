@@ -95,6 +95,28 @@ describe('TicketsPage', () => {
     expect(receiptTitle(fixture)).toBe('Ticket n.º 3');
     expect(el(fixture).querySelector('.shown')?.textContent?.trim()).toContain('3 tickets');
     expect(el(fixture).querySelector('.shown')?.textContent).toContain('17,10');
+    // The same count and total also close the list (shown there on a phone).
+    expect(el(fixture).querySelector('.list .summary')?.textContent).toContain('3 tickets');
+  });
+
+  it('opens the receipt as a bottom sheet on a phone and closes it with Escape', () => {
+    // jsdom has no matchMedia: a phone is one that says every query matches.
+    const original = window.matchMedia;
+    window.matchMedia = (() => ({ matches: true })) as unknown as typeof window.matchMedia;
+    try {
+      const { fixture } = setup();
+      const receipt = el(fixture).querySelector('.receipt')!;
+      expect(receipt.classList.contains('open')).toBe(false);
+      el(fixture).querySelectorAll<HTMLElement>('.open')[1]!.click();
+      fixture.detectChanges();
+      expect(receipt.classList.contains('open')).toBe(true);
+      expect(el(fixture).querySelector('.sheet-backdrop')).not.toBeNull();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(receipt.classList.contains('open')).toBe(false);
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it('opens the ticket named in the address', () => {
