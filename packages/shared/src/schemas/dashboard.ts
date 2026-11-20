@@ -38,6 +38,8 @@ export const DashboardSchema = z.object({
     z.object({
       productId: ObjectIdString,
       name: z.string(),
+      /** The product's current category; `null` when it has none or was deleted. */
+      categoryId: ObjectIdString.nullable(),
       units: Count,
       totalCents: Cents.nonnegative(),
     }),
@@ -59,16 +61,20 @@ export const DashboardSchema = z.object({
     low: Count,
     out: Count,
   }),
-  /** Products sold out or at their minimum, the most urgent first; at most six. */
-  restock: z.array(
+  /**
+   * The best sellers of the period still in the catalogue, most sold first, with the stock left
+   * of each (`quantity`, against its `minQuantity`); at most six.
+   */
+  topStock: z.array(
     z.object({
       id: ObjectIdString,
       name: z.string(),
+      units: Count,
       quantity: Count,
       minQuantity: Count,
     }),
   ),
-  /** The last five tickets. */
+  /** The last six tickets. */
   recentTickets: z.array(
     z.object({
       id: ObjectIdString,

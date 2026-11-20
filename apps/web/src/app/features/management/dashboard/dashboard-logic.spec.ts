@@ -89,14 +89,33 @@ describe('daily chart', () => {
 
 describe('ranked rows', () => {
   it('sizes the best sellers by units against the first one', () => {
-    const rows = productRows([
-      { productId: 'a'.repeat(24), name: 'Agua', units: 20, totalCents: 1200 },
-      { productId: 'b'.repeat(24), name: 'Café', units: 5, totalCents: 1750 },
-    ]);
+    const drinks: StockCategory = {
+      id: 'c'.repeat(24),
+      name: 'Bebidas',
+      icon: 'bottle',
+      color: '#e8effc',
+      iconColor: '#1d4fb8',
+      createdAt: '2026-11-01T00:00:00.000Z',
+    };
+    const rows = productRows(
+      [
+        {
+          productId: 'a'.repeat(24),
+          name: 'Agua',
+          categoryId: drinks.id,
+          units: 20,
+          totalCents: 1200,
+        },
+        { productId: 'b'.repeat(24), name: 'Café', categoryId: null, units: 5, totalCents: 1750 },
+      ],
+      [drinks],
+    );
     expect(rows.map((row) => [row.label, row.value, row.width])).toEqual([
       ['Agua', 20, 100],
       ['Café', 5, 25],
     ]);
+    expect(rows[0]?.category).toBe(drinks);
+    expect(rows[1]?.category).toBeUndefined();
   });
 
   it('names each category, merging what has none or one that no longer exists', () => {

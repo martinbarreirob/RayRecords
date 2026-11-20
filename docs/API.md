@@ -136,9 +136,9 @@ The CSV parser (`apps/api/src/modules/expenses/csv.ts`) is **lenient** because w
 
 ## Dashboard
 
-| Method | Path             | Response    | Notes                                                                                                                                                                                                                                                                                            |
-| ------ | ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET`  | `/api/dashboard` | `Dashboard` | `days` = 7, 30 (default) or 90. Sales of the period day by day (every day, in the app time zone) with its totals, the totals of the same span before it and of today, the five best sellers, sales by category, the state of the stock, up to six products to restock and the last five tickets. |
+| Method | Path             | Response    | Notes                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------ | ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/dashboard` | `Dashboard` | `days` = 7, 30 (default) or 90. Sales of the period day by day (every day, in the app time zone) with its totals, the totals of the same span before it and of today, the five best sellers (with their category), sales by category, the stock value and its split by state (in stock, low, out), the stock left of the six best sellers (most sold first) and the last six tickets. |
 
 ## Planned
 

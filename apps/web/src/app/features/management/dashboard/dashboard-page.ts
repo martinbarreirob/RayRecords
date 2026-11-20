@@ -10,6 +10,7 @@ import { CategoryBadge } from '../../categories/category-badge';
 import { UNCATEGORIZED_LOOK } from '../../categories/uncategorized';
 import { formatTicketDate } from '../tickets/tickets-logic';
 import {
+  stockSlices,
   PERIODS,
   averageTicket,
   axisDays,
@@ -20,7 +21,6 @@ import {
   longDay,
   productRows,
   shortDay,
-  stockSlices,
   type DayBar,
 } from './dashboard-logic';
 
@@ -110,6 +110,11 @@ const UNITS = new Intl.NumberFormat('es-ES');
                     (mouseenter)="hovered.set(bar)"
                   >
                     <span class="bar" [style.height.%]="bar.height"></span>
+                    @if (hovered()?.date === bar.date) {
+                      <span class="tip num" [style.bottom]="'calc(' + bar.height + '% + 6px)'">
+                        {{ money(bar.totalCents) }}
+                      </span>
+                    }
                   </span>
                 }
               </div>
@@ -120,27 +125,29 @@ const UNITS = new Intl.NumberFormat('es-ES');
               </div>
             </div>
             <!-- The same figures for whoever cannot see the bars. -->
-            <table class="sr-only">
-              <caption>
-                Ventas de cada día del periodo
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Día</th>
-                  <th scope="col">Ventas</th>
-                  <th scope="col">Tickets</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (bar of bars(); track bar.date) {
+            <div class="sr-only">
+              <table>
+                <caption>
+                  Ventas de cada día del periodo
+                </caption>
+                <thead>
                   <tr>
-                    <th scope="row">{{ long(bar.date) }}</th>
-                    <td>{{ money(bar.totalCents) }}</td>
-                    <td>{{ bar.tickets }}</td>
+                    <th scope="col">Día</th>
+                    <th scope="col">Ventas</th>
+                    <th scope="col">Tickets</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @for (bar of bars(); track bar.date) {
+                    <tr>
+                      <th scope="row">{{ long(bar.date) }}</th>
+                      <td>{{ money(bar.totalCents) }}</td>
+                      <td>{{ bar.tickets }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           } @else {
             <p class="none">
               Sin ventas en este periodo.
@@ -149,10 +156,10 @@ const UNITS = new Intl.NumberFormat('es-ES');
           }
         </section>
 
-        <!-- State of the stock -->
+        <!-- Stock of the best sellers -->
         <section class="card stock" aria-labelledby="dash-stock">
           <header class="card-head">
-            <h2 id="dash-stock">Estado del stock</h2>
+            <h2 id="dash-stock">Stock de los más vendidos</h2>
             <a routerLink="/gestion/stock">Ver stock</a>
           </header>
           @if (d.stock.products) {
@@ -172,25 +179,27 @@ const UNITS = new Intl.NumberFormat('es-ES');
                 </li>
               }
             </ul>
-            @if (d.restock.length) {
-              <h3>Reponer pronto</h3>
-              <ul class="restock">
-                @for (product of d.restock; track product.id) {
-                  <li>
-                    <span class="name">{{ product.name }}</span>
-                    @if (product.quantity === 0) {
-                      <span class="badge danger">Agotado</span>
-                    } @else {
-                      <span class="badge warning">
-                        Quedan {{ product.quantity }} de {{ product.minQuantity }}
-                      </span>
-                    }
-                  </li>
-                }
-              </ul>
-            } @else {
-              <p class="none">Nada que reponer: todo está por encima de su mínimo.</p>
-            }
+          }
+          @if (d.topStock.length) {
+            <ul class="stock-rank">
+              @for (product of d.topStock; track product.id) {
+                <li>
+                  <span class="name">{{ product.name }}</span>
+                  @if (product.quantity === 0) {
+                    <span class="badge danger">Agotado</span>
+                  } @else if (product.minQuantity > 0 && product.quantity <= product.minQuantity) {
+                    <span class="badge warning">Quedan {{ product.quantity }}</span>
+                  } @else {
+                    <span class="left num">{{ product.quantity }} en stock</span>
+                  }
+                </li>
+              }
+            </ul>
+          } @else if (d.stock.products) {
+            <p class="none">
+              Sin ventas en este periodo.
+              <a routerLink="/gestion/ventas">Hacer una venta</a>
+            </p>
           } @else {
             <p class="none">
               Todavía no hay productos.
@@ -200,7 +209,7 @@ const UNITS = new Intl.NumberFormat('es-ES');
         </section>
 
         <!-- Best sellers -->
-        <section class="card third" aria-labelledby="dash-top">
+        <section class="card third top" aria-labelledby="dash-top">
           <header class="card-head">
             <h2 id="dash-top">Más vendidos</h2>
             <span class="muted">unidades</span>
@@ -209,6 +218,7 @@ const UNITS = new Intl.NumberFormat('es-ES');
             <ol class="rank">
               @for (row of products(); track row.id) {
                 <li>
+                  <app-category-badge [look]="row.category ?? uncategorized" />
                   <span class="rank-label">{{ row.label }}</span>
                   <strong class="num">{{ count(row.value) }}</strong>
                   <span class="track" aria-hidden="true">
@@ -223,7 +233,7 @@ const UNITS = new Intl.NumberFormat('es-ES');
         </section>
 
         <!-- Sales by category -->
-        <section class="card third" aria-labelledby="dash-cats">
+        <section class="card third cats" aria-labelledby="dash-cats">
           <header class="card-head">
             <h2 id="dash-cats">Ventas por categoría</h2>
             <span class="muted">importe</span>
@@ -232,10 +242,8 @@ const UNITS = new Intl.NumberFormat('es-ES');
             <ol class="rank">
               @for (row of categories(); track row.id) {
                 <li>
-                  <span class="rank-label">
-                    <app-category-badge [look]="row.category ?? uncategorized" />
-                    {{ row.label }}
-                  </span>
+                  <app-category-badge [look]="row.category ?? uncategorized" />
+                  <span class="rank-label">{{ row.label }}</span>
                   <strong class="num">{{ money(row.value) }}</strong>
                   <span class="track" aria-hidden="true">
                     <span class="fill" [style.width.%]="row.width"></span>
@@ -249,20 +257,13 @@ const UNITS = new Intl.NumberFormat('es-ES');
         </section>
 
         <!-- Last tickets -->
-        <section class="card third" aria-labelledby="dash-recent">
+        <section class="card third recent-card" aria-labelledby="dash-recent">
           <header class="card-head">
             <h2 id="dash-recent">Últimos tickets</h2>
             <a routerLink="/gestion/tickets">Ver todos</a>
           </header>
           @if (d.recentTickets.length) {
-            <table class="table recent">
-              <thead>
-                <tr>
-                  <th scope="col">N.º</th>
-                  <th scope="col">Fecha</th>
-                  <th scope="col" class="num">Total</th>
-                </tr>
-              </thead>
+            <table class="table recent" aria-labelledby="dash-recent">
               <tbody>
                 @for (ticket of d.recentTickets; track ticket.id) {
                   <tr>
@@ -325,7 +326,9 @@ export class DashboardPage {
   protected readonly axis = computed(() => axisDays(this.data()?.days ?? []));
   protected readonly best = computed(() => bestDay(this.data()?.days ?? []));
   protected readonly maxDay = computed(() => this.best()?.totalCents ?? 0);
-  protected readonly products = computed(() => productRows(this.data()?.topProducts ?? []));
+  protected readonly products = computed(() =>
+    productRows(this.data()?.topProducts ?? [], this.stockCategories()),
+  );
   protected readonly categories = computed(() =>
     categoryRows(this.data()?.categories ?? [], this.stockCategories()),
   );

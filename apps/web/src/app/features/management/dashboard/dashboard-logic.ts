@@ -108,8 +108,18 @@ function ranked<T extends { id: string; label: string; value: number; category?:
   }));
 }
 
-export function productRows(top: Dashboard['topProducts']): RankRow[] {
-  return ranked(top.map((p) => ({ id: p.productId, label: p.name, value: p.units })));
+/** The best sellers, each with its category for the badge (none when it has none or it is gone). */
+export function productRows(
+  top: Dashboard['topProducts'],
+  categories: readonly StockCategory[] = [],
+): RankRow[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  return ranked(
+    top.map((p) => {
+      const category = p.categoryId ? byId.get(p.categoryId) : undefined;
+      return { id: p.productId, label: p.name, value: p.units, ...(category && { category }) };
+    }),
+  );
 }
 
 /** Sales by category, with the category itself for its badge; unknown ids read as none. */

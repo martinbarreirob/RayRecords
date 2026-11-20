@@ -30,17 +30,18 @@ const dashboard: Dashboard = {
   previous: { totalCents: 4000, tickets: 2, units: 4 },
   today: { totalCents: 0, tickets: 0, units: 0 },
   topProducts: [
-    { productId: 'b'.repeat(24), name: 'Agua', units: 5, totalCents: 300 },
-    { productId: 'c'.repeat(24), name: 'Café', units: 2, totalCents: 700 },
+    { productId: 'b'.repeat(24), name: 'Agua', categoryId: DRINKS, units: 5, totalCents: 300 },
+    { productId: 'c'.repeat(24), name: 'Café', categoryId: null, units: 2, totalCents: 700 },
   ],
   categories: [
     { categoryId: DRINKS, units: 6, totalCents: 4500 },
     { categoryId: null, units: 1, totalCents: 500 },
   ],
   stock: { products: 10, units: 120, valueCents: 98_765, ok: 7, low: 2, out: 1 },
-  restock: [
-    { id: 'd'.repeat(24), name: 'Pilas', quantity: 0, minQuantity: 2 },
-    { id: 'e'.repeat(24), name: 'Café', quantity: 2, minQuantity: 5 },
+  topStock: [
+    { id: 'b'.repeat(24), name: 'Agua', units: 5, quantity: 40, minQuantity: 0 },
+    { id: 'd'.repeat(24), name: 'Pilas', units: 3, quantity: 0, minQuantity: 2 },
+    { id: 'e'.repeat(24), name: 'Café', units: 2, quantity: 2, minQuantity: 5 },
   ],
   recentTickets: [
     {
@@ -61,7 +62,7 @@ const blank: Dashboard = {
   topProducts: [],
   categories: [],
   stock: { products: 0, units: 0, valueCents: 0, ok: 0, low: 0, out: 0 },
-  restock: [],
+  topStock: [],
   recentTickets: [],
 };
 
@@ -129,33 +130,32 @@ describe('DashboardPage', () => {
     const [top, cats] = [...el(fixture).querySelectorAll('ol.rank')];
     expect([...top!.querySelectorAll('li')].map((li) => squashed(li))).toEqual(['Agua5', 'Café2']);
     const rows = [...cats!.querySelectorAll('li')];
-    expect(text(rows[0])).toContain('Bebidas 45,00');
+    expect(text(rows[0])).toContain('Bebidas45,00');
     expect(rows[0]?.querySelector('app-category-badge')).not.toBeNull();
-    expect(text(rows[1])).toContain('Sin categoría 5,00');
+    expect(text(rows[1])).toContain('Sin categoría5,00');
     expect(rows[1]?.querySelector<HTMLElement>('.fill')?.style.width).toBe('11%');
   });
 
-  it('shows the state of the stock with counts, and what to restock', () => {
+  it('shows the state of the stock with counts, and the stock left of the best sellers', () => {
     const { fixture } = setup();
     expect([...el(fixture).querySelectorAll('.legend li')].map((li) => text(li))).toEqual([
       'Con stock 7',
       'Stock bajo 2',
       'Agotado 1',
     ]);
-    expect([...el(fixture).querySelectorAll('.restock li')].map((li) => squashed(li))).toEqual([
+    expect([...el(fixture).querySelectorAll('.stock-rank li')].map((li) => squashed(li))).toEqual([
+      'Agua40enstock',
       'PilasAgotado',
-      'CaféQuedan2de5',
+      'CaféQuedan2',
     ]);
   });
 
   it('lists the recent tickets as a table, like the tickets screen', () => {
     const { fixture } = setup();
     const table = el(fixture).querySelector('table.recent')!;
-    expect([...table.querySelectorAll('thead th')].map((th) => text(th))).toEqual([
-      'N.º',
-      'Fecha',
-      'Total',
-    ]);
+    // No header row: the three columns are self-explanatory; the table is named by its card title.
+    expect(table.querySelector('thead')).toBeNull();
+    expect(table.getAttribute('aria-labelledby')).toBe('dash-recent');
     const link = table.querySelector<HTMLAnchorElement>('tbody a.number')!;
     expect(text(link)).toContain('#12');
     expect(link.getAttribute('href')).toBe(`/gestion/tickets?ticket=${'f'.repeat(24)}`);

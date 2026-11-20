@@ -100,6 +100,13 @@ describe('summarize', () => {
       ['Descatalogado', 1, 1000],
       ['Café', 1, 350],
     ]);
+    // Each carries its current category; a product without one or deleted has none.
+    expect(summary.topProducts.map((p) => p.categoryId)).toEqual([
+      DRINKS.toHexString(),
+      null,
+      null,
+      DRINKS.toHexString(),
+    ]);
   });
 
   it('splits the sales by the current category; a deleted product has none', () => {
@@ -120,15 +127,21 @@ describe('summarize', () => {
     });
   });
 
-  it('lists what to restock, sold out first', () => {
-    expect(summary.restock.map((p) => [p.name, p.quantity, p.minQuantity])).toEqual([
-      ['Pilas', 0, 2],
-      ['Café', 2, 5],
+  it('lists the stock of the best sellers, most sold first, without deleted products', () => {
+    expect(summary.topStock.map((p) => [p.name, p.units, p.quantity, p.minQuantity])).toEqual([
+      ['Agua', 13, 40, 0],
+      ['Pilas', 2, 0, 2],
+      ['Café', 1, 2, 5],
     ]);
   });
 
+  it('shows at most the last six tickets', () => {
+    const many = Array.from({ length: 12 }, () => ticket('2026-11-19T09:00:00.000Z', [[water, 1]]));
+    expect(summarize(many, products, 7, ZONE, NOW).recentTickets).toHaveLength(6);
+  });
+
   it('shows the last tickets, newest first', () => {
-    expect(summary.recentTickets).toHaveLength(5);
+    expect(summary.recentTickets).toHaveLength(6);
     expect(summary.recentTickets[0]).toMatchObject({
       number: tickets[6]!.number,
       units: 100,

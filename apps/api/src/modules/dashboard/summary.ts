@@ -2,8 +2,8 @@ import { addDays, todayIn, type Dashboard, type SalesTotals } from '@rayrecords/
 import type { ProductDoc, TicketDoc } from '../../db/documents';
 
 const TOP_PRODUCTS = 5;
-const RESTOCK = 6;
-const RECENT_TICKETS = 5;
+const TOP_STOCK = 6;
+const RECENT_TICKETS = 6;
 
 const empty = (): SalesTotals => ({ totalCents: 0, tickets: 0, units: 0 });
 const unitsOf = (ticket: TicketDoc) => ticket.lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -67,24 +67,13 @@ export function summarize(
   }
 
   const stock = { products: products.length, units: 0, valueCents: 0, ok: 0, low: 0, out: 0 };
-  const short: ProductDoc[] = [];
   for (const product of products) {
     stock.units += product.quantity;
     stock.valueCents += product.quantity * product.priceCents;
     if (product.quantity === 0) stock.out += 1;
     else if (product.minQuantity > 0 && product.quantity <= product.minQuantity) stock.low += 1;
     else stock.ok += 1;
-    if (
-      product.quantity === 0 ||
-      (product.minQuantity > 0 && product.quantity <= product.minQuantity)
-    ) {
-      short.push(product);
-    }
   }
-  // Sold out first; then the ones that have used up most of their margin.
-  const urgency = (product: ProductDoc) =>
-    product.quantity === 0 ? -1 : product.quantity / product.minQuantity;
-  short.sort((a, b) => urgency(a) - urgency(b) || a.name.localeCompare(b.name, 'es'));
 
   return {
     from,
@@ -94,19 +83,32 @@ export function summarize(
     previous,
     today: byDay.get(to)!,
     topProducts: [...sold]
-      .map(([productId, product]) => ({ productId, ...product }))
+      .map(([productId, product]) => ({
+        productId,
+        ...product,
+        categoryId: productById.get(productId)?.categoryId?.toHexString() ?? null,
+      }))
       .sort((a, b) => b.units - a.units || b.totalCents - a.totalCents)
       .slice(0, TOP_PRODUCTS),
     categories: [...byCategory]
       .map(([categoryId, category]) => ({ categoryId, ...category }))
       .sort((a, b) => b.totalCents - a.totalCents),
     stock,
-    restock: short.slice(0, RESTOCK).map((product) => ({
-      id: product._id.toHexString(),
-      name: product.name,
-      quantity: product.quantity,
-      minQuantity: product.minQuantity,
-    })),
+    // A product deleted since has no stock to show.
+    topStock: [...sold]
+      .flatMap(([id, item]) => {
+        const product = productById.get(id);
+        return product ? [{ product, units: item.units, totalCents: item.totalCents }] : [];
+      })
+      .sort((a, b) => b.units - a.units || b.totalCents - a.totalCents)
+      .slice(0, TOP_STOCK)
+      .map(({ product, units }) => ({
+        id: product._id.toHexString(),
+        name: product.name,
+        units,
+        quantity: product.quantity,
+        minQuantity: product.minQuantity,
+      })),
     recentTickets: [...tickets]
       .sort((a, b) => b.number - a.number)
       .slice(0, RECENT_TICKETS)
