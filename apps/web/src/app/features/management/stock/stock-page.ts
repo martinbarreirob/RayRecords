@@ -14,8 +14,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { Product, StockCategory } from '@rayrecords/shared';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, type MenuItem } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { Menu, MenuModule } from 'primeng/menu';
 import { PaginatorModule, type PaginatorState } from 'primeng/paginator';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
@@ -40,14 +41,19 @@ import {
 import { CategoryLabel } from '../../categories/category-label';
 import { CategorySelect, type CategoryOption } from '../../categories/category-select';
 import { ProductDialog } from './product-dialog';
+import { ProductSheet } from './product-sheet';
+import type { SheetState } from '../../../core/ui/bottom-sheet';
 
 /** Used until the real heights can be measured (first paint). */
 const ROW_FALLBACK = 41;
 const CARD_BORDER = 2;
+/** Rows per page on a phone, where the page scrolls instead of fitting the window. */
+const MOBILE_PAGE_SIZE = 8;
+const PHONE_QUERY = '(width <= 767px)';
 
 /** Phones show stacked rows and let the page scroll; only the desktop table is fitted to the window. */
 function prefersStackedRows(): boolean {
-  return typeof matchMedia === 'function' && !!matchMedia('(width <= 767px)')?.matches;
+  return typeof matchMedia === 'function' && !!matchMedia(PHONE_QUERY)?.matches;
 }
 import {
   LEVEL_CHOICES,
@@ -77,9 +83,11 @@ const UNITS = new Intl.NumberFormat('es-ES');
     TableModule,
     SelectModule,
     ConfirmDialogModule,
+    MenuModule,
     PageHeader,
     AddButton,
     ProductDialog,
+    ProductSheet,
     CategoriesDialog,
     CategoryLabel,
     CategorySelect,
@@ -93,9 +101,12 @@ const UNITS = new Intl.NumberFormat('es-ES');
   },
   styleUrl: './stock-page.scss',
   template: `
-    <app-page-header title="Stock" eyebrow="Gestión">
-      <button type="button" class="btn" (click)="categoriesOpen.set(true)">Categorías</button>
-      <app-add-button label="Nuevo producto" [iconOnMobile]="true" (pressed)="openCreate()" />
+    <app-page-header title="Stock" eyebrow="Gestión" [hideEyebrowOnMobile]="true">
+      <button type="button" class="btn categories-btn" (click)="categoriesOpen.set(true)">
+        <app-icon name="tag" />
+        Categorías
+      </button>
+      <app-add-button label="Nuevo producto" (pressed)="openCreate()" />
     </app-page-header>
 
     @if (error(); as message) {
@@ -119,12 +130,13 @@ const UNITS = new Intl.NumberFormat('es-ES');
         <button
           type="button"
           class="btn filters-toggle"
+          aria-label="Filtros"
           aria-controls="stock-filters"
           [attr.aria-expanded]="filtersOpen()"
           (click)="filtersOpen.set(!filtersOpen())"
         >
           <app-icon name="adjustments-horizontal" />
-          Filtros
+          <span class="label">Filtros</span>
           @if (filterCount(); as count) {
             <span class="badge accent">{{ count }}</span>
           }
@@ -159,10 +171,17 @@ const UNITS = new Intl.NumberFormat('es-ES');
               }
             </div>
           </div>
+          @if (filterCount() || query()) {
+            <button type="button" class="btn ghost clear-in-panel" (click)="clearFilters()">
+              Quitar filtros
+            </button>
+          }
         </section>
       </div>
       @if (filterCount() || query()) {
-        <button type="button" class="btn ghost" (click)="clearFilters()">Quitar filtros</button>
+        <button type="button" class="btn ghost clear-toolbar" (click)="clearFilters()">
+          Quitar filtros
+        </button>
       }
       <span class="spacer"></span>
       <p class="shown muted" aria-live="polite">
@@ -214,7 +233,13 @@ const UNITS = new Intl.NumberFormat('es-ES');
           </ng-template>
 
           <ng-template #body let-row>
-            <tr class="st-row">
+            <tr
+              class="st-row"
+              [attr.role]="phone() ? 'button' : null"
+              [attr.tabindex]="phone() ? 0 : null"
+              (click)="onRowClick(row)"
+              (keydown.enter)="onRowClick(row)"
+            >
               <td class="c-name">
                 <span class="name" [title]="row.notes ?? row.name">{{ row.name }}</span>
                 @if (row.sku) {
@@ -240,18 +265,11 @@ const UNITS = new Intl.NumberFormat('es-ES');
                 <button
                   type="button"
                   class="btn ghost icon"
-                  [attr.aria-label]="'Editar ' + row.name"
-                  (click)="openEdit(row)"
+                  aria-haspopup="menu"
+                  [attr.aria-label]="'Opciones: ' + row.name"
+                  (click)="openMenu($event, row, menu)"
                 >
-                  <app-icon name="pencil" />
-                </button>
-                <button
-                  type="button"
-                  class="btn ghost icon danger"
-                  [attr.aria-label]="'Borrar ' + row.name"
-                  (click)="remove(row)"
-                >
-                  <app-icon name="trash" />
+                  <app-icon name="dots" />
                 </button>
               </td>
             </tr>
@@ -295,11 +313,19 @@ const UNITS = new Intl.NumberFormat('es-ES');
       </div>
     </div>
 
+    @if (visible().length) {
+      <p class="foot muted" aria-live="polite">
+        {{ shownLabel() }} · {{ units(totals().units) }} uds. ·
+        <strong>{{ money(totals().valueCents) }}</strong>
+      </p>
+    }
+
     <div class="pager">
       <p-paginator
         [first]="first()"
         [rows]="pageSize()"
         [totalRecords]="visible().length"
+        [pageLinkSize]="phone() ? 3 : 5"
         (onPageChange)="onPage($event)"
       />
     </div>
@@ -320,6 +346,24 @@ const UNITS = new Intl.NumberFormat('es-ES');
       (changed)="load()"
       (closed)="categoriesOpen.set(false)"
     />
+    @if (phone()) {
+      <app-product-sheet
+        [(state)]="sheetState"
+        [row]="sheetRow()"
+        [categories]="categories()"
+        [resetOn]="sheetKey()"
+        (saved)="onSaved($event)"
+        (removed)="remove($event)"
+      />
+    }
+    <p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body">
+      <ng-template #item let-item>
+        <a class="p-menu-item-link" role="menuitem" tabindex="-1">
+          <app-icon class="p-menu-item-icon" [name]="$any(item.icon)" />
+          <span class="p-menu-item-label">{{ item.label }}</span>
+        </a>
+      </ng-template>
+    </p-menu>
     <p-confirmdialog />
   `,
 })
@@ -380,6 +424,15 @@ export class StockPage {
 
   // Dialogs
   protected readonly editorOpen = signal(false);
+  /** Phone: the product sheet replaces the dialog and the row menu. */
+  protected readonly phone = signal(false);
+  protected readonly sheetState = signal<SheetState>('closed');
+  private readonly sheetId = signal<string | null>(null);
+  /** Counts the openings of the sheet, so its form starts over each time. */
+  protected readonly sheetKey = signal(0);
+  protected readonly sheetRow = computed(
+    () => this.rows().find(({ id }) => id === this.sheetId()) ?? null,
+  );
   protected readonly editing = signal<Product | null>(null);
   protected readonly categoriesOpen = signal(false);
 
@@ -414,6 +467,16 @@ export class StockPage {
 
   constructor() {
     this.load();
+    if (typeof matchMedia === 'function') {
+      const query = matchMedia(PHONE_QUERY);
+      const sync = () => {
+        this.phone.set(query.matches);
+        if (!query.matches) this.sheetState.set('closed');
+      };
+      sync();
+      query.addEventListener?.('change', sync);
+      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', sync));
+    }
     // The page size follows the window and what the table holds (rows and the room they have).
     const injector = inject(Injector);
     const destroyRef = inject(DestroyRef);
@@ -448,15 +511,20 @@ export class StockPage {
    * Sets the rows per page to as many as fit in the space the table area has: its height minus the
    * header row, over the height of a row (never under `MIN_PAGE_SIZE`). The card then takes the
    * height of its rows, so with fewer products than fit it is just shorter. On a phone the page
-   * scrolls, so it is left alone.
+   * scrolls, so a fixed `MOBILE_PAGE_SIZE` is used.
    */
   private fit(): void {
     const area = this.area()?.nativeElement;
-    if (!area || prefersStackedRows()) return;
+    if (!area) return;
+    if (prefersStackedRows()) return this.setPageSize(MOBILE_PAGE_SIZE);
     const height = (selector: string): number =>
       area.querySelector(selector)?.getBoundingClientRect().height ?? 0;
     const available = area.clientHeight - height('.p-datatable-thead') - CARD_BORDER;
     const size = fitPageSize(available, height('tr.st-row') || ROW_FALLBACK);
+    this.setPageSize(size);
+  }
+
+  private setPageSize(size: number): void {
     if (size === this.pageSize()) return;
     this.pageSize.set(size);
     // Stay on the page that holds the first row now on screen.
@@ -536,6 +604,12 @@ export class StockPage {
 
   protected openCreate(): void {
     if (this.editorOpen() || this.categoriesOpen()) return;
+    if (this.phone()) {
+      this.sheetId.set(null);
+      this.sheetKey.update((key) => key + 1);
+      this.sheetState.set('expanded');
+      return;
+    }
     this.editing.set(null);
     this.editorOpen.set(true);
   }
@@ -543,6 +617,14 @@ export class StockPage {
   protected openEdit(row: ProductRow): void {
     this.editing.set(this.products().find((product) => product.id === row.id) ?? null);
     this.editorOpen.set(true);
+  }
+
+  /** Phone: a tap on a row shows its product in the sheet. */
+  protected onRowClick(row: ProductRow): void {
+    if (!this.phone()) return;
+    this.sheetId.set(row.id);
+    this.sheetKey.update((key) => key + 1);
+    this.sheetState.set('peek');
   }
 
   /** Shows the saved product at once, without waiting for a reload. */
@@ -553,6 +635,27 @@ export class StockPage {
         : [...products, saved],
     );
     this.editorOpen.set(false);
+    // Phone: an edited product goes back to its summary; a new one just closes the sheet.
+    if (this.phone()) {
+      if (this.sheetId() === saved.id) this.sheetState.set('peek');
+      else this.sheetState.set('closed');
+    }
+  }
+
+  /** What the options menu of a row offers; set when it opens, for the row it opens on. */
+  protected readonly menuItems = signal<MenuItem[]>([]);
+
+  protected openMenu(event: Event, row: ProductRow, menu: Menu): void {
+    this.menuItems.set([
+      { label: 'Editar', icon: 'pencil', command: () => this.openEdit(row) },
+      {
+        label: 'Eliminar',
+        icon: 'trash',
+        styleClass: 'menu-danger',
+        command: () => this.remove(row),
+      },
+    ]);
+    menu.toggle(event);
   }
 
   protected remove(row: ProductRow): void {
@@ -567,6 +670,7 @@ export class StockPage {
         this.api.deleteProduct(row.id).subscribe({
           next: () => {
             this.products.update((products) => products.filter(({ id }) => id !== row.id));
+            if (this.sheetId() === row.id) this.sheetState.set('closed');
             this.error.set('');
           },
           error: (error: unknown) => this.error.set(apiErrorMessage(error)),
