@@ -9,10 +9,13 @@ import { Icon } from './icon';
  * taken over). The key is matched by its physical position (`code`), because Option+N on a Mac
  * types a dead-key character.
  *
- * With `iconOnMobile` the phone shows just a plus sign, for headers with little room.
+ * With `iconOnMobile` the phone shows just a plus sign, for headers with little room. With
+ * `fillOnMobile` the phone shows the plus sign and the text and the button takes all the width its
+ * container leaves (alone in a header row, or next to a flexible sibling).
  */
 @Component({
   selector: 'app-add-button',
+  host: { '[class.fill]': 'fillOnMobile()' },
   imports: [Icon],
   styles: `
     .kbd {
@@ -23,6 +26,10 @@ import { Icon } from './icon';
 
     .plus {
       display: none;
+    }
+
+    :host(.fill) .btn {
+      width: 100%;
     }
 
     /* On a touch screen there is no keyboard to press it with. */
@@ -40,8 +47,14 @@ import { Icon } from './icon';
         padding: 0;
       }
 
-      .icon-only .plus {
+      .icon-only .plus,
+      :host(.fill) .plus {
         display: inline;
+      }
+
+      :host(.fill) {
+        flex: 1 1 0;
+        min-width: 0;
       }
 
       .icon-only .text {
@@ -70,6 +83,8 @@ export class AddButton {
 
   readonly label = input.required<string>();
   readonly iconOnMobile = input(false);
+  /** On a phone: plus sign plus text, stretched to the free width of the row. */
+  readonly fillOnMobile = input(false);
   /** Emitted by a click and by the keyboard shortcut. */
   readonly pressed = output();
 

@@ -1,6 +1,11 @@
 // Reusable classes for what does not need PrimeNG. Contract documented in docs/DESIGN.md.
 
-/* Buttons */
+/*
+ * Buttons. Control heights come from --control-height (36px on desktop, one touch target on a
+ * phone), shared by .btn, .input/.select, .segmented and .btn.icon, so controls in one row always
+ * line up. Reusable helpers: .btn.icon (square, as tall as an .input), .btn.sm (compact; 36px on a
+ * phone) and .btn.sm.icon (square compact). Do not set min-height by hand on a control.
+ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -69,6 +74,20 @@
   &.icon {
     width: var(--control-height);
     padding: 0;
+  }
+
+  &.icon.sm {
+    width: 28px;
+  }
+}
+
+@media (width <= 767px) {
+  .btn.sm {
+    min-height: 36px;
+  }
+
+  .btn.icon.sm {
+    width: 36px;
   }
 }
 
@@ -439,5 +458,15 @@ main > :not(router-outlet) {
   from {
     opacity: 0;
     transform: translateX(var(--nav-shift, 0px));
+  }
+}
+
+/* On a phone only fade: a transform on the page host would make it the containing block of the
+   sales cart sheet (position: fixed) while the entrance runs, and the sheet would jump. */
+@media (width <= 767px) {
+  @keyframes screen-in {
+    from {
+      opacity: 0;
+    }
   }
 }

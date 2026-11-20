@@ -55,9 +55,30 @@ import { Component, input } from '@angular/core';
         margin-bottom: var(--space-4);
       }
 
+      /* No fixed height: with no visible title and no actions the header takes no room at all. */
       .page-header {
         gap: var(--space-2) var(--space-3);
-        min-height: var(--touch-target);
+        min-height: 0;
+      }
+
+      :host(:has(.page-actions:empty)) {
+        margin-bottom: 0;
+      }
+
+      /*
+       * The section tabs of the shell already name the screen, so the h1 stays only for screen
+       * readers (and the eyebrow too when hideEyebrowOnMobile is set).
+       */
+      h1,
+      .title-block.compact {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
       }
 
       /* Takes what the actions leave; if the line next to the title does not fit it wraps below. */
@@ -65,11 +86,6 @@ import { Component, input } from '@angular/core';
         flex: 1 1 0;
         min-width: 0;
         gap: 0 var(--space-2);
-      }
-
-      h1 {
-        font-size: 22px;
-        letter-spacing: -0.02em;
       }
 
       .page-eyebrow {
@@ -87,17 +103,23 @@ import { Component, input } from '@angular/core';
       .page-actions.split {
         display: contents;
       }
+
+      /* Opt-in: the actions take the whole row, so a flexible child (flex: 1) can fill it. */
+      .page-actions.stretch {
+        flex: 1 1 0;
+        margin-left: 0;
+      }
     }
   `,
   template: `
     <header class="page-header">
-      <div class="title-block">
+      <div class="title-block" [class.compact]="hideEyebrowOnMobile() || !eyebrow()">
         <h1>{{ title() }}</h1>
         @if (eyebrow()) {
           <span class="page-eyebrow" aria-live="polite">{{ eyebrow() }}</span>
         }
       </div>
-      <div class="page-actions" [class.split]="split()">
+      <div class="page-actions" [class.split]="split()" [class.stretch]="stretchActions()">
         <ng-content />
       </div>
     </header>
@@ -108,4 +130,8 @@ export class PageHeader {
   readonly eyebrow = input('');
   /** On a phone, lets the screen lay its actions out over several rows (see the calendar). */
   readonly split = input(false);
+  /** On a phone, the actions take the full row width (a child with flex: 1 then fills what is left). */
+  readonly stretchActions = input(false);
+  /** On a phone the eyebrow is hidden too when it only repeats the area tab (for example "Gestión"). */
+  readonly hideEyebrowOnMobile = input(false);
 }

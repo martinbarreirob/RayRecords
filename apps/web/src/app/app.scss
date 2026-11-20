@@ -307,6 +307,19 @@ main {
 }
 
 @media (width <= 767px) {
+  // No reserved scrollbar gutter on a phone: it would inset every screen by 10px on both sides and
+  // keep the edge-to-edge lists (stock, tickets) from reaching the screen edges.
+  main {
+    scrollbar-gutter: auto;
+  }
+
+  // Touch screens scroll without a visible bar; a mouse in a narrow window keeps its scrollbar.
+  @media (pointer: coarse) {
+    main {
+      scrollbar-width: none;
+    }
+  }
+
   // The brand shrinks to the logo and the search to an icon, so the area tabs and the user button
   // fit in one row.
   .topbar-inner {

@@ -149,6 +149,8 @@
 @media (width <= 767px) {
   :root {
     --page-gutter: 16px;
+    /* Every control (button, field, switch) is one touch target tall, so a row never mixes heights. */
+    --control-height: var(--touch-target);
     --text-3xl: 32px;
     --text-2xl: 24px;
   }
