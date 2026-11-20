@@ -230,11 +230,16 @@
  * scrolls sideways and an arrow appears at each end to move the selection.
  */
 .categories {
+  position: relative;
   display: flex;
   flex: none;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+}
+
+.categories > .cat-arrow.prev {
+  order: -1;
 }
 
 .categories > .btn {
@@ -317,18 +322,30 @@
   }
 }
 
-/* Phone: one column, the page scrolls and the cart comes after the products. */
+/*
+ * Phone: one column; the page scrolls, every card has the same size, the categories are a bare
+ * strip with a small arrow at the side that has more, and the cart is a bottom sheet.
+ */
 @media (width <= 767px) {
-  /* A phone has two or three narrow columns: the card takes the whole row instead. */
-  .bento.few .tile {
-    grid-column: 1 / -1;
+  .cart-empty {
+    .desk-only {
+      display: none;
+    }
+
+    .phone-only {
+      display: inline;
+    }
   }
 
   :host {
+    /* A little more width than the other screens: the grid and the cart bar want every pixel. */
+    --page-gutter: 12px;
+    --sheet-bar: 60px;
     display: block;
     height: auto;
     min-height: 0;
-    padding-bottom: var(--space-6);
+    /* The closed sheet bar must not hide the end of the list. */
+    padding-bottom: calc(var(--sheet-bar) + env(safe-area-inset-bottom, 0px) + var(--space-4));
   }
 
   .layout {
@@ -341,43 +358,288 @@
     overflow: visible;
   }
 
+  /* All cards the same: two columns, one fixed height with room for a two-line name. */
   .bento {
+    --tile-size: 148px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: var(--tile-size);
     gap: var(--space-2);
   }
 
-  .cart {
-    align-self: stretch;
+  .bento.few .tile,
+  .tile.xl,
+  .tile.wide {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .tile {
+    position: relative;
+    padding: var(--space-3);
+  }
+
+  .tile .tile-name,
+  .tile:not(.xl, .wide) .tile-top + .tile-name {
+    min-height: 2.5em;
+    font-size: var(--text-base);
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  /* The "in cart" count is a small chip on the corner: it takes no room from the text. */
+  .tile-top {
+    position: absolute;
+    top: -6px;
+    right: var(--space-2);
+  }
+
+  .tile:has(.badge.in-cart) {
+    border-color: var(--success);
+  }
+
+  .tile-foot {
+    min-width: 0;
+  }
+
+  .add,
+  .add.icon {
+    width: var(--control-height);
+    min-height: var(--control-height);
+    padding: 0;
+  }
+
+  /* Categories: no button chrome; a small round arrow over a fade at the side with more. */
+  .categories {
+    min-height: var(--control-height);
+  }
+
+  .cat-strip {
+    align-items: center;
+  }
+
+  .cat {
+    box-sizing: border-box;
+    height: var(--control-height);
+    min-height: var(--control-height);
+    line-height: 1;
+  }
+
+  .cat-arrow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    width: 40px;
     min-height: 0;
-    max-height: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--muted);
+    font-size: 12px;
+
+    &.prev {
+      left: 0;
+      justify-content: flex-start;
+      background: linear-gradient(to right, var(--bg) 45%, transparent);
+    }
+
+    &.next {
+      right: 0;
+      justify-content: flex-end;
+      background: linear-gradient(to left, var(--bg) 45%, transparent);
+    }
+
+    &.edge-off {
+      display: none;
+    }
+
+    app-icon {
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--bg);
+    }
+  }
+
+  /* Cart: a sheet fixed to the bottom edge. Closed, only its bar shows; open, it rises over the page. */
+  .cart {
+    --sheet-drag: 0px;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    align-self: auto;
+    min-height: 0;
+    max-height: min(80dvh, 640px);
+    border-width: 1px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(
+      calc(100% - var(--sheet-bar) - env(safe-area-inset-bottom, 0px) + var(--sheet-drag))
+    );
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+
+    &.sheet-open {
+      transform: translateY(var(--sheet-drag));
+    }
+
+    &.sheet-dragging {
+      transition: none;
+    }
+
+    &.drop-ready,
+    &.drop-over {
+      border-style: solid;
+    }
+  }
+
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    display: block;
+    background: color-mix(in srgb, var(--text) 40%, transparent);
+    animation: backdrop-in 0.25s ease-out;
+  }
+
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .cart-head {
+    position: relative;
+    min-height: var(--sheet-bar);
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    border-bottom: 0;
+  }
+
+  .cart.sheet-open .cart-head {
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* The bar replaces the title and the count of the desktop header. */
+  .cart-head h2,
+  .cart-count {
+    display: none;
+  }
+
+  .sheet-toggle {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    min-height: var(--sheet-bar);
+    padding: var(--space-3) var(--space-4) 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    /* The vertical drag is for the sheet, not for scrolling the page. */
+    touch-action: none;
+  }
+
+  .sheet-grip {
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line-strong);
+    transform: translateX(-50%);
+  }
+
+  .sheet-summary {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .sheet-title {
+    font-weight: 600;
+  }
+
+  .sheet-count {
+    overflow: hidden;
+    font-size: var(--text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sheet-total {
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+
+  .clear {
+    margin: 0 var(--space-2) 0 0;
+  }
+
+  .cart:not(.sheet-open) .clear {
+    display: none;
+  }
+
+  .cart-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .lines {
-    flex: none;
-    overflow: visible;
+    flex: 1 1 auto;
+    overflow-y: auto;
   }
 
-  .categories > .btn,
-  .cat,
-  .add,
+  .cart-empty {
+    flex: none;
+  }
+
+  .cart-foot {
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  }
+
   .clear,
   .cart-foot .btn {
-    min-height: var(--touch-target);
+    min-height: var(--control-height);
   }
 
-  .add.icon {
-    width: var(--touch-target);
-  }
-
-  .categories > .btn,
   .stepper .btn.icon,
   .line-remove {
-    width: var(--touch-target);
-    min-height: var(--touch-target);
+    width: var(--control-height);
+    min-height: var(--control-height);
   }
 
   .stepper .input {
-    min-height: var(--touch-target);
+    min-height: var(--control-height);
     font-size: max(16px, var(--text-base));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cart {
+      transition: none;
+    }
+
+    .sheet-backdrop {
+      animation: none;
+    }
   }
 }

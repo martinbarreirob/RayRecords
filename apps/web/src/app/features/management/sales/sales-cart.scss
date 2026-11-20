@@ -126,6 +126,10 @@
   white-space: nowrap;
 }
 
+.cart-empty .phone-only {
+  display: none;
+}
+
 .cart-empty {
   display: flex;
   flex: 1 1 0;
@@ -169,4 +173,14 @@
 
 .ticket {
   min-height: var(--touch-target);
+}
+
+/* Desktop: the wrapper of the body takes no box of its own, and the phone bar does not exist. */
+.cart-body {
+  display: contents;
+}
+
+.sheet-toggle,
+.sheet-backdrop {
+  display: none;
 }

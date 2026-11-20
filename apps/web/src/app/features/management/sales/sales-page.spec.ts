@@ -151,6 +151,10 @@ describe('SalesPage', () => {
     window.dispatchEvent(new Event('resize'));
     fixture.detectChanges();
 
+    // At the start only the arrow forwards is on (the phone hides the one that has nothing behind).
+    expect(button(el(fixture), 'Categoría anterior').classList.contains('edge-off')).toBe(true);
+    expect(button(el(fixture), 'Categoría siguiente').classList.contains('edge-off')).toBe(false);
+
     button(el(fixture), 'Categoría siguiente').click();
     fixture.detectChanges();
     expect(tileNames(fixture)).toEqual(['Café', 'Agua']);
@@ -159,6 +163,14 @@ describe('SalesPage', () => {
     button(el(fixture), 'Categoría anterior').click();
     fixture.detectChanges();
     expect(tileNames(fixture)).toEqual(['Pilas']);
+
+    // Scrolled to the end: the arrow back is on and the one forwards is off.
+    Object.defineProperty(strip, 'clientWidth', { value: 600, configurable: true });
+    Object.defineProperty(strip, 'scrollLeft', { value: 300, configurable: true });
+    strip.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+    expect(button(el(fixture), 'Categoría anterior').classList.contains('edge-off')).toBe(false);
+    expect(button(el(fixture), 'Categoría siguiente').classList.contains('edge-off')).toBe(true);
 
     Object.defineProperty(strip, 'scrollWidth', { value: 500, configurable: true });
     window.dispatchEvent(new Event('resize'));
@@ -184,6 +196,27 @@ describe('SalesPage', () => {
     expect(big.querySelector('.tile-top')?.textContent).toContain('Más vendido');
     expect(big.querySelector('.add')?.textContent?.trim()).toBe('Añadir');
     expect(tile(fixture, 'Pilas').children[1]?.textContent?.trim()).toBe('Agotado');
+  });
+
+  it('opens and closes the cart sheet from its bar, with aria-expanded and Escape', () => {
+    const { fixture } = setup();
+    const toggle = el(fixture).querySelector<HTMLButtonElement>('.sheet-toggle')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    addToCart(fixture, 'Café');
+    expect(toggle.textContent).toContain('1 artículo');
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    el(fixture)
+      .querySelector('.cart')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    // Not a phone in jsdom: Escape only acts on the sheet.
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('empties the cart from the button next to its title', () => {
