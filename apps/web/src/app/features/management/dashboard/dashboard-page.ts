@@ -37,7 +37,12 @@ const UNITS = new Intl.NumberFormat('es-ES');
   host: { class: 'page' },
   styleUrls: ['./dashboard-page.scss', './dashboard-charts.scss'],
   template: `
-    <app-page-header title="Dashboard" eyebrow="Gestión" [split]="true">
+    <app-page-header
+      title="Dashboard"
+      eyebrow="Gestión"
+      [split]="true"
+      [hideEyebrowOnMobile]="true"
+    >
       <div class="segmented" role="group" aria-label="Periodo">
         @for (period of periods; track period.days) {
           <button

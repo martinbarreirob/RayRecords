@@ -4,14 +4,23 @@
   display: block;
 }
 
-/* The dashboard is meant to fit the screen without scrolling: a shorter bottom margin than the
-   other pages. */
-app-page-header {
-  margin-bottom: var(--space-4);
+/* Phone: a little more width than the other screens (the .page padding reads this token). */
+@media (width <= 767px) {
+  :host {
+    --page-gutter: 12px;
+  }
 }
 
-:host(.page) {
-  padding-bottom: var(--space-4);
+/* The dashboard is meant to fit the screen without scrolling: a shorter bottom margin than the
+   other pages. */
+@media (width >= 768px) {
+  app-page-header {
+    margin-bottom: var(--space-4);
+  }
+
+  :host(.page) {
+    padding-bottom: var(--space-4);
+  }
 }
 
 .alert {
