@@ -33,17 +33,19 @@ export interface ManagedCategory {
   icon: CategoryIcon;
   color: string;
   iconColor: string;
+  /** Built-in entry ("Todas"): its icon and colors can change, its name cannot, nor can it be deleted. */
+  locked?: boolean;
 }
 
 /** The part of a category the manager can change. */
-export type CategoryChanges = Partial<Omit<ManagedCategory, 'id'>>;
+export type CategoryChanges = Partial<Omit<ManagedCategory, 'id' | 'locked'>>;
 
 /**
  * What the manager does to the data, given by whoever hosts it: the same screen works for the
  * stock categories and the expense ones, which live in different collections.
  */
 export interface CategoryOps {
-  create(input: Omit<ManagedCategory, 'id'>): Observable<ManagedCategory>;
+  create(input: Omit<ManagedCategory, 'id' | 'locked'>): Observable<ManagedCategory>;
   update(id: string, changes: CategoryChanges): Observable<unknown>;
   remove(id: string): Observable<unknown>;
 }
@@ -121,24 +123,26 @@ const NAME_ID = 'category-name';
                       <span class="count">{{ countLabel(category.id) }}</span>
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    class="btn ghost icon row-action"
-                    [attr.aria-label]="'Renombrar la categoría ' + category.name"
-                    title="Renombrar"
-                    (click)="rename(category)"
-                  >
-                    <app-icon name="pencil" />
-                  </button>
-                  <button
-                    type="button"
-                    class="btn ghost icon danger row-action"
-                    [attr.aria-label]="'Eliminar la categoría ' + category.name"
-                    title="Eliminar"
-                    (click)="remove(category)"
-                  >
-                    <app-icon name="trash" />
-                  </button>
+                  @if (!category.locked) {
+                    <button
+                      type="button"
+                      class="btn ghost icon row-action"
+                      [attr.aria-label]="'Renombrar la categoría ' + category.name"
+                      title="Renombrar"
+                      (click)="rename(category)"
+                    >
+                      <app-icon name="pencil" />
+                    </button>
+                    <button
+                      type="button"
+                      class="btn ghost icon danger row-action"
+                      [attr.aria-label]="'Eliminar la categoría ' + category.name"
+                      title="Eliminar"
+                      (click)="remove(category)"
+                    >
+                      <app-icon name="trash" />
+                    </button>
+                  }
                 </li>
               }
             </ul>
@@ -169,6 +173,7 @@ const NAME_ID = 'category-name';
                   maxlength="60"
                   [placeholder]="creating() ? 'Nombre de la nueva categoría' : 'Nombre'"
                   [value]="draft().name"
+                  [readOnly]="nameLocked()"
                   (input)="patch({ name: nameInput.value })"
                   (blur)="commitName()"
                 />
@@ -319,6 +324,8 @@ export class CategoriesDialog {
    * created counts before the reloaded list brings it, so the editor does not blink.
    */
   protected readonly editing = computed(() => this.creating() || this.selectedId() !== null);
+  /** The built-in category is in the editor: its name is fixed. */
+  protected readonly nameLocked = computed(() => !this.creating() && !!this.selected()?.locked);
   protected readonly icons = computed(() => searchIcons(this.query()));
   /** The colors on screen are not one of the suggested pairs. */
   protected readonly isCustom = computed(() => !this.pairs.some((pair) => this.isPair(pair)));
@@ -427,7 +434,7 @@ export class CategoriesDialog {
   /** Leaving the name field saves it; an empty name goes back to the saved one. */
   protected commitName(): void {
     const category = this.selected();
-    if (this.creating() || !category) return;
+    if (this.creating() || !category || category.locked) return;
     const name = this.draft().name.trim();
     if (!name) {
       this.patch({ name: category.name });

@@ -132,6 +132,7 @@
 }
 
 .mv-foot > td {
+  border-top: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--muted);
   font-size: var(--text-sm);
@@ -160,9 +161,41 @@
   }
 }
 
+/*
+ * The card keeps the height of a full page (see the panel), and the totals row sits at its bottom:
+ * the table fills the card, and an empty row after the movements takes up the spare height, so the
+ * movements keep their own height. Desktop only; on a phone the rows are stacked and just flow.
+ */
+@media (width >= 768px) {
+  .table-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :host ::ng-deep {
+    .table-card .p-datatable,
+    .table-card .p-datatable-table-container {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+    }
+
+    .table-card .p-datatable-table {
+      flex: 1 1 auto;
+    }
+
+    .table-card .p-datatable-tbody::after {
+      content: '';
+      display: table-row;
+      height: 100%;
+    }
+  }
+}
+
+/* The table pages by itself, but its own paginator is not shown: the one under the card is. */
 :host ::ng-deep {
   .p-datatable-paginator-bottom {
-    border-top: 1px solid var(--line);
+    display: none;
   }
 
   .p-datatable-tbody > tr > td.c-edit {
@@ -371,4 +404,20 @@
     width: 84px;
     height: 20px;
   }
+}
+
+/* Page navigation: centred under the card, outside it. Always in the same place. */
+.pager {
+  --p-paginator-background: transparent;
+  --p-paginator-padding: 0;
+  --p-paginator-border-width: 0;
+  --p-paginator-gap: var(--space-1);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
 }

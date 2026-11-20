@@ -27,6 +27,8 @@ import { Icon } from '../../../core/ui/icon';
 import { AddButton } from '../../../core/ui/add-button';
 import { StockSearchService } from '../../../core/stock-search/stock-search.service';
 import { TicketPrinter } from '../../../core/print/ticket-printer';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { PrintSettingsDialog } from './print-settings-dialog';
 
 /**
@@ -35,11 +37,24 @@ import { PrintSettingsDialog } from './print-settings-dialog';
  */
 @Component({
   selector: 'app-tickets-page',
-  imports: [Icon, FormsModule, AddButton, PageHeader, DateField, PrintSettingsDialog],
+  imports: [
+    Icon,
+    FormsModule,
+    AddButton,
+    PageHeader,
+    DateField,
+    PrintSettingsDialog,
+    ConfirmDialogModule,
+  ],
+  providers: [ConfirmationService],
   host: { class: 'page' },
   styleUrl: './tickets-page.scss',
   template: `
     <app-page-header title="Tickets" eyebrow="Gestión">
+      <button type="button" class="btn edit-receipt" (click)="settingsOpen.set(true)">
+        <app-icon name="pencil" />
+        Formato de ticket
+      </button>
       <app-add-button label="Nueva venta" [iconOnMobile]="true" (pressed)="stockSearch.show()" />
     </app-page-header>
 
@@ -79,10 +94,6 @@ import { PrintSettingsDialog } from './print-settings-dialog';
       }
       <span class="spacer"></span>
       <span class="shown muted" aria-live="polite">{{ shownLabel() }}</span>
-      <button type="button" class="btn edit-receipt" (click)="settingsOpen.set(true)">
-        <app-icon name="pencil" />
-        Editar ticket
-      </button>
     </div>
 
     <section
@@ -222,6 +233,7 @@ import { PrintSettingsDialog } from './print-settings-dialog';
     </div>
 
     <app-print-settings-dialog [open]="settingsOpen()" (closed)="settingsOpen.set(false)" />
+    <p-confirmdialog />
   `,
 })
 export class TicketsPage {

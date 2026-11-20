@@ -111,6 +111,11 @@ describe('category tabs', () => {
     expect(categoryTabs([], products)).toEqual([{ id: 'all', label: 'Todas' }]);
   });
 
+  it('gives "Todas" the look it is given', () => {
+    const look = { icon: 'box', color: '#ffffff', iconColor: '#2b2b2b' } as const;
+    expect(categoryTabs([], products, look)[0]).toEqual({ id: 'all', label: 'Todas', look });
+  });
+
   it('steps with the arrows and goes round at both ends', () => {
     const tabs = categoryTabs(categories, products);
     expect(stepCategory(tabs, 'all', 1)).toBe(SNACKS);

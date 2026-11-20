@@ -66,6 +66,24 @@
   list-style: none;
 }
 
+/* Switching category: the new grid fades in and settles a few pixels (compositor-only). */
+.bento.swap {
+  animation: swap-in 0.18s ease-out;
+}
+
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento.swap {
+    animation: none;
+  }
+}
+
 /* One or two products: each takes three columns, so it does not sit small in an empty grid. */
 .bento.few .tile {
   grid-column: span 3;
@@ -255,11 +273,23 @@
     color: var(--text);
   }
 
+  /* Selected: a soft tint and a tonal ring instead of a heavy outline. */
   &[aria-pressed='true'] {
-    border-color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
     background: var(--accent-soft);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--text);
     font-weight: 600;
+  }
+
+  transition:
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out,
+    box-shadow 0.15s ease-out,
+    color 0.15s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 
   /* Only a tab that starts with a category badge is tighter on the left, so the badge sits

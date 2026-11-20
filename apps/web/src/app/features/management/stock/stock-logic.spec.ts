@@ -1,10 +1,7 @@
 import type { Product, StockCategory } from '@rayrecords/shared';
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_PAGE_SIZE,
   EMPTY_DRAFT,
-  fitPageSize,
-  MIN_PAGE_SIZE,
   NO_CATEGORY,
   NO_FILTERS,
   activeFilterCount,
@@ -205,23 +202,5 @@ describe('toCreate', () => {
       minQuantity: 0,
       priceCents: 0,
     });
-  });
-});
-
-describe('fitPageSize', () => {
-  it('counts the whole rows that fit', () => {
-    expect(fitPageSize(430, 43)).toBe(10);
-    expect(fitPageSize(429, 43)).toBe(9);
-  });
-
-  it('never goes under five rows, even in a tiny window', () => {
-    expect(fitPageSize(60, 43)).toBe(MIN_PAGE_SIZE);
-    expect(MIN_PAGE_SIZE).toBe(5);
-  });
-
-  it('falls back to the default when nothing can be measured', () => {
-    expect(fitPageSize(0, 43)).toBe(DEFAULT_PAGE_SIZE);
-    expect(fitPageSize(500, 0)).toBe(DEFAULT_PAGE_SIZE);
-    expect(fitPageSize(Number.NaN, 43)).toBe(DEFAULT_PAGE_SIZE);
   });
 });

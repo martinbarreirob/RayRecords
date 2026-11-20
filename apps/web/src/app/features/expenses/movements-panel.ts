@@ -1,4 +1,15 @@
-import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   DEFAULT_TIME_ZONE,
@@ -8,6 +19,7 @@ import {
   type Transaction,
   type TransactionQuery,
 } from '@rayrecords/shared';
+import { PaginatorModule, type PaginatorState } from 'primeng/paginator';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import {
@@ -44,6 +56,7 @@ import {
   type SectionFilter,
 } from './movements-logic';
 import { Icon } from '../../core/ui/icon';
+import { DEFAULT_PAGE_SIZE, fitPageSize } from '../../core/ui/page-size';
 import { CategoryLabel } from '../categories/category-label';
 import { CategorySelect, type CategoryOption } from '../categories/category-select';
 import { MovementDialog } from './movement-dialog';
@@ -65,6 +78,36 @@ interface SectionCard {
   count: number;
 }
 
+/** Used until a real row can be measured. */
+const ROW_FALLBACK = 45;
+/** Height of the page buttons until they can be measured. */
+const PAGER_FALLBACK = 52;
+/** Slack under the table (card border, gaps) so the page does not scroll by a few pixels. */
+const FIT_MARGIN = 8;
+/** The border of the table card, top and bottom. */
+const CARD_BORDER = 2;
+
+/** The closest ancestor that scrolls: the page does not scroll with the window but inside it. */
+function scrollParent(element: HTMLElement): HTMLElement {
+  for (let node = element.parentElement; node; node = node.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node;
+  }
+  return document.documentElement;
+}
+
+/** Padding, border and margin that the ancestors of `element` (up to `limit`) leave under it. */
+function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
+  let total = parseFloat(getComputedStyle(element).marginBottom) || 0;
+  for (let node = element.parentElement; node && node !== limit; node = node.parentElement) {
+    const style = getComputedStyle(node);
+    total +=
+      (parseFloat(style.paddingBottom) || 0) +
+      (parseFloat(style.borderBottomWidth) || 0) +
+      (parseFloat(style.marginBottom) || 0);
+  }
+  return total + (parseFloat(getComputedStyle(limit).paddingBottom) || 0);
+}
+
 @Component({
   selector: 'app-movements-panel',
   imports: [
@@ -74,6 +117,7 @@ interface SectionCard {
     Icon,
     FormsModule,
     TableModule,
+    PaginatorModule,
     SelectModule,
     PeriodPicker,
   ],
@@ -250,7 +294,9 @@ interface SectionCard {
         }
 
         <div
+          #card
           class="table-card"
+          [style.min-height.px]="tableHeight()"
           [class.is-refreshing]="loading() && visible().length > 0"
           [attr.aria-busy]="loading()"
         >
@@ -262,13 +308,9 @@ interface SectionCard {
             [sortField]="sortField()"
             [sortOrder]="sortOrder()"
             (onSort)="onSort($event)"
-            [paginator]="tableRows().length > pageSize()"
+            [paginator]="true"
             [rows]="pageSize()"
             [first]="first()"
-            (onPage)="onPage($event)"
-            [rowsPerPageOptions]="[25, 50, 100]"
-            [showCurrentPageReport]="true"
-            currentPageReportTemplate="{first}–{last} de {totalRecords}"
             [rowHover]="true"
             styleClass="movements-table"
           >
@@ -493,6 +535,15 @@ interface SectionCard {
             </ng-template>
           </p-table>
         </div>
+
+        <div #pager class="pager">
+          <p-paginator
+            [first]="first()"
+            [rows]="pageSize()"
+            [totalRecords]="tableRows().length"
+            (onPageChange)="onPage($event)"
+          />
+        </div>
       </div>
     </div>
 
@@ -555,7 +606,13 @@ export class MovementsPanel {
   // Sorting and paging
   protected readonly sortField = signal<string>('date');
   protected readonly sortOrder = signal<1 | -1>(-1);
-  protected readonly pageSize = signal(50);
+  protected readonly pageSize = signal(DEFAULT_PAGE_SIZE);
+  /** Height of a full page of the table; `null` where the page just scrolls (a phone). */
+  protected readonly tableHeight = signal<number | null>(null);
+  private footHeight = 0;
+  private rowHeight = ROW_FALLBACK;
+  private readonly card = viewChild<ElementRef<HTMLElement>>('card');
+  private readonly pager = viewChild<ElementRef<HTMLElement>>('pager');
   protected readonly first = signal(0);
 
   // Data
@@ -709,6 +766,25 @@ export class MovementsPanel {
   private subscription: Subscription | undefined;
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
+    // The page size follows the window: as many rows as fit below the top of the table.
+    afterNextRender(() => {
+      // One measurement per frame while the window is being dragged, not one per resize event.
+      let frame = 0;
+      const onResize = (): void => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => this.fit());
+      };
+      window.addEventListener('resize', onResize);
+      destroyRef.onDestroy(() => {
+        cancelAnimationFrame(frame);
+        window.removeEventListener('resize', onResize);
+      });
+    });
+    effect(() => {
+      this.tableRows();
+      untracked(() => queueMicrotask(() => this.fit()));
+    });
     effect(() => {
       const period = this.period();
       this.bus.version();
@@ -826,9 +902,52 @@ export class MovementsPanel {
     this.sortOrder.set(choice.order);
   }
 
-  protected onPage(event: { first?: number; rows?: number }): void {
+  protected onPage(event: PaginatorState): void {
     this.first.set(event.first ?? 0);
-    if (event.rows) this.pageSize.set(event.rows);
+  }
+
+  /**
+   * Sets the rows per page to as many as fit between the top of the table and the bottom of the
+   * screen (room kept for the header and the page buttons), never under `MIN_PAGE_SIZE`. On a phone
+   * the page scrolls, so it is left at the default.
+   */
+  private fit(): void {
+    const card = this.card()?.nativeElement;
+    if (!card) return;
+    if (typeof matchMedia === 'function' && matchMedia('(width <= 767px)').matches) {
+      this.tableHeight.set(null);
+      return;
+    }
+    const scroller = scrollParent(card);
+    const top = card.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    const header = card.querySelector('.p-datatable-thead')?.getBoundingClientRect().height ?? 0;
+    // Like the totals row, the height of a row is remembered for when there is no row to measure.
+    const rowNow = card.querySelector('tr.mv-row')?.getBoundingClientRect().height;
+    if (rowNow) this.rowHeight = rowNow;
+    const row = this.rowHeight;
+    const pager = this.pager()?.nativeElement;
+    const pagerHeight = pager?.getBoundingClientRect().height || PAGER_FALLBACK;
+    // The totals row only exists with movements: its height is remembered for the empty states.
+    const footNow = card.querySelector('.p-datatable-tfoot')?.getBoundingClientRect().height;
+    if (footNow) this.footHeight = footNow;
+    const foot = this.footHeight;
+    // Whatever the containers between the pager and the scrolling area add under it.
+    const below = pager ? spaceBelow(pager, scroller) : 0;
+    const available =
+      scroller.clientHeight -
+      (top + scroller.scrollTop) -
+      header -
+      foot -
+      pagerHeight -
+      below -
+      FIT_MARGIN;
+    const size = fitPageSize(available, row);
+    // The table always takes the room of a full page (its rows, the header, the totals and the
+    // border), so with fewer rows the rest stays blank and the page buttons never move.
+    this.tableHeight.set(Math.round(header + size * row + foot + CARD_BORDER));
+    if (size === this.pageSize()) return;
+    this.pageSize.set(size);
+    this.first.update((first) => Math.floor(first / size) * size);
   }
 
   // Category changes

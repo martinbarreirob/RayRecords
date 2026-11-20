@@ -25,11 +25,18 @@ import { apiErrorMessage } from '../../../core/api/errors';
 import { formatCents } from '../../../core/format';
 import { AddButton } from '../../../core/ui/add-button';
 import { PageHeader } from '../../../core/ui/page-header';
+import { DEFAULT_PAGE_SIZE, fitPageSize } from '../../../core/ui/page-size';
 import {
   CategoriesDialog,
   type CategoryOps,
   type CategoryTexts,
 } from '../../categories/categories-dialog';
+import {
+  ALL_CATEGORY_NAME,
+  AllCategoryStore,
+  allCategoryEntry,
+  withAllCategory,
+} from '../../categories/all-category';
 import { CategoryLabel } from '../../categories/category-label';
 import { CategorySelect, type CategoryOption } from '../../categories/category-select';
 import { ProductDialog } from './product-dialog';
@@ -44,9 +51,7 @@ function prefersStackedRows(): boolean {
 }
 import {
   LEVEL_CHOICES,
-  DEFAULT_PAGE_SIZE,
   NO_CATEGORY,
-  fitPageSize,
   stockTotals,
   activeFilterCount,
   filterProducts,
@@ -184,8 +189,6 @@ const UNITS = new Intl.NumberFormat('es-ES');
           [paginator]="true"
           [rows]="pageSize()"
           [(first)]="first"
-          [showCurrentPageReport]="true"
-          currentPageReportTemplate="{first}–{last} de {totalRecords}"
           [rowHover]="true"
           styleClass="stock-table"
         >
@@ -310,8 +313,8 @@ const UNITS = new Intl.NumberFormat('es-ES');
     />
     <app-categories-dialog
       [open]="categoriesOpen()"
-      [categories]="categories()"
-      [counts]="counts()"
+      [categories]="managedCategories()"
+      [counts]="managedCounts()"
       [ops]="categoryOps"
       [texts]="categoryTexts"
       (changed)="load()"
@@ -327,11 +330,15 @@ export class StockPage {
   private readonly confirmation = inject(ConfirmationService);
 
   /** What the category manager does with the stock categories. */
-  protected readonly categoryOps: CategoryOps = {
-    create: (input) => this.api.createStockCategory(input),
-    update: (id, changes) => this.api.updateStockCategory(id, changes),
-    remove: (id) => this.api.deleteStockCategory(id),
-  };
+  private readonly allCategory = inject(AllCategoryStore);
+  protected readonly categoryOps: CategoryOps = withAllCategory(
+    {
+      create: (input) => this.api.createStockCategory(input),
+      update: (id, changes) => this.api.updateStockCategory(id, changes),
+      remove: (id) => this.api.deleteStockCategory(id),
+    },
+    this.allCategory,
+  );
   protected readonly categoryTexts: CategoryTexts = {
     count: (n) => (n === 0 ? 'sin productos' : n === 1 ? '1 producto' : `${n} productos`),
     deleteEffect: (n) =>
@@ -386,8 +393,17 @@ export class StockPage {
   protected readonly counts = computed(() => productCounts(this.products()));
   protected readonly filterCount = computed(() => activeFilterCount(this.filters()));
 
+  /** "Todas" first, with the look the user gave it, then the stock categories. */
+  protected readonly managedCategories = computed(() => [
+    allCategoryEntry(this.allCategory.look()),
+    ...this.categories(),
+  ]);
+  protected readonly managedCounts = computed(
+    () => new Map([...this.counts(), ['all', this.products().length]]),
+  );
+
   protected readonly categoryOptions = computed<CategoryOption[]>(() => [
-    { value: 'all', label: 'Todas', look: null, plain: true },
+    { value: 'all', label: ALL_CATEGORY_NAME, look: this.allCategory.look() },
     { value: 'none', label: NO_CATEGORY, look: null },
     ...this.categories().map((category) => ({
       value: category.id,

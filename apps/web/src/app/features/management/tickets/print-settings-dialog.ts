@@ -18,6 +18,7 @@ import {
   type ReceiptShop,
   type Ticket,
 } from '@rayrecords/shared';
+import { ConfirmationService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
 import { imageToLogo } from '../../../core/print/logo';
 import { PrintSettingsStore } from '../../../core/print/print-settings';
@@ -243,6 +244,7 @@ const PREVIEW_MM: Record<PaperWidth, number> = { 58: 56, 80: 80 };
 })
 export class PrintSettingsDialog {
   private readonly store = inject(PrintSettingsStore);
+  private readonly confirmation = inject(ConfirmationService);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly open = input(false);
@@ -291,8 +293,20 @@ export class PrintSettingsDialog {
     }
   }
 
+  /** Asks before overwriting the receipt format: it is what every ticket will print. */
   protected save(): void {
-    this.store.save({ shop: this.draft(), width: this.width() });
-    this.closed.emit();
+    this.confirmation.confirm({
+      header: 'Guardar formato de ticket',
+      message:
+        'Los tickets que imprimas a partir de ahora usarán este formato. ¿Guardar los cambios?',
+      icon: 'pi pi-question-circle',
+      acceptLabel: 'Guardar',
+      rejectLabel: 'Cancelar',
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () => {
+        this.store.save({ shop: this.draft(), width: this.width() });
+        this.closed.emit();
+      },
+    });
   }
 }

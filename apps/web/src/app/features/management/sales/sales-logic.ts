@@ -1,4 +1,5 @@
 import type { Product, ProductSales, StockCategory } from '@rayrecords/shared';
+import type { CategoryLook } from '../../categories/category-badge';
 import { NO_CATEGORY, type CategoryFilter } from '../stock/stock-logic';
 
 /** What the cart remembers: which product and how many. Name, price and stock come from the stock. */
@@ -31,6 +32,8 @@ export interface CategoryTab {
   label: string;
   /** The category behind the tab, for its badge; "Todas" and "Sin categoría" have none. */
   category?: StockCategory;
+  /** The badge of the "Todas" tab, which the user can restyle. */
+  look?: CategoryLook;
 }
 
 /** How many of the best sellers on screen get the big card and how many the wide one. */
@@ -81,9 +84,10 @@ export function bentoTiles(
 export function categoryTabs(
   categories: readonly StockCategory[],
   products: readonly Product[],
+  allLook?: CategoryLook,
 ): CategoryTab[] {
   const tabs: CategoryTab[] = [
-    { id: 'all', label: 'Todas' },
+    { id: 'all', label: 'Todas', ...(allLook && { look: allLook }) },
     ...categories.map((category) => ({ id: category.id, label: category.name, category })),
   ];
   if (categories.length && products.some((product) => product.categoryId === null)) {

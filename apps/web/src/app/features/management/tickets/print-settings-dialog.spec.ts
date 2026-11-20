@@ -1,4 +1,5 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { ConfirmationService } from 'primeng/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PRINT_SETTINGS_KEY, PrintSettingsStore } from '../../../core/print/print-settings';
 import { providePrimeNgTheme } from '../../../core/theme/provide-primeng';
@@ -10,7 +11,7 @@ describe('PrintSettingsDialog', () => {
   beforeEach(() => localStorage.clear());
 
   function setup(saved?: Parameters<PrintSettingsStore['save']>[0]) {
-    TestBed.configureTestingModule({ providers: [providePrimeNgTheme()] });
+    TestBed.configureTestingModule({ providers: [providePrimeNgTheme(), ConfirmationService] });
     if (saved) TestBed.inject(PrintSettingsStore).save(saved);
     const fixture = TestBed.createComponent(PrintSettingsDialog);
     fixture.componentRef.setInput('open', true);
@@ -72,9 +73,17 @@ describe('PrintSettingsDialog', () => {
     await fixture.whenStable();
     type(fixture, 'name', 'Mi tienda');
     button('80 mm').click();
+    // The confirmation has no host here: accept it as the dialog would.
+    const confirm = vi
+      .spyOn(TestBed.inject(ConfirmationService), 'confirm')
+      .mockImplementation((options) => {
+        options.accept?.();
+        return TestBed.inject(ConfirmationService);
+      });
     button('Guardar').click();
     fixture.detectChanges();
 
+    expect(confirm).toHaveBeenCalledTimes(1);
     expect(JSON.parse(localStorage.getItem(PRINT_SETTINGS_KEY)!)).toMatchObject({
       shop: { name: 'Mi tienda' },
       width: 80,
@@ -90,6 +99,17 @@ describe('PrintSettingsDialog', () => {
     fixture.detectChanges();
     expect(dialog().querySelector('.logo-thumb')).toBeNull();
     expect(previewDoc()).not.toContain('<img');
+  });
+
+  it('does not save until the confirmation is accepted', async () => {
+    const { fixture, closed } = setup();
+    await fixture.whenStable();
+    type(fixture, 'name', 'Mi tienda');
+    const confirm = vi.spyOn(TestBed.inject(ConfirmationService), 'confirm');
+    button('Guardar').click();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem(PRINT_SETTINGS_KEY)).toBeNull();
+    expect(closed).not.toHaveBeenCalled();
   });
 
   it('does not save when cancelled', async () => {

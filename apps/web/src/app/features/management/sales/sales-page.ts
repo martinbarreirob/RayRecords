@@ -18,6 +18,7 @@ import { PageHeader } from '../../../core/ui/page-header';
 import { pageScrollTop } from '../../../core/ui/page-scroll';
 import { ScrollFade } from '../../../core/ui/scroll-fade';
 import { CategoryBadge } from '../../categories/category-badge';
+import { AllCategoryStore } from '../../categories/all-category';
 import { UNCATEGORIZED_LOOK } from '../../categories/uncategorized';
 import type { CategoryFilter } from '../stock/stock-logic';
 import { AddButton } from '../../../core/ui/add-button';
@@ -92,7 +93,7 @@ import { TicketPrinter } from '../../../core/print/ticket-printer';
                 [attr.aria-pressed]="category() === tab.id"
                 (click)="pick(tab.id)"
               >
-                <app-category-badge [look]="tab.category ?? uncategorized" />
+                <app-category-badge [look]="tab.look ?? tab.category ?? uncategorized" />
                 {{ tab.label }}
               </button>
             }
@@ -118,57 +119,60 @@ import { TicketPrinter } from '../../../core/print/ticket-printer';
               }
             </ul>
           } @else if (tiles().length) {
-            <ul class="bento" [class.few]="few()">
-              @for (tile of tiles(); track tile.product.id) {
-                <li
-                  class="tile"
-                  [class]="tile.size"
-                  [class.out]="tile.product.quantity === 0"
-                  [class.dragging]="draggingId() === tile.product.id"
-                  [attr.draggable]="canAdd(tile.product) ? 'true' : null"
-                  (dragstart)="onDragStart($event, tile.product)"
-                  (dragend)="onDragEnd()"
-                >
-                  @if (tile.size !== 'normal' || inCart(tile.product.id)) {
-                    <span class="tile-top">
-                      @if (tile.size !== 'normal') {
-                        <span class="badge accent">Más vendido</span>
-                      }
-                      @if (inCart(tile.product.id); as count) {
-                        <span class="badge in-cart">
-                          {{ tile.size === 'normal' ? '× ' + count : count + ' en el carrito' }}
-                        </span>
+            <!-- A new list per category, so each switch plays the enter animation. -->
+            @for (key of [category()]; track key) {
+              <ul class="bento swap" [class.few]="few()">
+                @for (tile of tiles(); track tile.product.id) {
+                  <li
+                    class="tile"
+                    [class]="tile.size"
+                    [class.out]="tile.product.quantity === 0"
+                    [class.dragging]="draggingId() === tile.product.id"
+                    [attr.draggable]="canAdd(tile.product) ? 'true' : null"
+                    (dragstart)="onDragStart($event, tile.product)"
+                    (dragend)="onDragEnd()"
+                  >
+                    @if (tile.size !== 'normal' || inCart(tile.product.id)) {
+                      <span class="tile-top">
+                        @if (tile.size !== 'normal') {
+                          <span class="badge accent">Más vendido</span>
+                        }
+                        @if (inCart(tile.product.id); as count) {
+                          <span class="badge in-cart">
+                            {{ tile.size === 'normal' ? '× ' + count : count + ' en el carrito' }}
+                          </span>
+                        }
+                      </span>
+                    }
+                    <span class="tile-name">{{ tile.product.name }}</span>
+                    <span class="tile-stock">
+                      @if (tile.product.quantity === 0) {
+                        Agotado
+                      } @else {
+                        {{ tile.product.quantity }} en stock
                       }
                     </span>
-                  }
-                  <span class="tile-name">{{ tile.product.name }}</span>
-                  <span class="tile-stock">
-                    @if (tile.product.quantity === 0) {
-                      Agotado
-                    } @else {
-                      {{ tile.product.quantity }} en stock
-                    }
-                  </span>
-                  <span class="tile-foot">
-                    <span class="tile-price num">{{ money(tile.product.priceCents) }}</span>
-                    <button
-                      type="button"
-                      class="btn sm add"
-                      [class.icon]="!roomy(tile.size)"
-                      [attr.aria-label]="'Añadir ' + tile.product.name + ' al carrito'"
-                      [title]="'Añadir al carrito'"
-                      [disabled]="!canAdd(tile.product)"
-                      (click)="add(tile.product)"
-                    >
-                      <app-icon name="plus" />
-                      @if (roomy(tile.size)) {
-                        Añadir
-                      }
-                    </button>
-                  </span>
-                </li>
-              }
-            </ul>
+                    <span class="tile-foot">
+                      <span class="tile-price num">{{ money(tile.product.priceCents) }}</span>
+                      <button
+                        type="button"
+                        class="btn sm add"
+                        [class.icon]="!roomy(tile.size)"
+                        [attr.aria-label]="'Añadir ' + tile.product.name + ' al carrito'"
+                        [title]="'Añadir al carrito'"
+                        [disabled]="!canAdd(tile.product)"
+                        (click)="add(tile.product)"
+                      >
+                        <app-icon name="plus" />
+                        @if (roomy(tile.size)) {
+                          Añadir
+                        }
+                      </button>
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
           } @else if (!products().length) {
             <p class="empty">
               Todavía no hay productos. Añádelos en la sección «Stock» para poder venderlos.
@@ -325,7 +329,10 @@ export class SalesPage {
   protected readonly draggingId = signal<string | null>(null);
   protected readonly over = signal(false);
 
-  protected readonly tabs = computed(() => categoryTabs(this.categories(), this.products()));
+  private readonly allCategory = inject(AllCategoryStore);
+  protected readonly tabs = computed(() =>
+    categoryTabs(this.categories(), this.products(), this.allCategory.look()),
+  );
   protected readonly tiles = computed(() =>
     bentoTiles(this.products(), unitsByProduct(this.sales()), this.category()),
   );
