@@ -12,8 +12,17 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import type { MenuItem } from 'primeng/api';
+import { Menu, MenuModule } from 'primeng/menu';
 import type { Observable } from 'rxjs';
-import { DEFAULT_TIME_ZONE, monthOf, todayIn, type CalendarEntry } from '@rayrecords/shared';
+import {
+  DEFAULT_TIME_ZONE,
+  EVENTS_LIST_NAME,
+  EVENTS_LIST_SLUG,
+  monthOf,
+  todayIn,
+  type CalendarEntry,
+} from '@rayrecords/shared';
 import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { RefreshBus } from '../../core/refresh';
@@ -21,6 +30,7 @@ import { AddButton } from '../../core/ui/add-button';
 import { PageHeader } from '../../core/ui/page-header';
 import { DateField } from '../../core/ui/date-field';
 import { TimeField } from '../../core/ui/time-field';
+import { EventDialog } from './event-dialog';
 import {
   arrowTarget,
   buildMonthGrid,
@@ -47,7 +57,17 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
 
 @Component({
   selector: 'app-calendar-page',
-  imports: [Icon, AddButton, PageHeader, RouterLink, NgTemplateOutlet, DateField, TimeField],
+  imports: [
+    Icon,
+    AddButton,
+    PageHeader,
+    RouterLink,
+    NgTemplateOutlet,
+    DateField,
+    TimeField,
+    EventDialog,
+    MenuModule,
+  ],
   template: `
     <div class="page">
       <app-page-header title="Calendario" [eyebrow]="monthLabel()" [split]="true">
@@ -94,7 +114,7 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
       }
 
       @if (adding()) {
-        <form class="card add" (submit)="add($event)" (keydown.escape)="adding.set(false)">
+        <form class="card add" (submit)="add($event)" (keydown.escape)="closeForm()">
           <label class="field title-field">
             <span>Título</span>
             <input
@@ -110,14 +130,19 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
           </label>
           <div class="field">
             <label for="cal-date">Fecha</label>
-            <app-date-field inputId="cal-date" [required]="true" [(value)]="newDate" />
+            <app-date-field
+              inputId="cal-date"
+              [required]="true"
+              [value]="newDate()"
+              (valueChange)="onDateEdited($event)"
+            />
           </div>
           <div class="field">
             <label for="cal-time">Hora (opcional)</label>
             <app-time-field inputId="cal-time" [(value)]="newTime" />
           </div>
           <div class="row actions">
-            <button type="button" class="btn ghost" (click)="adding.set(false)">Cancelar</button>
+            <button type="button" class="btn ghost" (click)="closeForm()">Cancelar</button>
             <button type="submit" class="btn primary" [disabled]="!newTitle().trim() || !newDate()">
               Añadir
             </button>
@@ -196,10 +221,9 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
                                 class="entry"
                                 [class.done]="entry.doneAt"
                                 [class.overdue]="isOverdue(entry)"
+                                [attr.title]="entryTip(entry)"
+                                (click)="selected.set(day.date)"
                               >
-                                @if (entry.time) {
-                                  <span class="time">{{ entry.time }}</span>
-                                }
                                 <span class="t">{{ entry.title }}</span>
                               </li>
                             }
@@ -245,7 +269,7 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
             }
             <button type="button" class="btn sm add-here" (click)="openAdd(selected())">
               <app-icon name="plus" />
-              Añadir en este día
+              Añadir evento
             </button>
           </aside>
         </div>
@@ -318,32 +342,55 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
           [checked]="!!entry.doneAt"
           (change)="toggleDone(entry, check.checked)"
         />
-        <div class="body">
+        <div class="body" (click)="entry.kind === 'event' && openEdit(entry)">
           <div class="line">
-            @if (entry.time) {
-              <span class="time">{{ entry.time }}</span>
-            }
             <span class="t">{{ entry.title }}</span>
             @if (isOverdue(entry)) {
               <span class="badge danger">Vencida</span>
             }
           </div>
-          @if (entry.kind === 'item') {
-            <a class="list-link" [routerLink]="['/listas', entry.listSlug]">{{ entry.listName }}</a>
-          }
+          <div class="sub">
+            @if (entry.time) {
+              <span class="time">{{ entry.time }}</span>
+              <span class="sep" aria-hidden="true">·</span>
+            }
+            <a
+              class="list-link"
+              [routerLink]="['/listas', entry.kind === 'item' ? entry.listSlug : eventsSlug]"
+            >
+              {{ entry.kind === 'item' ? entry.listName : eventsName }}
+            </a>
+          </div>
         </div>
         @if (entry.kind === 'event') {
           <button
             type="button"
-            class="btn icon ghost remove"
-            [attr.aria-label]="'Eliminar: ' + entry.title"
-            (click)="removeEvent(entry)"
+            class="btn icon ghost more"
+            aria-haspopup="menu"
+            [attr.aria-label]="'Opciones: ' + entry.title"
+            (click)="openMenu($event, entry, menu)"
           >
-            <app-icon name="trash" />
+            <app-icon name="dots" />
           </button>
         }
       </li>
     </ng-template>
+
+    <p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body">
+      <ng-template #item let-item>
+        <a class="p-menu-item-link" role="menuitem" tabindex="-1">
+          <app-icon class="p-menu-item-icon" [name]="$any(item.icon)" />
+          <span class="p-menu-item-label">{{ item.label }}</span>
+        </a>
+      </ng-template>
+    </p-menu>
+
+    <app-event-dialog
+      [open]="!!editing()"
+      [event]="editing()"
+      (saved)="onEdited($event)"
+      (closed)="editing.set(null)"
+    />
   `,
   styleUrls: ['./calendar-page.scss', './calendar-skeleton.scss'],
 })
@@ -353,6 +400,9 @@ export class CalendarPage {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
+  /** An event belongs to the locked «Eventos» list, like an item belongs to its own. */
+  protected readonly eventsName = EVENTS_LIST_NAME;
+  protected readonly eventsSlug = EVENTS_LIST_SLUG;
   protected readonly weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   protected readonly today = todayIn(DEFAULT_TIME_ZONE);
 
@@ -380,6 +430,13 @@ export class CalendarPage {
   protected readonly newTitle = signal('');
   protected readonly newDate = signal('');
   protected readonly newTime = signal('');
+  /** The event open in the edit dialog. */
+  protected readonly editing = signal<CalendarEntry | null>(null);
+  /**
+   * The form date follows the selected calendar day until the user types a date in the form
+   * itself; from then on the form keeps their choice.
+   */
+  private readonly dateEdited = signal(false);
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
 
   protected readonly grid = computed(() => buildMonthGrid(this.month()));
@@ -433,6 +490,14 @@ export class CalendarPage {
       const from = weeks[0]![0]!.date;
       const to = weeks.at(-1)!.at(-1)!.date;
       untracked(() => this.load(from, to));
+    });
+
+    // A new-event form that has not had its date edited follows the selected day.
+    effect(() => {
+      const date = this.selected();
+      if (untracked(() => this.adding() && !this.dateEdited())) {
+        untracked(() => this.newDate.set(date));
+      }
     });
 
     // When the form opens, focus goes to the title.
@@ -504,8 +569,52 @@ export class CalendarPage {
   }
 
   protected openAdd(date: string): void {
+    this.dateEdited.set(false);
     this.newDate.set(date);
     this.adding.set(true);
+  }
+
+  /** What the options menu of a row offers; set when it opens, for the event it opens on. */
+  protected readonly menuItems = signal<MenuItem[]>([]);
+
+  protected openMenu(event: Event, entry: CalendarEntry, menu: Menu): void {
+    this.menuItems.set([
+      { label: 'Editar', icon: 'pencil', command: () => this.openEdit(entry) },
+      {
+        label: 'Eliminar',
+        icon: 'trash',
+        styleClass: 'menu-danger',
+        command: () => this.removeEvent(entry),
+      },
+    ]);
+    menu.toggle(event);
+  }
+
+  /** Full name with the time, shown when the pointer rests on a chip of the grid. */
+  protected entryTip(entry: CalendarEntry): string {
+    return entry.time ? `${entry.time} · ${entry.title}` : entry.title;
+  }
+
+  protected openEdit(entry: CalendarEntry): void {
+    if (entry.kind === 'event') this.editing.set(entry);
+  }
+
+  /** After saving, the calendar shows the day where the event ended up. */
+  protected onEdited(date: string): void {
+    this.editing.set(null);
+    this.error.set('');
+    this.month.set(monthOf(date));
+    this.selected.set(date);
+    this.bus.changed();
+  }
+
+  protected onDateEdited(date: string): void {
+    this.dateEdited.set(true);
+    this.newDate.set(date);
+  }
+
+  protected closeForm(): void {
+    this.adding.set(false);
   }
 
   protected add(event: Event): void {

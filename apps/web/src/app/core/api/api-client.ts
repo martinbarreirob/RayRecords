@@ -110,6 +110,8 @@ export abstract class ApiClient {
 
   /** Dated list items plus the calendar's own events. */
   abstract calendar(from: string, to: string): Observable<CalendarEntry[]>;
+  /** Every event, soonest first. */
+  abstract events(): Observable<CalendarEvent[]>;
   /** Events live only in the calendar and need no list. */
   abstract createEvent(input: CreateEvent): Observable<CalendarEvent>;
   abstract updateEvent(id: string, input: UpdateEvent): Observable<CalendarEvent>;

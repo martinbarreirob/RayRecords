@@ -29,6 +29,13 @@ export function toEvent(doc: EventDoc): CalendarEvent {
 export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
   const c = app.data;
 
+  /** Every event, soonest first (the lists screen shows them all). */
+  app.get('/events', { schema: { response: { 200: z.array(EventSchema) } } }, async () => {
+    // Events without a time come first within their day.
+    const docs = await c.events.find().sort({ date: 1, time: 1 }).toArray();
+    return docs.map(toEvent);
+  });
+
   app.post(
     '/events',
     { schema: { body: CreateEventSchema, response: { 201: EventSchema } } },

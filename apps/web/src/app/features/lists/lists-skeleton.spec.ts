@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { Item, List } from '@rayrecords/shared';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { ListDetailPage } from './list-detail-page';
 import { ListsPage } from './lists-page';
@@ -82,7 +82,7 @@ describe('ListsPage: loading', () => {
   let lists$: Subject<List[]>;
 
   function render() {
-    const api = { lists: () => lists$, items: () => new Subject<Item[]>() };
+    const api = { lists: () => lists$, items: () => new Subject<Item[]>(), events: () => of([]) };
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
     });
@@ -109,7 +109,11 @@ describe('ListsPage: loading', () => {
     fixture.detectChanges();
 
     expect(el.querySelector('app-lists-skeleton')).toBeNull();
-    expect(el.querySelectorAll('li.list-card').length).toBe(2);
+    expect(el.querySelectorAll('li.list-card:not(.locked)').length).toBe(2);
+    // The calendar's events list is always there, locked: no archive button.
+    const locked = el.querySelector('li.list-card.locked')!;
+    expect(locked.textContent).toContain('Eventos');
+    expect(locked.querySelector('.archive')).toBeNull();
   });
 
   it('empty is not loading: with no lists the notice shows and not the skeleton', () => {

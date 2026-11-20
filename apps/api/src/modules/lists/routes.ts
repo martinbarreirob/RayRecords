@@ -3,6 +3,7 @@ import {
   ListSchema,
   ObjectIdString,
   UpdateListSchema,
+  EVENTS_LIST_SLUG,
   slugify,
 } from '@rayrecords/shared';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -22,6 +23,8 @@ async function uniqueSlug(c: Collections, name: string): Promise<string> {
   const base = slugify(name) || 'lista';
   for (let n = 1; ; n++) {
     const slug = n === 1 ? base : `${base}-${n}`;
+    // The slug of the events list belongs to the calendar's locked list.
+    if (slug === EVENTS_LIST_SLUG) continue;
     if (!(await c.lists.findOne({ slug }, { projection: { _id: 1 } }))) return slug;
   }
 }

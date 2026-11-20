@@ -19,13 +19,22 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LIST_PRESETS, type List, type ListKind } from '@rayrecords/shared';
+import {
+  EVENTS_LIST_NAME,
+  EVENTS_LIST_SLUG,
+  LIST_PRESETS,
+  type List,
+  type ListKind,
+} from '@rayrecords/shared';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
+import { RefreshBus } from '../../core/refresh';
 import { AddButton } from '../../core/ui/add-button';
 import { PageHeader } from '../../core/ui/page-header';
 import { formatNoteDate } from '../notes/note-board.logic';
+import { eventsCountText } from './events-logic';
 import { aliasError, cleanAlias, movedMessage, stepIndex } from './lists-logic';
 import { ListsSkeleton } from './lists-skeleton';
 import { ListsStore } from './lists.store';
@@ -143,98 +152,109 @@ const KIND_LABELS: Record<ListKind, string> = {
       } @else if (store.lists(); as lists) {
         @if (lists.length === 0) {
           <p class="empty">Todavía no hay listas. Crea la primera con «Nueva lista».</p>
-        } @else {
-          <ul
-            class="grid"
-            cdkDropList
-            cdkDropListOrientation="mixed"
-            aria-label="Listas"
-            [cdkDropListDisabled]="dragOff()"
-            (cdkDropListDropped)="drop($event)"
-          >
-            @for (
-              list of lists;
-              track list.id;
-              let i = $index;
-              let first = $first;
-              let last = $last
-            ) {
-              <li class="card list-card" cdkDrag [cdkDragData]="list" [cdkDragDisabled]="dragOff()">
-                <div *cdkDragPlaceholder class="slot" aria-hidden="true"></div>
-                <div *cdkDragPreview matchSize class="preview">
-                  <div class="preview-card">
-                    {{ list.name }}
-                    <small>{{ kindLabel(list) }}</small>
-                  </div>
-                </div>
-
-                <h2>
-                  <a [routerLink]="['/listas', list.slug]">{{ list.name }}</a>
-                </h2>
-
-                <div class="tools" role="group" [attr.aria-label]="'Orden de ' + list.name">
-                  @if (!dragOff()) {
-                    <button
-                      type="button"
-                      class="btn ghost sm icon tool handle"
-                      cdkDragHandle
-                      [attr.data-ctl]="list.id + ':handle'"
-                      [attr.aria-label]="'Reordenar ' + list.name"
-                      aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home End"
-                      title="Arrastra, o usa las flechas con el asa enfocada"
-                      (keydown)="handleKey($event, list)"
-                    >
-                      <app-icon name="grip-vertical" />
-                    </button>
-                  }
-                  <button
-                    type="button"
-                    class="btn ghost sm icon tool"
-                    [attr.data-ctl]="list.id + ':before'"
-                    [attr.aria-label]="'Mover ' + list.name + ' antes'"
-                    [attr.aria-disabled]="first ? 'true' : null"
-                    title="Mover antes"
-                    (click)="moveBy(list, -1, 'before')"
-                  >
-                    <app-icon name="arrow-left" class="ico-h" />
-                    <app-icon name="arrow-up" class="ico-v" />
-                  </button>
-                  <button
-                    type="button"
-                    class="btn ghost sm icon tool"
-                    [attr.data-ctl]="list.id + ':after'"
-                    [attr.aria-label]="'Mover ' + list.name + ' después'"
-                    [attr.aria-disabled]="last ? 'true' : null"
-                    title="Mover después"
-                    (click)="moveBy(list, 1, 'after')"
-                  >
-                    <app-icon name="arrow-right" class="ico-h" />
-                    <app-icon name="arrow-down" class="ico-v" />
-                  </button>
-                </div>
-
-                <div class="meta">
-                  <span class="badge" [class.accent]="!!list.board">{{ kindLabel(list) }}</span>
-                  @if (list.captureAlias) {
-                    <span class="kbd">{{ list.captureAlias }}:</span>
-                  }
-                </div>
-                <div class="foot">
-                  <span>{{ countText(list) }}</span>
-                  <button
-                    type="button"
-                    class="btn ghost sm archive"
-                    [attr.aria-label]="'Archivar ' + list.name"
-                    (click)="archive(list)"
-                  >
-                    Archivar
-                  </button>
-                </div>
-              </li>
-            }
-          </ul>
-          <p class="sr-only" role="status" aria-live="polite">{{ announcement() }}</p>
         }
+        <ul
+          class="grid"
+          cdkDropList
+          cdkDropListOrientation="mixed"
+          aria-label="Listas"
+          [cdkDropListDisabled]="dragOff()"
+          (cdkDropListDropped)="drop($event)"
+        >
+          <li class="card list-card locked">
+            <h2>
+              <a [routerLink]="['/listas', eventsSlug]">{{ eventsName }}</a>
+            </h2>
+            <div class="meta">
+              <span class="badge">Calendario</span>
+              <span class="locked-note">Bloqueada</span>
+            </div>
+            <div class="foot">
+              <span>{{ eventsCount() === null ? '' : countEvents(eventsCount()!) }}</span>
+            </div>
+          </li>
+          @for (
+            list of lists;
+            track list.id;
+            let i = $index;
+            let first = $first;
+            let last = $last
+          ) {
+            <li class="card list-card" cdkDrag [cdkDragData]="list" [cdkDragDisabled]="dragOff()">
+              <div *cdkDragPlaceholder class="slot" aria-hidden="true"></div>
+              <div *cdkDragPreview matchSize class="preview">
+                <div class="preview-card">
+                  {{ list.name }}
+                  <small>{{ kindLabel(list) }}</small>
+                </div>
+              </div>
+
+              <h2>
+                <a [routerLink]="['/listas', list.slug]">{{ list.name }}</a>
+              </h2>
+
+              <div class="tools" role="group" [attr.aria-label]="'Orden de ' + list.name">
+                @if (!dragOff()) {
+                  <button
+                    type="button"
+                    class="btn ghost sm icon tool handle"
+                    cdkDragHandle
+                    [attr.data-ctl]="list.id + ':handle'"
+                    [attr.aria-label]="'Reordenar ' + list.name"
+                    aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home End"
+                    title="Arrastra, o usa las flechas con el asa enfocada"
+                    (keydown)="handleKey($event, list)"
+                  >
+                    <app-icon name="grip-vertical" />
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="btn ghost sm icon tool"
+                  [attr.data-ctl]="list.id + ':before'"
+                  [attr.aria-label]="'Mover ' + list.name + ' antes'"
+                  [attr.aria-disabled]="first ? 'true' : null"
+                  title="Mover antes"
+                  (click)="moveBy(list, -1, 'before')"
+                >
+                  <app-icon name="arrow-left" class="ico-h" />
+                  <app-icon name="arrow-up" class="ico-v" />
+                </button>
+                <button
+                  type="button"
+                  class="btn ghost sm icon tool"
+                  [attr.data-ctl]="list.id + ':after'"
+                  [attr.aria-label]="'Mover ' + list.name + ' después'"
+                  [attr.aria-disabled]="last ? 'true' : null"
+                  title="Mover después"
+                  (click)="moveBy(list, 1, 'after')"
+                >
+                  <app-icon name="arrow-right" class="ico-h" />
+                  <app-icon name="arrow-down" class="ico-v" />
+                </button>
+              </div>
+
+              <div class="meta">
+                <span class="badge" [class.accent]="!!list.board">{{ kindLabel(list) }}</span>
+                @if (list.captureAlias) {
+                  <span class="kbd">{{ list.captureAlias }}:</span>
+                }
+              </div>
+              <div class="foot">
+                <span>{{ countText(list) }}</span>
+                <button
+                  type="button"
+                  class="btn ghost sm archive"
+                  [attr.aria-label]="'Archivar ' + list.name"
+                  (click)="archive(list)"
+                >
+                  Archivar
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+        <p class="sr-only" role="status" aria-live="polite">{{ announcement() }}</p>
       } @else {
         <app-lists-skeleton variant="grid" message="Cargando listas…" />
       }
@@ -245,6 +265,13 @@ const KIND_LABELS: Record<ListKind, string> = {
 })
 export class ListsPage {
   protected readonly store = inject(ListsStore);
+  private readonly api = inject(ApiClient);
+  private readonly bus = inject(RefreshBus);
+  protected readonly eventsName = EVENTS_LIST_NAME;
+  protected readonly eventsSlug = EVENTS_LIST_SLUG;
+  protected readonly countEvents = eventsCountText;
+  /** How many events the calendar holds; `null` until known. */
+  protected readonly eventsCount = signal<number | null>(null);
   private readonly router = inject(Router);
   private readonly confirmation = inject(ConfirmationService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -282,6 +309,16 @@ export class ListsPage {
     effect(() => {
       this.store.lists();
       untracked(() => this.store.loadCounts());
+    });
+    // The locked events list: its count follows the calendar.
+    effect(() => {
+      this.bus.version();
+      untracked(() =>
+        this.api.events().subscribe({
+          next: (events) => this.eventsCount.set(events.length),
+          error: () => this.eventsCount.set(null),
+        }),
+      );
     });
     // With no lists, the form is offered open.
     effect(() => {

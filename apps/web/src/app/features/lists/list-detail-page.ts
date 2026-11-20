@@ -46,6 +46,7 @@ type View = 'list' | 'board';
       align-items: center;
       justify-content: space-between;
       gap: var(--space-3) var(--space-5);
+      min-height: var(--control-height);
       margin-bottom: var(--space-5);
     }
 
@@ -66,9 +67,10 @@ type View = 'list' | 'board';
       color: var(--muted);
     }
 
+    /* The same size as the title of every other screen (see PageHeader). */
     h1 {
       overflow-wrap: anywhere;
-      font-size: 26px;
+      font-size: var(--text-xl);
     }
 
     .summary {
@@ -110,7 +112,7 @@ type View = 'list' | 'board';
     .skeleton.head-skeleton {
       width: 240px;
       max-width: 100%;
-      height: 30px;
+      height: var(--control-height);
       margin-bottom: var(--space-5);
       /* Appears with a delay, like the rest of the skeleton: a fast load never shows it. */
       opacity: 0;
@@ -133,7 +135,8 @@ type View = 'list' | 'board';
 
     @media (width <= 767px) {
       h1 {
-        font-size: var(--text-2xl);
+        font-size: 22px;
+        letter-spacing: -0.02em;
       }
 
       .search,

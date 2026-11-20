@@ -243,3 +243,8 @@
     padding-inline-end: calc(var(--touch-target) * 2 + var(--space-3));
   }
 }
+
+/* The locked list of the calendar's events: it cannot be moved, renamed or archived. */
+.locked-note {
+  color: var(--muted);
+}

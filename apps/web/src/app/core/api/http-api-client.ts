@@ -163,6 +163,10 @@ export class HttpApiClient extends ApiClient {
     return this.http.get<CalendarEntry[]>('/api/calendar', { params: { from, to } });
   }
 
+  override events(): Observable<CalendarEvent[]> {
+    return this.http.get<CalendarEvent[]>('/api/events');
+  }
+
   override createEvent(input: CreateEvent): Observable<CalendarEvent> {
     return this.http.post<CalendarEvent>('/api/events', input);
   }

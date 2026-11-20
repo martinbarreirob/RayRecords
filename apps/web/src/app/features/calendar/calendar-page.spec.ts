@@ -56,6 +56,107 @@ describe('CalendarPage: adding events', () => {
   });
 });
 
+describe('CalendarPage: form date and editing', () => {
+  const event = {
+    id: 'b'.repeat(24),
+    title: 'Cena',
+    dueDate: today,
+    time: '21:00',
+    kind: 'event',
+  } as CalendarEntry;
+  const updated: { id: string; input: unknown }[] = [];
+
+  function setup(): ComponentFixture<CalendarPage> {
+    updated.length = 0;
+    const api = {
+      lists: () => of([]),
+      calendar: () => of([event]),
+      createEvent: () => of({}),
+      updateEvent: (id: string, input: unknown) => {
+        updated.push({ id, input });
+        return of({});
+      },
+    };
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  async function settle(fixture: ComponentFixture<CalendarPage>): Promise<void> {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  const dateInput = (root: HTMLElement) =>
+    root.querySelector<HTMLInputElement>('form.add #cal-date')!;
+
+  it('the new-event date follows the selected day until the user edits it', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    const days = root.querySelectorAll<HTMLButtonElement>('button.day[data-date]');
+    const other = [...days].find((d) => d.dataset['date'] !== today)!;
+
+    root.querySelector<HTMLButtonElement>('app-add-button button')!.click();
+    await settle(fixture);
+    const component = fixture.componentInstance as unknown as { newDate: () => string };
+    expect(component.newDate()).toBe(today);
+
+    other.click();
+    await settle(fixture);
+    expect(component.newDate()).toBe(other.dataset['date']);
+
+    (fixture.componentInstance as unknown as { onDateEdited(d: string): void }).onDateEdited(
+      '2030-01-01',
+    );
+    days[0]!.click();
+    await settle(fixture);
+    expect(component.newDate()).toBe('2030-01-01');
+    expect(dateInput(root)).not.toBeNull();
+  });
+
+  it('edits an event in a dialog and saves through updateEvent', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+
+    root.querySelector<HTMLButtonElement>('button[aria-label="Opciones: Cena"]')!.click();
+    await settle(fixture);
+    const edit = [...document.querySelectorAll<HTMLElement>('.p-menu-item-link')].find(
+      (link) => link.textContent?.trim() === 'Editar',
+    )!;
+    edit.click();
+    await settle(fixture);
+    // The inline creation form is not involved; the dialog opens with the event's data.
+    expect(root.querySelector('form.add')).toBeNull();
+    const title = document.querySelector<HTMLInputElement>('#event-form input[name="title"]')!;
+    expect(title.value).toBe('Cena');
+
+    title.value = 'Cena con Ana';
+    title.dispatchEvent(new Event('input'));
+    document.querySelector<HTMLFormElement>('#event-form')!.dispatchEvent(new Event('submit'));
+    await settle(fixture);
+
+    expect(updated).toEqual([
+      { id: event.id, input: { title: 'Cena con Ana', date: today, time: '21:00' } },
+    ]);
+    expect(document.querySelector('#event-form')).toBeNull();
+  });
+
+  it('clicking the event body also opens the editor', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLElement>('.day-panel .row-entry .body')!.click();
+    await settle(fixture);
+    expect(document.querySelector('#event-form')).not.toBeNull();
+  });
+});
+
 describe('CalendarPage: loading', () => {
   let requests: { from: string; to: string; subject: Subject<CalendarEntry[]> }[];
 

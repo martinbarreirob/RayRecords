@@ -7,7 +7,7 @@ import {
   type ListPreset,
 } from '@rayrecords/shared';
 import { ObjectId } from 'mongodb';
-import type { ItemDoc, ListDoc, NoteCardDoc, NoteGroupDoc } from '../db/documents';
+import type { EventDoc, ItemDoc, ListDoc, NoteCardDoc, NoteGroupDoc } from '../db/documents';
 
 interface ItemSeed {
   title: string;
@@ -192,23 +192,15 @@ export function buildCatalog(now: Date, today: DateOnly) {
     ...toItems(
       tasks,
       [
+        // A task that is overdue and one with a link: list items with a date show in the calendar
+        // too, next to the events.
         { title: 'Enviar la factura de octubre', dueDate: addDays(today, -2), tags: ['trabajo'] },
-        { title: 'Llamar al dentista', dueDate: today },
-        {
-          title: 'Preparar la presentación',
-          dueDate: addDays(today, 1),
-          time: '10:00',
-          tags: ['trabajo'],
-        },
-        { title: 'Renovar el seguro del coche', dueDate: addDays(today, 2), tags: ['casa'] },
-        { title: 'Cumpleaños de Ana', dueDate: addDays(today, 4), tags: ['personal'] },
         {
           title: 'Comprar entradas del concierto',
           dueDate: addDays(today, 7),
           url: 'https://example.com/entradas',
         },
-        { title: 'Revisión del coche', dueDate: addDays(today, 9), time: '09:30', tags: ['casa'] },
-        { title: 'Declaración trimestral', dueDate: addDays(today, 21), tags: ['trabajo'] },
+        { title: 'Ordenar el trastero', tags: ['casa'] },
       ],
       now,
     ),
@@ -306,6 +298,24 @@ export function buildCatalog(now: Date, today: DateOnly) {
     createdAt: now,
     updatedAt: now,
   });
+  /** The calendar's own events: they live in their own collection, and the lists screen shows them as «Eventos». */
+  const event = (title: string, date: DateOnly, time?: string): EventDoc => ({
+    _id: new ObjectId(),
+    title,
+    date,
+    ...(time !== undefined && { time }),
+    createdAt: now,
+    updatedAt: now,
+  });
+  const events: EventDoc[] = [
+    event('Llamar al dentista', today),
+    event('Preparar la presentación', addDays(today, 1), '10:00'),
+    event('Renovar el seguro del coche', addDays(today, 2)),
+    event('Cumpleaños de Ana', addDays(today, 4)),
+    event('Revisión del coche', addDays(today, 9), '09:30'),
+    event('Declaración trimestral', addDays(today, 21)),
+  ];
+
   const noteCards: NoteCardDoc[] = [
     card('Pedir presupuesto del alicatado', 16, 56, { groupId: group._id }),
     card('Elegir grifería', 16, 130, { groupId: group._id }),
@@ -322,6 +332,7 @@ export function buildCatalog(now: Date, today: DateOnly) {
   return {
     lists: [films, series, shopping, tasks, board, ideas],
     items,
+    events,
     noteGroups: [group],
     noteCards,
   };

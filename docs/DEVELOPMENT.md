@@ -159,7 +159,8 @@ List aliases are not coded: they are each list's `captureAlias` and are passed t
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Categories / rules | 9 / 18                                                                                                                                         |
 | Lists              | 6: Películas (movies), Series (shows), Compras (shopping), Tareas (tasks), Portfolio web (board), Ideas                                        |
-| Items              | 47                                                                                                                                             |
+| Items              | 42 (three of them tasks, two with a date)                                                                                                      |
+| Events             | 6, in the calendar's own collection: they are what the locked «Eventos» list shows                                                             |
 | Notes              | 10 cards: one group of 3, one done 3 h ago, another 22 h ago (hidden soon) and another 30 h ago (already hidden; shows in "Terminadas" / done) |
 | Stock              | A shop of accessories, bags, jewellery and clothes: 4 categories and 37 products (two without a category), some low on stock or sold out       |
 | Tickets            | About 47 sales over the last 30 days, within shop hours; the product quantities are what is left after them                                    |
