@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The "Run workflow" button: rebuilds the images and redeploys from the chosen branch (main only).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,7 +38,7 @@ jobs:
   # Images are built here, not on the server (4 GB of RAM).
   images:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -72,7 +74,7 @@ jobs:
   # Needs the secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS (see docs/DEVELOPMENT.md).
   deploy:
     needs: images
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     concurrency:
