@@ -149,6 +149,17 @@ describe('groupMovements', () => {
     expect(cafe.id).toBe(normalizeText('Cafetería Ñandú'));
   });
 
+  it('groups the movements of one place whose town and terminal reference differ', () => {
+    const groups = groupMovements([
+      mv('O FORNO PI \\PONTEVEDRA\\ES2609180829', -300, '2026-09-18', null),
+      mv('O FORNO PI \\PONTEVEDRA\\ES2609160812', -250, '2026-09-16', null),
+      mv('O FORNO PI \\PONTEVEDRA\\ES2609100844', -400, '2026-09-10', null),
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.count).toBe(3);
+    expect(groups[0]!.id).toBe('o forno pi');
+  });
+
   it('sums the amounts, counts the movements and keeps the latest date', () => {
     const [group] = groupMovements([
       mv('Bar', -200, '2026-11-01', 'ocio'),

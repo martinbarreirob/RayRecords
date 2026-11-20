@@ -1,5 +1,10 @@
 import { normalizeText } from '../../core/text';
-import { TRANSFER_CATEGORY, type Category, type Transaction } from '@rayrecords/shared';
+import {
+  TRANSFER_CATEGORY,
+  merchantKey,
+  type Category,
+  type Transaction,
+} from '@rayrecords/shared';
 
 /** A section of the design: a category, or `null` for uncategorised movements. */
 export type SectionKey = string | null;
@@ -188,7 +193,9 @@ export interface MovementGroup {
 export function groupMovements(rows: readonly MovementRow[]): MovementGroup[] {
   const byKey = new Map<string, MovementRow[]>();
   for (const row of rows) {
-    const key = normalizeText(row.description);
+    // The merchant key drops the town and terminal reference (`O FORNO PI \PONTEVEDRA\ES26…`), so
+    // the movements of one place group together; without a key the whole description is used.
+    const key = merchantKey(row.description) ?? normalizeText(row.description);
     const list = byKey.get(key);
     if (list) list.push(row);
     else byKey.set(key, [row]);
