@@ -17,3 +17,10 @@ export function eurosToCents(text: string): number | null {
   const value = Number(normalized);
   return Number.isFinite(value) ? Math.round(value * 100) : null;
 }
+
+const units = new Intl.NumberFormat('es-ES');
+
+/** A whole count with thousands grouping: "1.234". */
+export function formatUnits(value: number): string {
+  return units.format(value);
+}

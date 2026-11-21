@@ -9,7 +9,11 @@ import { RulesPanel } from './rules-panel';
 
 /** Loading is not the same as empty: the skeleton shows while data arrives and the empty state only after. */
 describe('Expenses: loading states', () => {
-  const baseApi = { accounts: () => of([]), categories: () => of([]) };
+  const baseApi = {
+    accounts: () => of([]),
+    categories: () => of([]),
+    reviewQueue: () => of({ groups: [], usage: [], pendingTransactions: 0, pendingGroups: 0 }),
+  };
 
   function mount<T>(component: new () => T, api: object): ComponentFixture<T> {
     TestBed.configureTestingModule({

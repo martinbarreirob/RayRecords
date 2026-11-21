@@ -5,8 +5,10 @@ import {
   afterNextRender,
   afterRenderEffect,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -38,10 +40,9 @@ import {
   type TileSize,
 } from './sales-logic';
 import { Icon } from '../../../core/ui/icon';
+import { injectIsPhone, prefersReducedMotion } from '../../../core/ui/viewport';
 import { TicketPrinter } from '../../../core/print/ticket-printer';
 
-/** The phone layout of the sales screen: same breakpoint as the style files. */
-const PHONE_QUERY = '(width <= 767px)';
 /** Pixels the finger must travel before a press on the cart bar counts as a drag. */
 const DRAG_SLOP = 6;
 /** Pixels of drag that are enough to open or close the sheet. */
@@ -93,13 +94,7 @@ function clamp(value: number, min: number, max: number): number {
     <div class="layout">
       <section class="catalog" aria-label="Productos">
         <nav class="categories" aria-label="Categorías">
-          <div
-            #strip
-            class="cat-strip"
-            role="group"
-            aria-label="Elegir categoría"
-            (scroll)="measureEdges()"
-          >
+          <div #strip class="cat-strip" role="group" aria-label="Elegir categoría">
             @for (tab of tabs(); track tab.id) {
               <button
                 type="button"
@@ -117,7 +112,6 @@ function clamp(value: number, min: number, max: number): number {
             <button
               type="button"
               class="btn icon cat-arrow prev"
-              [class.edge-off]="!canScrollBack()"
               aria-label="Categoría anterior"
               (click)="step(-1)"
             >
@@ -126,7 +120,6 @@ function clamp(value: number, min: number, max: number): number {
             <button
               type="button"
               class="btn icon cat-arrow next"
-              [class.edge-off]="!canScrollForward()"
               aria-label="Categoría siguiente"
               (click)="step(1)"
             >
@@ -146,7 +139,7 @@ function clamp(value: number, min: number, max: number): number {
           } @else if (tiles().length) {
             <!-- A new list per category, so each switch plays the enter animation. -->
             @for (key of [category()]; track key) {
-              <ul class="bento swap" [class.few]="few()">
+              <ul class="bento swap" [class.few]="few()" [attr.data-from]="from()">
                 @for (tile of tiles(); track tile.product.id) {
                   @let size = tileSize(tile.size);
                   <li
@@ -248,7 +241,6 @@ function clamp(value: number, min: number, max: number): number {
               <span class="sheet-count muted">{{ summary() }}</span>
             </span>
             <strong class="sheet-total num">{{ money(total().totalCents) }}</strong>
-            <app-icon [name]="sheetOpen() ? 'chevron-down' : 'chevron-up'" />
           </button>
           <h2 id="cart-title">Carrito</h2>
           @if (rows().length) {
@@ -347,14 +339,28 @@ function clamp(value: number, min: number, max: number): number {
               <span>Total</span>
               <strong class="num">{{ money(total().totalCents) }}</strong>
             </div>
-            <button
-              type="button"
-              class="btn primary ticket"
-              [disabled]="!rows().length || saving()"
-              (click)="generateTicket()"
-            >
-              {{ saving() ? 'Imprimiendo…' : 'Imprimir ticket' }}
-            </button>
+            <div class="foot-actions">
+              <!-- Phone only: "Vaciar" leaves the header and sits small at the left of the print button. -->
+              @if (rows().length) {
+                <button
+                  type="button"
+                  class="btn ghost sm clear-foot"
+                  aria-label="Vaciar el carrito"
+                  [disabled]="saving()"
+                  (click)="cart.clear()"
+                >
+                  Vaciar
+                </button>
+              }
+              <button
+                type="button"
+                class="btn primary ticket"
+                [disabled]="!rows().length || saving()"
+                (click)="generateTicket()"
+              >
+                {{ saving() ? 'Imprimiendo…' : 'Imprimir ticket' }}
+              </button>
+            </div>
           </footer>
         </div>
       </aside>
@@ -407,13 +413,12 @@ export class SalesPage {
 
   /** The categories do not fit on the bar: only then are the arrows shown. */
   protected readonly stripOverflows = signal(false);
-  /** There are categories out of sight at the start / the end of the strip (the phone shows one arrow per side). */
-  protected readonly canScrollBack = signal(false);
-  protected readonly canScrollForward = signal(true);
+  /** Which way the last category change went (the arrows loop), so the new grid slides in from there. */
+  protected readonly from = signal<'next' | 'prev' | null>(null);
   private readonly strip = viewChild<ElementRef<HTMLElement>>('strip');
 
   // Phone: the cart is a bottom sheet and every card has the same size.
-  protected readonly phone = signal(false);
+  protected readonly phone = injectIsPhone();
   protected readonly sheetOpen = signal(false);
   /** While the bar is being dragged: how far the sheet is pulled from where it rests, in pixels. */
   protected readonly dragOffset = signal(0);
@@ -430,16 +435,10 @@ export class SalesPage {
 
   constructor() {
     this.load();
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const query = window.matchMedia(PHONE_QUERY);
-      const sync = () => {
-        this.phone.set(query.matches);
-        if (!query.matches) this.closeSheet();
-      };
-      sync();
-      query.addEventListener?.('change', sync);
-      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', sync));
-    }
+    // Leaving the phone layout drops the sheet.
+    effect(() => {
+      if (!this.phone()) untracked(() => this.closeSheet());
+    });
     afterNextRender(() => this.measure());
     // The categories arrive, or change, after the first measure.
     afterRenderEffect(() => {
@@ -463,15 +462,6 @@ export class SalesPage {
     const bar = strip?.parentElement;
     if (!strip || !bar) return;
     this.stripOverflows.set(strip.scrollWidth > bar.clientWidth + 1);
-    this.measureEdges();
-  }
-
-  /** Which sides of the strip have more categories out of sight. */
-  protected measureEdges(): void {
-    const strip = this.strip()?.nativeElement;
-    if (!strip) return;
-    this.canScrollBack.set(strip.scrollLeft > 1);
-    this.canScrollForward.set(strip.scrollWidth - strip.clientWidth - strip.scrollLeft > 1);
   }
 
   private load(): void {
@@ -497,15 +487,21 @@ export class SalesPage {
 
   // Categories
 
-  protected pick(id: CategoryFilter): void {
+  protected pick(id: CategoryFilter, from: 'next' | 'prev' | null = null): void {
+    this.from.set(from);
     this.category.set(id);
-    // The chosen category may be outside the visible part of the strip.
+    // The chosen category may be outside the visible part of the strip: it glides to the middle.
     const chip = this.host.nativeElement.querySelector<HTMLElement>(`[data-cat="${id}"]`);
-    chip?.scrollIntoView?.({ inline: 'center', block: 'nearest' });
+    chip?.scrollIntoView?.({
+      inline: 'center',
+      block: 'nearest',
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    });
   }
 
+  /** The arrows loop: after the last category comes the first, and before the first, the last. */
   protected step(delta: 1 | -1): void {
-    this.pick(stepCategory(this.tabs(), this.category(), delta));
+    this.pick(stepCategory(this.tabs(), this.category(), delta), delta > 0 ? 'next' : 'prev');
   }
 
   // Cart

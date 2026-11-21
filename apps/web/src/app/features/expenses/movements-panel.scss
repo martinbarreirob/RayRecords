@@ -30,17 +30,19 @@
 }
 
 /*
- * Two columns: the totals and the categories on the left (they filter the table), the movements
- * on the right. The left one stays in view while the table scrolls.
+ * Two columns: the movements on the left, the summary on the right (its totals and categories
+ * filter the table). The summary stays in view while the table scrolls.
  */
 .layout {
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas: 'main side';
   gap: var(--space-4);
   align-items: start;
 }
 
 .side {
+  grid-area: side;
   position: sticky;
   top: var(--space-3);
   display: flex;
@@ -50,7 +52,79 @@
 }
 
 .main {
+  grid-area: main;
   min-width: 0;
+}
+
+/*
+ * The summary never grows past the window (less the page header): when the categories do not fit,
+ * their list scrolls inside its card, so the shortcuts at the foot are always in view.
+ */
+@media (width > 767px) {
+  .side {
+    max-height: calc(100dvh - 12rem);
+  }
+
+  .cats {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .cats .sections {
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* The summary opens with its name and how many movements the period has. */
+.side-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
+
+  h2 {
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+
+  .muted {
+    font-size: var(--text-sm);
+  }
+}
+
+/* It closes with the other views: Importar and Reglas side by side, then what is left to review. */
+.side-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.side-tools {
+  display: flex;
+  gap: var(--space-2);
+
+  .btn {
+    flex: 1 1 0;
+  }
+}
+
+.review-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-height);
+  padding-block: 0;
+  border: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
 }
 
 /* Totals card: the balance across the top, expenses and income side by side under it. */
@@ -180,7 +254,17 @@
     border-radius: 2px;
     background: var(--accent);
   }
+}
 
+/* The tag icon is for the phone, where the manager button is only that. */
+.categories-btn app-icon {
+  display: none;
+}
+
+@media (width <= 767px) {
+  .categories-btn app-icon {
+    display: inline-flex;
+  }
 }
 
 /* The category manager closes the card: air, a rule, air and the button. */
@@ -213,13 +297,13 @@
   border-radius: var(--radius-md);
 }
 
-/* The table title: on a desktop the chosen category already says it, so it is only read aloud. */
+/* The table title: the chosen category and its movements. With none chosen it is only read aloud on a desktop. */
 .main-title {
   margin-bottom: var(--space-3);
 }
 
 @media (width > 767px) {
-  .main-title {
+  .main-title.is-all {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -299,10 +383,10 @@
   margin-bottom: var(--space-3);
 }
 
-/* Narrow desktop: the left column gets a little thinner. */
+/* Narrow desktop: the summary column gets a little thinner. */
 @media (width <= 1023px) {
   .layout {
-    grid-template-columns: 230px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 260px;
   }
 }
 
@@ -321,6 +405,8 @@
   .layout {
     display: flex;
     flex-direction: column;
+    /* The desktop grid aligns to the start; here that would let the categories row size the column. */
+    align-items: stretch;
   }
 
   .main {
@@ -334,6 +420,12 @@
   .side {
     position: static;
     margin-bottom: var(--space-3);
+  }
+
+  /* The tabs of the page already lead to the other views, and the count is in the table title. */
+  .side-head,
+  .side-foot {
+    display: none;
   }
 
   .period {
@@ -360,19 +452,40 @@
     min-height: var(--touch-target);
   }
 
+  /* The category chips scroll sideways; the manager is a square button at their right. */
   .cats {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     padding: 0;
     border: 0;
     background: none;
   }
 
   .sections {
+    flex: 1 1 0;
     flex-direction: row;
+    min-width: 0;
     gap: var(--space-2);
     overflow-x: auto;
-    margin-right: calc(-1 * var(--page-gutter));
-    padding-right: var(--page-gutter);
     scrollbar-width: none;
+  }
+
+  .cats-foot {
+    flex: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+
+    .btn {
+      width: var(--touch-target);
+      min-height: var(--touch-target);
+      padding: 0;
+    }
+
+    .categories-label {
+      display: none;
+    }
   }
 
   .section {

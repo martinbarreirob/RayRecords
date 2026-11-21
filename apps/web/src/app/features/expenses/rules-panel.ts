@@ -10,6 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Icon } from '../../core/ui/icon';
 import type { CategorizationRule, RuleMatchType } from '@rayrecords/shared';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
@@ -32,6 +33,7 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
 @Component({
   selector: 'app-rules-panel',
   imports: [
+    Icon,
     CategoryLabel,
     CategorySelect,
     FormsModule,
@@ -83,9 +85,10 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
           @for (rule of rules(); track rule.id) {
             <li [class.inactive]="!rule.active">
               <span class="pattern">«{{ rule.pattern }}»</span>
-              <span class="badge">{{ labels[rule.matchType] }}</span>
+              <span class="badge match">{{ labels[rule.matchType] }}</span>
               <span class="arrow" aria-hidden="true">→</span>
               <app-category-label
+                class="rule-cat"
                 [look]="store.category(rule.categoryKey)"
                 [name]="store.categoryName(rule.categoryKey)"
               />
@@ -106,7 +109,8 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
                 [disabled]="busy()"
                 (click)="remove(rule)"
               >
-                Borrar
+                <app-icon class="del-icon" name="trash" />
+                <span class="del-label">Borrar</span>
               </button>
             </li>
           }

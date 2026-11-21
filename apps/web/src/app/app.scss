@@ -360,6 +360,15 @@ main {
     min-height: var(--touch-target);
   }
 
+  // The first row is the color of the phone's own bar (status bar, notch); the second is the tint.
+  .primary {
+    background: var(--chrome-bg);
+  }
+
+  .secondary {
+    background: var(--nav-bg);
+  }
+
   .secondary-inner {
     padding: 0;
     overflow-x: auto;

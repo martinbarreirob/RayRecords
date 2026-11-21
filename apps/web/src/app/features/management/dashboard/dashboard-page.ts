@@ -4,7 +4,7 @@ import type { Dashboard, StockCategory } from '@rayrecords/shared';
 import { forkJoin, type Subscription } from 'rxjs';
 import { ApiClient } from '../../../core/api/api-client';
 import { apiErrorMessage } from '../../../core/api/errors';
-import { formatCents } from '../../../core/format';
+import { formatCents, formatUnits } from '../../../core/format';
 import { PageHeader } from '../../../core/ui/page-header';
 import { CategoryBadge } from '../../categories/category-badge';
 import { UNCATEGORIZED_LOOK } from '../../categories/uncategorized';
@@ -23,8 +23,6 @@ import {
   shortDay,
   type DayBar,
 } from './dashboard-logic';
-
-const UNITS = new Intl.NumberFormat('es-ES');
 
 /**
  * The management area at a glance: what was sold in the chosen period and how it compares with
@@ -356,7 +354,7 @@ export class DashboardPage {
   }
 
   protected count(value: number): string {
-    return UNITS.format(value);
+    return formatUnits(value);
   }
 
   protected setDays(days: number): void {

@@ -2,7 +2,7 @@ import { Router, provideRouter } from '@angular/router';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { Product, StockCategory } from '@rayrecords/shared';
 import { NEVER, of, throwError } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ApiClient } from '../../../core/api/api-client';
 import { providePrimeNgTheme } from '../../../core/theme/provide-primeng';
 import { StockPage } from './stock-page';
@@ -224,13 +224,13 @@ describe('StockPage', () => {
     expect(sheet.classList.contains('is-expanded')).toBe(false);
     expect(sheet.getAttribute('role')).toBe('dialog');
     expect(sheet.getAttribute('aria-label')).toBe('Producto: Café molido');
-    expect(sheet.querySelector('.stats')?.textContent).toContain('12');
+    expect(sheet.querySelector('.stat-strip')?.textContent).toContain('12');
     const toggle = sheet.querySelector<HTMLButtonElement>('.toggle')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
 
     // Editar expands it to the form.
-    const [edit, remove] = [...sheet.querySelectorAll<HTMLButtonElement>('.actions .btn')];
-    expect(edit?.textContent?.trim()).toBe('Editar');
+    const [, edit, remove] = [...sheet.querySelectorAll<HTMLButtonElement>('.actions .action-row')];
+    expect(edit?.textContent?.trim()).toBe('Editar producto');
     edit!.click();
     fixture.detectChanges();
     expect(sheet.classList.contains('is-expanded')).toBe(true);
@@ -251,6 +251,83 @@ describe('StockPage', () => {
     remove!.click();
     fixture.detectChanges();
     expect(document.body.textContent).toContain('¿Borrar «Agua» del stock?');
+  });
+
+  it('adds or takes out units from the product sheet with the steps or a typed amount', () => {
+    const updateProduct = vi.fn((id: string, input: { quantity: number }) =>
+      of({ ...products[1]!, id, quantity: input.quantity }),
+    );
+    const fixture = setup({
+      products: () => of(products),
+      stockCategories: () => of(categories),
+      updateProduct,
+    });
+    const page = fixture.componentInstance as unknown as {
+      phone: { set(value: boolean): void };
+    };
+    page.phone.set(true);
+    fixture.detectChanges();
+    el(fixture).querySelectorAll<HTMLElement>('tr.st-row')[1]!.click();
+    fixture.detectChanges();
+
+    const sheet = el(fixture).querySelector<HTMLElement>('app-bottom-sheet .sheet')!;
+    // The summary has no adjust box until "Ajustar stock" swaps it for the amount picker.
+    expect(sheet.querySelector('.restock')).toBeNull();
+    sheet.querySelector<HTMLButtonElement>('.actions .action-row')!.click();
+    fixture.detectChanges();
+    expect(sheet.querySelector('.stat-strip')).toBeNull();
+    expect(sheet.querySelector('.restock-now')?.textContent).toContain('12');
+    // The level tag is in the head, not in this view.
+    expect(sheet.querySelector('.restock .badge')).toBeNull();
+
+    const save = sheet.querySelector<HTMLButtonElement>('.restock button[type="submit"]')!;
+    expect(save.disabled).toBe(true);
+    // −10 −5 −1 on the left of the field, +1 +5 +10 on the right.
+    const steps = [...sheet.querySelectorAll<HTMLButtonElement>('.restock .segmented button')];
+    expect(steps.map((button) => button.textContent?.trim())).toEqual([
+      '−10',
+      '−5',
+      '−1',
+      '+1',
+      '+5',
+      '+10',
+    ]);
+    const box = sheet.querySelector<HTMLInputElement>('.restock input')!;
+    const click = (button: HTMLButtonElement) => {
+      button.click();
+      fixture.detectChanges();
+    };
+    click(steps[4]!);
+    click(steps[4]!);
+    expect(box.value).toBe('10');
+    expect(sheet.querySelector('.restock-after')?.textContent).toContain('12 + 10 = 22');
+    click(steps[0]!);
+    expect(box.value).toBe('');
+    expect(save.disabled).toBe(true);
+
+    // Taking out more than there is cannot be saved.
+    click(steps[0]!);
+    click(steps[0]!);
+    expect(box.value).toBe('-20');
+    expect(sheet.querySelector('.restock-after')?.textContent).toContain('12 − 20 = -8');
+    expect(save.disabled).toBe(true);
+
+    // A typed amount works too, with a plain minus or a plus.
+    box.value = '-2';
+    box.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(sheet.querySelector('.restock-after')?.textContent).toContain('12 − 2 = 10');
+    box.value = '20';
+    box.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(sheet.querySelector('.restock-after')?.textContent).toContain('12 + 20 = 32');
+
+    sheet.querySelector<HTMLFormElement>('.restock')!.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(updateProduct).toHaveBeenCalledWith(products[1]!.id, { quantity: 32 });
+    // Back on the summary, with the new stock.
+    expect(sheet.querySelector('.restock')).toBeNull();
+    expect(sheet.querySelector('.stat-strip')?.textContent).toContain('32');
   });
 
   it('opens a new product directly expanded and empty on a phone', () => {

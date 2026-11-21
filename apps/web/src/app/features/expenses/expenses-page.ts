@@ -17,6 +17,7 @@ import { catchError, map, of, switchMap } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { RefreshBus } from '../../core/refresh';
 import { PageHeader } from '../../core/ui/page-header';
+import { prefersReducedMotion } from '../../core/ui/viewport';
 import {
   CategoriesDialog,
   type CategoryOps,
@@ -25,6 +26,7 @@ import {
 } from '../categories/categories-dialog';
 import { formatNoteDate } from '../notes/note-board.logic';
 import { ExpensesSkeleton } from './expenses-skeleton';
+import { VIEWS, showView, type View } from './expenses-views';
 import { ImportPanel } from './import-panel';
 import { FinanceStore } from './finance.store';
 import { MovementsPanel } from './movements-panel';
@@ -32,17 +34,8 @@ import { useSpanishTexts } from './primeng-es';
 import { ReviewPanel } from './review-panel';
 import { RulesPanel } from './rules-panel';
 
-type View = 'review' | 'movements' | 'import' | 'rules';
-
 /** How long the placeholder shows when switching views (a simulated load, so the change is felt). */
 export const VIEW_SWITCH_MS = 300;
-
-const VIEWS: readonly { id: View; slug: string; label: string }[] = [
-  { id: 'movements', slug: 'movimientos', label: 'Movimientos' },
-  { id: 'review', slug: 'revisar', label: 'Revisar' },
-  { id: 'import', slug: 'importar', label: 'Importar' },
-  { id: 'rules', slug: 'reglas', label: 'Reglas' },
-];
 
 /** Expenses: movements with their totals and categories, review, statement import and rules. */
 @Component({
@@ -259,10 +252,7 @@ export class ExpensesPage {
 
   private simulateLoad(): void {
     clearTimeout(this.switchTimer);
-    if (
-      typeof matchMedia === 'function' &&
-      matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
+    if (prefersReducedMotion()) {
       this.switching.set(false);
       return;
     }
@@ -271,10 +261,6 @@ export class ExpensesPage {
   }
 
   protected show(slug: string): void {
-    void this.router.navigate([], {
-      queryParams: { vista: slug === 'movimientos' ? null : slug },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
+    showView(this.router, slug);
   }
 }

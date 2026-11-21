@@ -8,7 +8,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { BottomSheet } from '../../../core/ui/bottom-sheet';
 import { DEFAULT_TIME_ZONE, todayIn, type Ticket } from '@rayrecords/shared';
 import type { Subscription } from 'rxjs';
 import { ApiClient } from '../../../core/api/api-client';
@@ -33,6 +35,7 @@ import {
   type TicketRow,
 } from './tickets-logic';
 import { Icon } from '../../../core/ui/icon';
+import { injectIsPhone } from '../../../core/ui/viewport';
 import { AddButton } from '../../../core/ui/add-button';
 import { StockSearchService } from '../../../core/stock-search/stock-search.service';
 import { TicketPrinter } from '../../../core/print/ticket-printer';
@@ -48,6 +51,8 @@ import { PrintSettingsDialog } from './print-settings-dialog';
   selector: 'app-tickets-page',
   imports: [
     Icon,
+    BottomSheet,
+    NgTemplateOutlet,
     FormsModule,
     AddButton,
     PageHeader,
@@ -224,59 +229,74 @@ import { PrintSettingsDialog } from './print-settings-dialog';
         }
       </section>
 
-      @if (sheetOpen()) {
-        <div class="sheet-backdrop" aria-hidden="true" (click)="closeSheet()"></div>
-      }
-      <aside
-        class="receipt"
-        aria-live="polite"
-        aria-label="Ticket seleccionado"
-        [class.open]="sheetOpen()"
-        [attr.inert]="phone() && !sheetOpen() ? '' : null"
-      >
-        @if (selected(); as ticket) {
-          <header class="receipt-head">
-            <span class="sheet-grip" aria-hidden="true"></span>
-            <h2>Ticket n.º {{ ticket.number }}</h2>
-            <span class="muted">{{ ticket.when }}</span>
-            <button type="button" class="btn sm print" (click)="printer.print(ticket)">
-              <app-icon name="printer" />
-              Imprimir
-            </button>
-            <button
-              type="button"
-              class="btn ghost icon sm sheet-close"
-              aria-label="Cerrar el ticket"
-              (click)="closeSheet()"
-            >
-              <app-icon name="x" />
-            </button>
-          </header>
-          <ul class="lines">
-            @for (line of ticket.lines; track line.productId) {
-              <li>
-                <span class="line-qty num">{{ line.quantity }} ×</span>
-                <span class="line-name">
-                  {{ line.name }}
-                  <small class="muted num">{{ money(line.unitPriceCents) }} / ud.</small>
-                </span>
-                <span class="line-total num">
-                  {{ money(line.quantity * line.unitPriceCents) }}
-                </span>
-              </li>
+      @if (phone()) {
+        <!-- Phone: the ticket is a bottom sheet; it closes with a tap outside or by dragging it down. -->
+        @let ticket = selected();
+        <app-bottom-sheet
+          [state]="sheetOpen() ? 'expanded' : 'closed'"
+          (stateChange)="sheetOpen.set($event !== 'closed')"
+          [collapsible]="false"
+          [label]="ticket ? 'Ticket n.º ' + ticket.number : 'Ticket'"
+        >
+          <span sheetHeader class="sheet-title">
+            @if (ticket) {
+              <span class="sheet-name">Ticket n.º {{ ticket.number }}</span>
+              <span class="muted">{{ ticket.when }}</span>
             }
-          </ul>
-          <footer class="receipt-foot">
-            <span class="muted">{{ units(ticket.units) }}</span>
-            <span class="total">
-              Total <strong class="num">{{ money(ticket.totalCents) }}</strong>
-            </span>
-          </footer>
-        } @else if (!loading()) {
-          <p class="receipt-empty muted">Elige un ticket de la lista para ver su detalle.</p>
-        }
-      </aside>
+          </span>
+          @if (ticket) {
+            <div class="receipt-sheet">
+              <ng-container *ngTemplateOutlet="lines; context: { $implicit: ticket }" />
+              <div class="sheet-actions">
+                <button type="button" class="btn" (click)="printer.print(ticket)">
+                  <app-icon name="printer" />
+                  Imprimir
+                </button>
+              </div>
+            </div>
+          }
+        </app-bottom-sheet>
+      } @else {
+        <aside class="receipt" aria-live="polite" aria-label="Ticket seleccionado">
+          @if (selected(); as ticket) {
+            <header class="receipt-head">
+              <h2>Ticket n.º {{ ticket.number }}</h2>
+              <span class="muted">{{ ticket.when }}</span>
+              <button type="button" class="btn sm print" (click)="printer.print(ticket)">
+                <app-icon name="printer" />
+                Imprimir
+              </button>
+            </header>
+            <ng-container *ngTemplateOutlet="lines; context: { $implicit: ticket }" />
+          } @else if (!loading()) {
+            <p class="receipt-empty muted">Elige un ticket de la lista para ver su detalle.</p>
+          }
+        </aside>
+      }
     </div>
+
+    <ng-template #lines let-ticket>
+      <ul class="lines">
+        @for (line of ticket.lines; track line.productId) {
+          <li>
+            <span class="line-qty num">{{ line.quantity }} ×</span>
+            <span class="line-name">
+              {{ line.name }}
+              <small class="muted num">{{ money(line.unitPriceCents) }} / ud.</small>
+            </span>
+            <span class="line-total num">
+              {{ money(line.quantity * line.unitPriceCents) }}
+            </span>
+          </li>
+        }
+      </ul>
+      <footer class="receipt-foot">
+        <span class="muted">{{ units(ticket.units) }}</span>
+        <span class="total">
+          Total <strong class="num">{{ money(ticket.totalCents) }}</strong>
+        </span>
+      </footer>
+    </ng-template>
 
     <app-print-settings-dialog [open]="settingsOpen()" (closed)="settingsOpen.set(false)" />
     <p-confirmdialog />
@@ -333,16 +353,10 @@ export class TicketsPage {
 
   constructor() {
     this.load();
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const query = window.matchMedia('(width <= 767px)');
-      const sync = () => {
-        this.phone.set(query.matches);
-        if (!query.matches) this.sheetOpen.set(false);
-      };
-      sync();
-      query.addEventListener?.('change', sync);
-      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', sync));
-    }
+    // Leaving the phone layout drops the sheet.
+    effect(() => {
+      if (!this.phone()) untracked(() => this.sheetOpen.set(false));
+    });
     // The sheet shows the ticket that was picked: if that one leaves the list, it closes.
     effect(() => {
       const picked = this.pickedId();
@@ -362,7 +376,7 @@ export class TicketsPage {
   }
 
   /** Follows the window, so the sheet is dropped when it grows past a phone. */
-  protected readonly phone = signal(false);
+  protected readonly phone = injectIsPhone();
 
   protected closeSheet(): void {
     this.sheetOpen.set(false);

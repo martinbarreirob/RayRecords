@@ -53,6 +53,14 @@ export interface CategoryLook {
       font-size: 19px;
     }
 
+    /* As tall as a two-line heading (a title and a small line under it). */
+    :host(.xl) {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      font-size: 26px;
+    }
+
     :host(.lg) {
       width: 56px;
       height: 56px;
@@ -64,5 +72,5 @@ export interface CategoryLook {
 })
 export class CategoryBadge {
   readonly look = input.required<CategoryLook>();
-  readonly size = input<'xs' | 'sm' | 'md' | 'lg'>('sm');
+  readonly size = input<'xs' | 'sm' | 'md' | 'xl' | 'lg'>('sm');
 }

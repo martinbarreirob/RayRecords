@@ -60,6 +60,7 @@ describe('MovementsPanel', () => {
       accounts: () => of([{ id: ACCOUNT, name: 'Cuenta de prueba' } as AccountSummary]),
       categories: () => of(categories),
       transactions: () => of({ items: page, total: page.length }),
+      reviewQueue: () => of({ groups: [], usage: [], pendingTransactions: 24, pendingGroups: 5 }),
       setCategory: vi.fn((id: string, input: { category: string | null }) =>
         of({
           ...page.find((tx) => tx.id === id)!,
@@ -98,6 +99,42 @@ describe('MovementsPanel', () => {
       text(section.querySelector('.section-name')),
     );
     expect(names).toEqual(['Todas', 'Hogar', 'Ocio', 'Salud', 'Sin categoría']);
+  });
+
+  it('opens the summary with the count of movements and keeps the counts out of each category', async () => {
+    const { fixture } = setup();
+    await settle(fixture);
+    expect(text(el(fixture).querySelector('.side-head'))).toBe('Resumen5 movimientos');
+    const rows = [...el(fixture).querySelectorAll('.section')];
+    // "Todas" is a card like the others: badge, name and amount, no "mov." count.
+    expect(rows[0]!.querySelector('app-category-badge')).not.toBeNull();
+    for (const row of rows) expect(text(row)).not.toContain('mov');
+  });
+
+  it('titles the table with the category chosen and its movements', async () => {
+    const { fixture } = setup();
+    await settle(fixture);
+    const title = () => el(fixture).querySelector<HTMLElement>('.main-title')!;
+    expect(title().classList.contains('is-all')).toBe(true);
+    [...el(fixture).querySelectorAll<HTMLButtonElement>('.section')]
+      .find((row) => text(row).includes('Hogar'))!
+      .click();
+    await settle(fixture);
+    expect(title().classList.contains('is-all')).toBe(false);
+    expect(text(title())).toBe('Hogar · 1 movimiento');
+  });
+
+  it('ends the summary with Importar and Reglas, then what is left to review', async () => {
+    const { fixture } = setup();
+    await settle(fixture);
+    const foot = el(fixture).querySelector('.side-foot')!;
+    expect(foot.previousElementSibling).toBe(el(fixture).querySelector('.cats'));
+    const [tools, review] = [...foot.children];
+    expect([...tools!.querySelectorAll('button')].map((b) => text(b))).toEqual([
+      'Importar',
+      'Reglas',
+    ]);
+    expect(text(review)).toBe('24 sin categoría en 5 comerciosRevisar');
   });
 
   it('gives every category in the list a badge, "Sin categoría" included', async () => {
@@ -141,7 +178,8 @@ describe('MovementsPanel', () => {
     const { fixture } = setup();
     await settle(fixture);
     expect(text(el(fixture))).not.toContain('Crear regla');
-    expect(text(el(fixture)).toLowerCase()).not.toContain('regla');
+    // The summary has its own shortcut to the rules view; the movements themselves have none.
+    expect(text(el(fixture).querySelector('.main')).toLowerCase()).not.toContain('regla');
   });
 
   it('draws the category as in stock, badge and name, with no container or arrow', async () => {
@@ -314,7 +352,7 @@ describe('MovementsPanel', () => {
       }
     });
 
-    it('does not repeat the description or the category on the movements of a group', async () => {
+    it('does not repeat the description on the movements of a group, but shows each category', async () => {
       const { fixture } = setup([
         movement('CINES', -1000, 'ocio'),
         movement('Cines', -1200, 'ocio'),
@@ -328,10 +366,11 @@ describe('MovementsPanel', () => {
       const children = [...el(fixture).querySelectorAll('tr.mv-child')];
       expect(children).toHaveLength(3);
       for (const child of children) {
-        // The date takes the room of the date and description cells; the category stays empty.
+        // The date takes the room of the date and description cells; the category is always
+        // there, so each movement of a place can be moved on its own.
         expect(child.querySelector('td.c-desc')).toBeNull();
         expect(child.querySelector<HTMLTableCellElement>('td.c-child')!.colSpan).toBe(2);
-        expect(text(child.querySelector('td.c-cat'))).toBe('');
+        expect(text(child.querySelector('td.c-cat'))).toBe('Ocio');
       }
       // Only a description written differently is shown, next to its date.
       expect(children.filter((c) => c.querySelector('.child-desc'))).toHaveLength(2);

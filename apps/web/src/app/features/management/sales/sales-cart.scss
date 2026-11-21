@@ -175,6 +175,16 @@
   min-height: var(--touch-target);
 }
 
+.foot-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Phone-only: on desktop "Vaciar" stays in the header. */
+.clear-foot {
+  display: none;
+}
+
 /* Desktop: the wrapper of the body takes no box of its own, and the phone bar does not exist. */
 .cart-body {
   display: contents;

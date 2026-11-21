@@ -1,14 +1,5 @@
 @use '../../../core/ui/skeleton';
 
-// Fields of a phone row; see the grid in the phone block below. `false` hides one.
-$row-fields: (
-  cat: true,
-  name: true,
-  qty: true,
-  price: true,
-  value: true,
-);
-
 // The screen is as tall as the space under the header: the table takes what the toolbar leaves
 // and pages to fit, so nothing scrolls.
 :host {
@@ -225,6 +216,10 @@ $row-fields: (
 
 .c-qty .badge {
   margin-right: var(--space-2);
+}
+
+.c-phone {
+  display: none;
 }
 
 .c-actions {
@@ -445,20 +440,13 @@ $row-fields: (
     }
 
     /*
-     * A phone row is a grid, the same height for all. To change what shows and where, edit only
-     * $row-fields (which fields exist) and the two variables on tr.st-row: --row-columns (the
-     * column sizes) and --row-areas (one quoted string per line, made of the field names).
+     * A phone row is two flex columns: the category icon on the left, and on the right two lines
+     * (name and unit price; stock and total). The desktop cells are hidden; `td.c-phone` holds them.
      */
     .p-datatable-tbody > tr.st-row {
-      --row-columns: 28px minmax(0, 1fr) 96px;
-      --row-areas: 'cat name value' 'cat qty price';
-
-      display: grid;
-      grid-template-columns: var(--row-columns);
-      grid-template-areas: var(--row-areas);
-      column-gap: var(--space-3);
-      row-gap: 2px;
+      display: flex;
       align-items: center;
+      gap: var(--space-3);
       height: 64px;
       padding: 0 var(--space-4);
       border-bottom: 1px solid var(--line);
@@ -470,33 +458,14 @@ $row-fields: (
         padding: 0;
         border: 0;
         background: transparent;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
-      @each $field, $shown in $row-fields {
-        > td.c-#{$field} {
-          grid-area: $field;
-
-          @if not $shown {
-            display: none;
-          }
-        }
-      }
-
-      > td.c-name {
-        max-width: none;
-        font-weight: 500;
-      }
-
-      .sku {
+      > td:not(.c-cat, .c-phone) {
         display: none;
       }
 
-      /* The category is just its badge: its name is in the product sheet. */
       > td.c-cat {
-        overflow: visible;
+        flex: none;
         line-height: 0;
       }
 
@@ -504,22 +473,53 @@ $row-fields: (
         display: none;
       }
 
-      > td.c-qty {
-        font-size: var(--text-sm);
-        text-align: left;
+      > td.c-phone {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
       }
 
-      > td.c-price {
+      .ph-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3);
+        min-width: 0;
+      }
+
+      .ph-name {
+        min-width: 0;
+        overflow: hidden;
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .ph-price,
+      .ph-total {
+        flex: none;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .ph-price {
+        font-weight: 600;
+      }
+
+      .ph-qty,
+      .ph-total {
         color: var(--muted);
         font-size: var(--text-sm);
       }
 
-      > td.c-value {
-        font-weight: 600;
+      .ph-unit {
+        margin-left: 2px;
+        font-size: var(--text-xs);
       }
 
-      > td.c-actions {
-        display: none;
+      .ghost-pill {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
       }
     }
 

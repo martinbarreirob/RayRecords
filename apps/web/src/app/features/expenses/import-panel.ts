@@ -164,12 +164,12 @@ import { CategoryLabel } from '../categories/category-label';
             <tbody>
               @for (row of r.preview; track $index) {
                 <tr [class.is-duplicate]="row.duplicate">
-                  <td class="muted">{{ row.date }}</td>
+                  <td class="muted c-date">{{ row.date }}</td>
                   <td class="desc" [title]="row.description">{{ row.description }}</td>
-                  <td class="num" [class.positive]="row.amountCents > 0">
+                  <td class="num c-amount" [class.positive]="row.amountCents > 0">
                     {{ money(row.amountCents) }}
                   </td>
-                  <td>
+                  <td class="c-cat">
                     <span class="badge" [class.warning]="row.category === null">
                       <app-category-label
                         [look]="store.category(row.category)"
@@ -177,7 +177,7 @@ import { CategoryLabel } from '../categories/category-label';
                       />
                     </span>
                   </td>
-                  <td>
+                  <td class="c-state">
                     <span class="badge" [class.success]="!row.duplicate">
                       {{ row.duplicate ? 'duplicado' : 'nuevo' }}
                     </span>

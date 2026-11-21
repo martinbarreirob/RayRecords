@@ -105,15 +105,42 @@ describe('TicketsPage', () => {
     window.matchMedia = (() => ({ matches: true })) as unknown as typeof window.matchMedia;
     try {
       const { fixture } = setup();
-      const receipt = el(fixture).querySelector('.receipt')!;
-      expect(receipt.classList.contains('open')).toBe(false);
+      const sheet = el(fixture).querySelector('.sheet')!;
+      expect(sheet.classList.contains('is-closed')).toBe(true);
       el(fixture).querySelectorAll<HTMLElement>('.open')[1]!.click();
       fixture.detectChanges();
-      expect(receipt.classList.contains('open')).toBe(true);
-      expect(el(fixture).querySelector('.sheet-backdrop')).not.toBeNull();
+      expect(sheet.classList.contains('is-expanded')).toBe(true);
+      expect(el(fixture).querySelector('.backdrop.dim')).not.toBeNull();
+      // There is no close arrow: the sheet closes with a tap outside, a drag or Escape.
+      expect(el(fixture).querySelector('[aria-label="Cerrar el ticket"]')).toBeNull();
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       fixture.detectChanges();
-      expect(receipt.classList.contains('open')).toBe(false);
+      expect(sheet.classList.contains('is-closed')).toBe(true);
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('closes the ticket sheet when it is dragged down', () => {
+    const original = window.matchMedia;
+    window.matchMedia = (() => ({ matches: true })) as unknown as typeof window.matchMedia;
+    try {
+      const { fixture } = setup();
+      el(fixture).querySelectorAll<HTMLElement>('.open')[1]!.click();
+      fixture.detectChanges();
+      const sheet = el(fixture).querySelector<HTMLElement>('.sheet')!;
+      expect(sheet.classList.contains('is-expanded')).toBe(true);
+      // jsdom has no layout: give the sheet a height so it has somewhere to travel to.
+      Object.defineProperty(sheet, 'offsetHeight', { value: 600, configurable: true });
+      const press = (target: EventTarget, type: string, y: number) =>
+        target.dispatchEvent(
+          new PointerEvent(type, { bubbles: true, isPrimary: true, clientY: y, button: 0 }),
+        );
+      press(el(fixture).querySelector('.head')!, 'pointerdown', 0);
+      press(window, 'pointermove', 200);
+      press(window, 'pointerup', 200);
+      fixture.detectChanges();
+      expect(sheet.classList.contains('is-closed')).toBe(true);
     } finally {
       window.matchMedia = original;
     }

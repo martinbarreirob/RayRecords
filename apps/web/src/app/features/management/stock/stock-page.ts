@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,7 +24,7 @@ import { TableModule } from 'primeng/table';
 import { forkJoin } from 'rxjs';
 import { ApiClient } from '../../../core/api/api-client';
 import { apiErrorMessage } from '../../../core/api/errors';
-import { formatCents } from '../../../core/format';
+import { formatCents, formatUnits } from '../../../core/format';
 import { AddButton } from '../../../core/ui/add-button';
 import { PageHeader } from '../../../core/ui/page-header';
 import { DEFAULT_PAGE_SIZE, fitPageSize } from '../../../core/ui/page-size';
@@ -49,12 +50,6 @@ const ROW_FALLBACK = 41;
 const CARD_BORDER = 2;
 /** Rows per page on a phone, where the page scrolls instead of fitting the window. */
 const MOBILE_PAGE_SIZE = 8;
-const PHONE_QUERY = '(width <= 767px)';
-
-/** Phones show stacked rows and let the page scroll; only the desktop table is fitted to the window. */
-function prefersStackedRows(): boolean {
-  return typeof matchMedia === 'function' && !!matchMedia(PHONE_QUERY)?.matches;
-}
 import {
   LEVEL_CHOICES,
   NO_CATEGORY,
@@ -68,8 +63,7 @@ import {
   type ProductRow,
 } from './stock-logic';
 import { Icon } from '../../../core/ui/icon';
-
-const UNITS = new Intl.NumberFormat('es-ES');
+import { injectIsPhone } from '../../../core/ui/viewport';
 
 /**
  * The whole stock in one table, with a search box and a folding filter panel. Products are added
@@ -248,7 +242,11 @@ const UNITS = new Intl.NumberFormat('es-ES');
               </td>
               <td class="c-cat">
                 <span class="cat" [class.cat-none]="row.category === null">
-                  <app-category-label [look]="row.category" [name]="row.categoryName" size="sm" />
+                  <app-category-label
+                    [look]="row.category"
+                    [name]="row.categoryName"
+                    [size]="phone() ? 'md' : 'sm'"
+                  />
                 </span>
               </td>
               <td class="c-qty num">
@@ -261,6 +259,20 @@ const UNITS = new Intl.NumberFormat('es-ES');
               </td>
               <td class="c-price num">{{ money(row.priceCents) }}</td>
               <td class="c-value num">{{ money(row.valueCents) }}</td>
+              <!-- Phone only: the row is an icon and two lines (name and price; stock and total). -->
+              <td class="c-phone">
+                <div class="ph-line">
+                  <span class="ph-name">{{ row.name }}</span>
+                  <span class="ph-price">{{ money(row.priceCents) }}</span>
+                </div>
+                <div class="ph-line">
+                  <span class="ph-qty">
+                    {{ units(row.quantity) }}
+                    <span class="ph-unit">{{ row.quantity === 1 ? 'unidad' : 'unidades' }}</span>
+                  </span>
+                  <span class="ph-total">{{ money(row.valueCents) }}</span>
+                </div>
+              </td>
               <td class="c-actions">
                 <button
                   type="button"
@@ -290,6 +302,10 @@ const UNITS = new Intl.NumberFormat('es-ES');
                   <td class="c-price num"><span class="skeleton ghost-num"></span></td>
                   <td class="c-value num"><span class="skeleton ghost-num"></span></td>
                   <td class="c-actions"></td>
+                  <td class="c-phone">
+                    <span class="skeleton ghost-name" [style.width.%]="width"></span>
+                    <span class="skeleton ghost-name" [style.width.%]="width - 20"></span>
+                  </td>
                 </tr>
               }
             } @else {
@@ -425,7 +441,7 @@ export class StockPage {
   // Dialogs
   protected readonly editorOpen = signal(false);
   /** Phone: the product sheet replaces the dialog and the row menu. */
-  protected readonly phone = signal(false);
+  protected readonly phone = injectIsPhone();
   protected readonly sheetState = signal<SheetState>('closed');
   private readonly sheetId = signal<string | null>(null);
   /** Counts the openings of the sheet, so its form starts over each time. */
@@ -467,16 +483,10 @@ export class StockPage {
 
   constructor() {
     this.load();
-    if (typeof matchMedia === 'function') {
-      const query = matchMedia(PHONE_QUERY);
-      const sync = () => {
-        this.phone.set(query.matches);
-        if (!query.matches) this.sheetState.set('closed');
-      };
-      sync();
-      query.addEventListener?.('change', sync);
-      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', sync));
-    }
+    // Leaving the phone layout drops the sheet.
+    effect(() => {
+      if (!this.phone()) untracked(() => this.sheetState.set('closed'));
+    });
     // The page size follows the window and what the table holds (rows and the room they have).
     const injector = inject(Injector);
     const destroyRef = inject(DestroyRef);
@@ -516,7 +526,8 @@ export class StockPage {
   private fit(): void {
     const area = this.area()?.nativeElement;
     if (!area) return;
-    if (prefersStackedRows()) return this.setPageSize(MOBILE_PAGE_SIZE);
+    // Phones let the page scroll; only the desktop table is fitted to the window.
+    if (this.phone()) return this.setPageSize(MOBILE_PAGE_SIZE);
     const height = (selector: string): number =>
       area.querySelector(selector)?.getBoundingClientRect().height ?? 0;
     const available = area.clientHeight - height('.p-datatable-thead') - CARD_BORDER;
@@ -569,7 +580,7 @@ export class StockPage {
   }
 
   protected units(value: number): string {
-    return UNITS.format(value);
+    return formatUnits(value);
   }
 
   // Search and filters

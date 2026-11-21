@@ -49,7 +49,6 @@ function clamp(value: number, min: number, max: number): number {
       inset: 0;
       z-index: calc(var(--z-popover) - 1);
       background: transparent;
-      /* Peeking leaves the page usable (scroll, tap another row); only expanded blocks it. */
       pointer-events: none;
       transition: background-color 0.25s ease-out;
 
@@ -79,7 +78,7 @@ function clamp(value: number, min: number, max: number): number {
       max-height: min(88dvh, 720px);
       border: 1px solid var(--line);
       border-bottom: 0;
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border-radius: var(--space-5) var(--space-5) 0 0;
       background: var(--surface);
       box-shadow: var(--shadow-lg);
       outline: none;
@@ -119,7 +118,7 @@ function clamp(value: number, min: number, max: number): number {
       position: relative;
       display: block;
       width: 100%;
-      padding: var(--space-5) var(--space-4) var(--space-2);
+      padding: calc(var(--space-5) + var(--space-1)) var(--space-4) var(--space-2);
       border: 0;
       background: none;
       color: var(--text);
@@ -130,7 +129,7 @@ function clamp(value: number, min: number, max: number): number {
 
     .grip {
       position: absolute;
-      top: var(--space-2);
+      top: var(--space-3);
       left: 50%;
       width: 36px;
       height: 4px;
@@ -140,7 +139,7 @@ function clamp(value: number, min: number, max: number): number {
     }
 
     .peek {
-      padding: 0 var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+      padding: 0 var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
     }
 
     .is-expanded .peek {
@@ -170,7 +169,7 @@ function clamp(value: number, min: number, max: number): number {
     <div
       class="backdrop"
       aria-hidden="true"
-      [class.dim]="state() === 'expanded'"
+      [class.dim]="state() !== 'closed'"
       [class.off]="state() === 'closed'"
       (click)="close()"
     ></div>

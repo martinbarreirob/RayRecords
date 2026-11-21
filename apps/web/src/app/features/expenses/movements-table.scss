@@ -234,10 +234,11 @@
 
     .p-datatable-tbody > tr.mv-row {
       display: grid;
-      grid-template-columns: 44px auto minmax(0, 1fr) auto auto;
+      grid-template-columns: 40px auto minmax(0, 1fr) auto;
       grid-template-areas:
-        'check desc desc amount edit'
-        'check date cat amount edit';
+        'check desc desc amount'
+        'check date cat amount';
+      cursor: pointer;
       column-gap: var(--space-2);
       align-items: center;
       min-height: 64px;
@@ -256,10 +257,18 @@
         justify-self: center;
       }
 
+      /* Up to two lines of the description, so it can be read without opening the movement. */
       > td.c-desc {
         grid-area: desc;
+        display: -webkit-box;
         max-width: none;
         font-weight: 500;
+        line-height: 1.3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
       }
 
       &.mv-child {
@@ -291,10 +300,9 @@
         font-size: var(--text-xs);
       }
 
+      /* A tap on the row edits it: the pencil is not drawn. */
       > td.c-edit {
-        grid-area: edit;
-        width: auto;
-        padding: 0;
+        display: none;
       }
 
       > td.c-amount {

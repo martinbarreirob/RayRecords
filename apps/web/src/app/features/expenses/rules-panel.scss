@@ -68,6 +68,17 @@ h2 + p {
   font-weight: 500;
 }
 
+/* The bin is for the phone, where the button is only that. */
+.del-icon {
+  display: none;
+}
+
+@media (width <= 767px) {
+  .del-icon {
+    display: inline-flex;
+  }
+}
+
 .arrow,
 .priority {
   color: var(--muted);
@@ -213,8 +224,68 @@ h2 + p {
     min-height: var(--touch-target);
   }
 
+  /*
+   * A rule on a phone is two lines and a button: the pattern and how it matches, with its switch
+   * at the right; then the category and the priority. The bin spans both lines.
+   */
   .rules li {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'pattern match toggle del'
+      'cat cat prio del';
+    align-items: center;
+    column-gap: var(--space-2);
+    row-gap: var(--space-1);
+
+    .pattern {
+      grid-area: pattern;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .match {
+      grid-area: match;
+      justify-self: start;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .arrow {
+      display: none;
+    }
+
+    .rule-cat {
+      grid-area: cat;
+      justify-self: start;
+    }
+
+    .priority {
+      grid-area: prio;
+      font-size: var(--text-xs);
+      white-space: nowrap;
+    }
+
     .spacer {
+      display: none;
+    }
+
+    p-toggleswitch {
+      grid-area: toggle;
+      justify-self: end;
+    }
+
+    .btn.danger {
+      grid-area: del;
+      width: var(--touch-target);
+      padding: 0;
+    }
+
+    .del-label {
       display: none;
     }
 
@@ -224,10 +295,6 @@ h2 + p {
 
     .ghost-del {
       height: var(--touch-target);
-    }
-
-    p-toggleswitch {
-      margin-left: auto;
     }
   }
 }

@@ -10,7 +10,9 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   DEFAULT_TIME_ZONE,
   type Category,
@@ -38,6 +40,7 @@ import { apiErrorMessage } from '../../core/api/errors';
 import { formatCents } from '../../core/format';
 import { RefreshBus } from '../../core/refresh';
 import { FinanceStore } from './finance.store';
+import { showView } from './expenses-views';
 import { PeriodPicker } from './period-picker';
 import {
   SORT_CHOICES,
@@ -56,7 +59,9 @@ import {
   type SectionFilter,
 } from './movements-logic';
 import { Icon } from '../../core/ui/icon';
+import { injectIsPhone } from '../../core/ui/viewport';
 import { DEFAULT_PAGE_SIZE, fitPageSize } from '../../core/ui/page-size';
+import { AllCategoryStore } from '../categories/all-category';
 import { CategoryLabel } from '../categories/category-label';
 import { CategorySelect, type CategoryOption } from '../categories/category-select';
 import { MovementDialog } from './movement-dialog';
@@ -125,8 +130,15 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
   host: { '(document:keydown.escape)': 'onEscape($event)' },
   template: `
     <div class="layout">
-      <!-- Left: the totals of the period over the categories, which also filter the table. -->
-      <aside class="side">
+      <!--
+        Right on a desktop: the summary of the period (its movements, totals and categories, which
+        also filter the table) with the shortcuts to the other views at its foot.
+      -->
+      <aside class="side" aria-label="Resumen del periodo">
+        <div class="side-head">
+          <h2>Resumen</h2>
+          <span class="muted num">{{ count(periodRows().length) }}</span>
+        </div>
         <section
           class="card balance"
           aria-label="Totales del periodo"
@@ -175,9 +187,17 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                 (click)="pick('all')"
               >
                 <span class="section-row">
-                  <span class="section-name">Todas</span>
-                  <span class="section-total num">{{ periodRows().length }} mov.</span>
+                  <app-category-label
+                    class="section-name"
+                    size="sm"
+                    [look]="allLook()"
+                    name="Todas"
+                  />
+                  <span class="section-total num" [class.positive]="totals().balanceCents > 0">
+                    {{ money(totals().balanceCents) }}
+                  </span>
                 </span>
+                <span class="section-bar" aria-hidden="true"><i style="width: 100%"></i></span>
               </button>
               @for (card of sections(); track card.id) {
                 <button
@@ -213,12 +233,34 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
             <button
               type="button"
               class="btn categories-btn"
+              aria-label="Gestionar las categorías"
               (click)="store.categoriesOpen.set(true)"
             >
-              Categorías
+              <app-icon name="tag" />
+              <span class="categories-label">Categorías</span>
             </button>
           </div>
         </section>
+
+        <!-- Desktop only: on a phone the tabs of the page are these shortcuts. -->
+        <div class="side-foot">
+          <div class="side-tools">
+            <button type="button" class="btn" (click)="open('importar')">
+              <app-icon name="upload" />
+              Importar
+            </button>
+            <button type="button" class="btn" (click)="open('reglas')">
+              <app-icon name="adjustments-horizontal" />
+              Reglas
+            </button>
+          </div>
+          @if (review().pendingTransactions > 0) {
+            <button type="button" class="alert warning review-link" (click)="open('revisar')">
+              <span>{{ reviewText() }}</span>
+              <strong>Revisar</strong>
+            </button>
+          }
+        </div>
       </aside>
 
       <!-- Right: the movements. -->
@@ -250,7 +292,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
           <button
             type="button"
             class="btn group-toggle"
-            aria-label="Agrupar por descripción"
+            aria-label="Agrupar por comercio"
             [attr.aria-pressed]="grouped()"
             (click)="toggleGrouped()"
           >
@@ -258,7 +300,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
               <app-icon class="icon-off" name="list" />
               <app-icon class="icon-on" name="stack-2" />
             </span>
-            <span class="group-toggle-label">Agrupar</span>
+            <span class="group-toggle-label">Agrupar por comercio</span>
           </button>
           <button
             type="button"
@@ -284,7 +326,13 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
           </div>
         </div>
 
-        <h2 class="main-title">{{ sectionTitle() }}</h2>
+        <!-- With a category chosen, its name and how many movements it holds; else only read aloud. -->
+        <h2 class="main-title" [class.is-all]="section() === 'all'">
+          {{ sectionTitle() }}
+          @if (section() !== 'all') {
+            <span class="muted">· {{ count(visible().length) }}</span>
+          }
+        </h2>
 
         @if (error(); as message) {
           <p class="alert" role="alert">{{ message }}</p>
@@ -389,7 +437,14 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                 </tr>
                 @if (isExpanded(row.id)) {
                   @for (child of children; track child.id) {
-                    <tr class="mv-row mv-child" [class.row-selected]="isSelected(child.id)">
+                    <tr
+                      class="mv-row mv-child"
+                      [class.row-selected]="isSelected(child.id)"
+                      [attr.role]="phone() ? 'button' : null"
+                      [attr.tabindex]="phone() ? 0 : null"
+                      (click)="onRowTap(child, $event)"
+                      (keydown.enter)="onRowTap(child, $event)"
+                    >
                       <td class="c-check">
                         <p-tablecheckbox
                           [value]="child"
@@ -413,16 +468,14 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                       </td>
                       @if (showCategory()) {
                         <td class="c-cat">
-                          <!-- Only when the group mixes categories: otherwise it repeats the group's. -->
-                          @if (row.mixed) {
-                            <span class="cat" [class.cat-none]="child.category === null">
-                              <app-category-label
-                                size="sm"
-                                [look]="child.categoryLook"
-                                [name]="child.categoryName"
-                              />
-                            </span>
-                          }
+                          <!-- Always shown: each movement of a place can be moved on its own. -->
+                          <span class="cat" [class.cat-none]="child.category === null">
+                            <app-category-label
+                              size="sm"
+                              [look]="child.categoryLook"
+                              [name]="child.categoryName"
+                            />
+                          </span>
                         </td>
                       }
                       <td class="c-edit">
@@ -439,7 +492,14 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                   }
                 }
               } @else {
-                <tr class="mv-row" [class.row-selected]="isSelected(row.id)">
+                <tr
+                  class="mv-row"
+                  [class.row-selected]="isSelected(row.id)"
+                  [attr.role]="phone() ? 'button' : null"
+                  [attr.tabindex]="phone() ? 0 : null"
+                  (click)="onRowTap(row, $event)"
+                  (keydown.enter)="onRowTap(row, $event)"
+                >
                   <td class="c-check">
                     <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
                   </td>
@@ -590,8 +650,32 @@ export class MovementsPanel {
   private readonly bus = inject(RefreshBus);
   protected readonly store = inject(FinanceStore);
 
+  private readonly router = inject(Router);
+  /** The look of "Todas", the one the user picked in the category manager. */
+  protected readonly allLook = inject(AllCategoryStore).look;
+
   protected readonly money = formatCents;
   protected readonly sortChoices = SORT_CHOICES;
+
+  /**
+   * What still has no category (movements and places), for the shortcut at the foot of the
+   * summary. The queue with a single group is asked for only for its two counters.
+   */
+  protected readonly review = toSignal(
+    toObservable(this.bus.version).pipe(
+      switchMap(() =>
+        this.api.reviewQueue(1).pipe(
+          map(({ pendingTransactions, pendingGroups }) => ({ pendingTransactions, pendingGroups })),
+          catchError(() => of({ pendingTransactions: 0, pendingGroups: 0 })),
+        ),
+      ),
+    ),
+    { initialValue: { pendingTransactions: 0, pendingGroups: 0 } },
+  );
+  protected readonly reviewText = computed(() => {
+    const { pendingTransactions: n, pendingGroups: g } = this.review();
+    return `${n} sin categoría en ${g} ${g === 1 ? 'comercio' : 'comercios'}`;
+  });
   private readonly currentYear = Number(todayIn(DEFAULT_TIME_ZONE).slice(0, 4));
 
   // Filters
@@ -727,6 +811,15 @@ export class MovementsPanel {
     Math.max(1, ...this.sections().map((card) => Math.abs(card.totalCents))),
   );
 
+  protected count(total: number): string {
+    return `${total} ${total === 1 ? 'movimiento' : 'movimientos'}`;
+  }
+
+  /** The shortcuts at the foot of the summary: Importar, Reglas and Revisar are views of the page. */
+  protected open(slug: string): void {
+    showView(this.router, slug);
+  }
+
   /** Width of a category's bar: its amount against the largest one. */
   protected bar(card: SectionCard): number {
     return Math.round((Math.abs(card.totalCents) / this.maxSection()) * 100);
@@ -764,6 +857,9 @@ export class MovementsPanel {
   );
 
   private subscription: Subscription | undefined;
+
+  /** Phone: the rows are tapped to edit, and the pencil of each one is not needed. */
+  protected readonly phone = injectIsPhone();
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -914,7 +1010,7 @@ export class MovementsPanel {
   private fit(): void {
     const card = this.card()?.nativeElement;
     if (!card) return;
-    if (typeof matchMedia === 'function' && matchMedia('(width <= 767px)').matches) {
+    if (this.phone()) {
       this.tableHeight.set(null);
       return;
     }
@@ -951,6 +1047,13 @@ export class MovementsPanel {
   }
 
   // Category changes
+
+  /** Phone: a tap on a row (not on its checkbox) opens it to edit. */
+  protected onRowTap(row: MovementRow, event: Event): void {
+    if (!this.phone()) return;
+    if ((event.target as Element).closest('.c-check, button, a')) return;
+    this.edit(row);
+  }
 
   protected edit(row: MovementRow): void {
     this.error.set('');

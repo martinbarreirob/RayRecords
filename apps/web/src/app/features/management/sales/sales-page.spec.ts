@@ -151,26 +151,23 @@ describe('SalesPage', () => {
     window.dispatchEvent(new Event('resize'));
     fixture.detectChanges();
 
-    // At the start only the arrow forwards is on (the phone hides the one that has nothing behind).
-    expect(button(el(fixture), 'Categoría anterior').classList.contains('edge-off')).toBe(true);
-    expect(button(el(fixture), 'Categoría siguiente').classList.contains('edge-off')).toBe(false);
-
+    // Both arrows are always on: they loop around the categories.
     button(el(fixture), 'Categoría siguiente').click();
     fixture.detectChanges();
     expect(tileNames(fixture)).toEqual(['Café', 'Agua']);
 
+    // From the first category, back goes to the last one.
     button(el(fixture), 'Categoría anterior').click();
     button(el(fixture), 'Categoría anterior').click();
     fixture.detectChanges();
     expect(tileNames(fixture)).toEqual(['Pilas']);
 
-    // Scrolled to the end: the arrow back is on and the one forwards is off.
-    Object.defineProperty(strip, 'clientWidth', { value: 600, configurable: true });
-    Object.defineProperty(strip, 'scrollLeft', { value: 300, configurable: true });
-    strip.dispatchEvent(new Event('scroll'));
+    // And forwards from the last one goes back to the first.
+    button(el(fixture), 'Categoría siguiente').click();
     fixture.detectChanges();
-    expect(button(el(fixture), 'Categoría anterior').classList.contains('edge-off')).toBe(false);
-    expect(button(el(fixture), 'Categoría siguiente').classList.contains('edge-off')).toBe(true);
+    expect(el(fixture).querySelector('.cat[aria-pressed="true"]')?.textContent?.trim()).toBe(
+      'Todas',
+    );
 
     Object.defineProperty(strip, 'scrollWidth', { value: 500, configurable: true });
     window.dispatchEvent(new Event('resize'));
@@ -227,8 +224,12 @@ describe('SalesPage', () => {
     addToCart(fixture, 'Café');
     const clear = head.querySelector<HTMLButtonElement>('.clear')!;
     expect(clear.textContent?.trim()).toBe('Vaciar');
+    // The phone shows a second, small "Vaciar" at the left of the print button.
     const footButtons = el(fixture).querySelectorAll('.cart-foot button');
-    expect([...footButtons].map((b) => b.textContent?.trim())).toEqual(['Imprimir ticket']);
+    expect([...footButtons].map((b) => b.textContent?.trim())).toEqual([
+      'Vaciar',
+      'Imprimir ticket',
+    ]);
 
     clear.click();
     fixture.detectChanges();

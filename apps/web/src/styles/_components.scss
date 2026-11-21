@@ -184,6 +184,88 @@
   }
 }
 
+/*
+ * Figures side by side in one bordered box, each a small label (dt) over a value (dd): the summary
+ * of a product, a movement or a total. Meant for 2 to 4 short figures.
+ */
+.stat-strip {
+  display: flex;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+
+  > div {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  > div + div {
+    border-left: 1px solid var(--line-soft);
+  }
+
+  dt {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/*
+ * Actions as the rows of one list, each an icon and a label (a bottom sheet's "Añadir stock",
+ * "Editar", "Eliminar"). The rows are buttons or links; `.danger` tints the destructive one.
+ */
+.action-list {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: calc(var(--touch-target) + var(--space-2));
+  padding: 0 var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  & + & {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+    text-decoration: none;
+  }
+
+  &.danger {
+    color: var(--danger);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-soft);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .kbd {
   display: inline-block;
   padding: 1px 6px;
@@ -281,6 +363,11 @@
   &.success {
     background: var(--success-soft);
     color: var(--success);
+  }
+
+  &.warning {
+    background: var(--warning-soft);
+    color: var(--warning);
   }
 }
 

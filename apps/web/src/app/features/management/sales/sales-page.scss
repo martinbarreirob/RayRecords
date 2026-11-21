@@ -78,6 +78,29 @@
   }
 }
 
+/* Moved with an arrow: the new grid comes in from the side it was sent from. */
+.bento.swap[data-from='next'] {
+  animation-name: swap-next;
+}
+
+.bento.swap[data-from='prev'] {
+  animation-name: swap-prev;
+}
+
+@keyframes swap-next {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+@keyframes swap-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bento.swap {
     animation: none;
@@ -90,6 +113,7 @@
 }
 
 .tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -139,11 +163,20 @@
   }
 }
 
-/* Only there when the card has a badge; otherwise the name starts at the top. */
+/* The badges ("Más vendido", the count in the cart) are chips on the corner: they take no room from the text. */
 .tile-top {
+  position: absolute;
+  top: -6px;
+  right: var(--space-2);
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+}
+
+/* A card that is in the cart has a green border. */
+.tile:has(.badge.in-cart) {
+  border-color: var(--success);
 }
 
 .badge.in-cart {
@@ -159,12 +192,6 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-}
-
-/* A small card with a badge has room for one line of name. */
-.tile:not(.xl, .wide) .tile-top + .tile-name {
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
 }
 
 .xl .tile-name {
@@ -340,12 +367,14 @@
   :host {
     /* A little more width than the other screens: the grid and the cart bar want every pixel. */
     --page-gutter: 12px;
-    --sheet-bar: 60px;
+    --sheet-bar: 68px;
+    /* Room under the bar for the rounded corners and the home indicator of a phone. */
+    --sheet-gap: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
     display: block;
     height: auto;
     min-height: 0;
     /* The closed sheet bar must not hide the end of the list. */
-    padding-bottom: calc(var(--sheet-bar) + env(safe-area-inset-bottom, 0px) + var(--space-4));
+    padding-bottom: calc(var(--sheet-bar) + var(--sheet-gap) + var(--space-4));
   }
 
   .layout {
@@ -374,27 +403,14 @@
   }
 
   .tile {
-    position: relative;
     padding: var(--space-3);
   }
 
-  .tile .tile-name,
-  .tile:not(.xl, .wide) .tile-top + .tile-name {
+  .tile .tile-name {
     min-height: 2.5em;
     font-size: var(--text-base);
     -webkit-line-clamp: 2;
     line-clamp: 2;
-  }
-
-  /* The "in cart" count is a small chip on the corner: it takes no room from the text. */
-  .tile-top {
-    position: absolute;
-    top: -6px;
-    right: var(--space-2);
-  }
-
-  .tile:has(.badge.in-cart) {
-    border-color: var(--success);
   }
 
   .tile-foot {
@@ -408,19 +424,29 @@
     padding: 0;
   }
 
-  /* Categories: no button chrome; a small round arrow over a fade at the side with more. */
+  /*
+   * Categories: the row runs edge to edge. The arrows have no button chrome: a bigger chevron on the
+   * page color that fades out toward the tabs, placed in the corners.
+   */
   .categories {
-    min-height: var(--control-height);
+    min-height: 40px;
+    margin: 0 calc(-1 * var(--page-gutter));
   }
 
   .cat-strip {
     align-items: center;
+    margin: -3px 0;
+    /* The ends rest clear of the arrows (52px), so the first and last tab are never under one. */
+    padding: 3px 52px;
+    scroll-padding-inline: 52px;
   }
 
+  /* The badge is as far from the top and bottom as it is from the left. */
   .cat {
     box-sizing: border-box;
-    height: var(--control-height);
-    min-height: var(--control-height);
+    height: 40px;
+    min-height: 40px;
+    padding: 0 var(--space-3) 0 var(--space-2);
     line-height: 1;
   }
 
@@ -431,41 +457,34 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    width: 40px;
+    width: 52px;
     min-height: 0;
     padding: 0;
     border: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
-    color: var(--muted);
-    font-size: 12px;
+    color: var(--text);
+    font-size: 20px;
 
     &.prev {
       left: 0;
       justify-content: flex-start;
-      background: linear-gradient(to right, var(--bg) 45%, transparent);
+      padding-left: var(--space-2);
+      background: linear-gradient(to right, var(--bg) 55%, transparent);
     }
 
     &.next {
       right: 0;
       justify-content: flex-end;
-      background: linear-gradient(to left, var(--bg) 45%, transparent);
+      padding-right: var(--space-2);
+      background: linear-gradient(to left, var(--bg) 55%, transparent);
     }
 
-    &.edge-off {
-      display: none;
-    }
+    transition: transform 0.15s ease-out;
 
-    app-icon {
-      box-sizing: border-box;
-      align-items: center;
-      justify-content: center;
-      width: 22px;
-      height: 22px;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      background: var(--bg);
+    &:active {
+      transform: scale(0.88);
     }
   }
 
@@ -481,11 +500,9 @@
     min-height: 0;
     max-height: min(80dvh, 640px);
     border-width: 1px 0 0;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-radius: var(--space-5) var(--space-5) 0 0;
     box-shadow: var(--shadow-lg);
-    transform: translateY(
-      calc(100% - var(--sheet-bar) - env(safe-area-inset-bottom, 0px) + var(--sheet-drag))
-    );
+    transform: translateY(calc(100% - var(--sheet-bar) - var(--sheet-gap) + var(--sheet-drag)));
     transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     will-change: transform;
 
@@ -520,8 +537,8 @@
 
   .cart-head {
     position: relative;
-    min-height: var(--sheet-bar);
-    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    min-height: calc(var(--sheet-bar) + var(--sheet-gap));
+    padding: 0 0 var(--sheet-gap);
     border-bottom: 0;
   }
 
@@ -543,7 +560,7 @@
     gap: var(--space-3);
     min-width: 0;
     min-height: var(--sheet-bar);
-    padding: var(--space-3) var(--space-4) 0;
+    padding: var(--space-4) var(--space-4) 0;
     border: 0;
     background: none;
     color: var(--text);
@@ -556,7 +573,7 @@
 
   .sheet-grip {
     position: absolute;
-    top: var(--space-2);
+    top: var(--space-3);
     left: 50%;
     width: 36px;
     height: 4px;
@@ -571,6 +588,12 @@
     align-items: center;
     gap: var(--space-2);
     min-width: 0;
+  }
+
+  /* One line height for everything on the bar, so the icon and the texts share a center. */
+  .sheet-summary > *,
+  .sheet-total {
+    line-height: 1;
   }
 
   .sheet-title {
@@ -589,12 +612,23 @@
     font-weight: 600;
   }
 
-  .clear {
-    margin: 0 var(--space-2) 0 0;
+  /* "Vaciar" moves from the header to the foot, next to the print button. */
+  .cart-head .clear {
+    display: none;
   }
 
-  .cart:not(.sheet-open) .clear {
-    display: none;
+  .foot-actions {
+    flex-direction: row;
+    gap: var(--space-2);
+  }
+
+  .clear-foot {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .foot-actions .ticket {
+    flex: 1 1 0;
   }
 
   .cart-body {
@@ -614,10 +648,9 @@
   }
 
   .cart-foot {
-    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   }
 
-  .clear,
   .cart-foot .btn {
     min-height: var(--control-height);
   }
