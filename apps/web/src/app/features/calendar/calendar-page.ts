@@ -342,15 +342,23 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
           [checked]="!!entry.doneAt"
           (change)="toggleDone(entry, check.checked)"
         />
-        <div class="body" (click)="entry.kind === 'event' && openEdit(entry)">
+        <div
+          class="body"
+          [class.tappable]="entry.kind === 'event'"
+          [attr.role]="entry.kind === 'event' ? 'button' : null"
+          [attr.tabindex]="entry.kind === 'event' ? 0 : null"
+          (click)="onBody(entry, $event)"
+          (keydown.enter)="onBody(entry, $event)"
+        >
           <div class="line">
-            <span class="t">{{ entry.title }}</span>
+            <span class="t" [attr.title]="entry.title">{{ entry.title }}</span>
+          </div>
+          <!-- Where the time goes: an overdue entry says so there instead. -->
+          <div class="sub">
             @if (isOverdue(entry)) {
               <span class="badge danger">Vencida</span>
-            }
-          </div>
-          <div class="sub">
-            @if (entry.time) {
+              <span class="sep" aria-hidden="true">·</span>
+            } @else if (entry.time) {
               <span class="time">{{ entry.time }}</span>
               <span class="sep" aria-hidden="true">·</span>
             }
@@ -365,7 +373,7 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
         @if (entry.kind === 'event') {
           <button
             type="button"
-            class="btn icon ghost more"
+            class="btn icon ghost row-menu"
             aria-haspopup="menu"
             [attr.aria-label]="'Opciones: ' + entry.title"
             (click)="openMenu($event, entry, menu)"
@@ -593,6 +601,12 @@ export class CalendarPage {
   /** Full name with the time, shown when the pointer rests on a chip of the grid. */
   protected entryTip(entry: CalendarEntry): string {
     return entry.time ? `${entry.time} · ${entry.title}` : entry.title;
+  }
+
+  /** Clicking or pressing Enter on the text of an event edits it; the link to its list does not. */
+  protected onBody(entry: CalendarEntry, event: Event): void {
+    if (entry.kind !== 'event' || (event.target as Element).closest('a')) return;
+    this.openEdit(entry);
   }
 
   protected openEdit(entry: CalendarEntry): void {

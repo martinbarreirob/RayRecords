@@ -86,8 +86,11 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
     }
 
     .cats-foot {
-      margin-top: var(--space-3);
-      padding: var(--space-3) var(--space-1) var(--space-1);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+      padding: var(--space-2) var(--space-1) var(--space-1);
       border-top: 1px solid var(--line-soft);
     }
 
@@ -356,6 +359,7 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
                   </div>
                 }
                 <div class="cats-foot">
+                  <span class="skeleton"></span>
                   <span class="skeleton"></span>
                 </div>
               </div>

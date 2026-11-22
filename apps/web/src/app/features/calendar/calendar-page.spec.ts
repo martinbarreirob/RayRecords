@@ -279,3 +279,54 @@ describe('CalendarPage: loading', () => {
     expect(el(fixture).querySelector('[role="alert"]')).not.toBeNull();
   });
 });
+
+describe('CalendarPage: overdue events with a long title', () => {
+  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  const overdue = {
+    id: 'c'.repeat(24),
+    title: 'Renovar el seguro del coche antes de que termine el plazo de la póliza actual'.repeat(2),
+    dueDate: yesterday,
+    time: '09:30',
+    kind: 'event',
+  } as CalendarEntry;
+
+  async function open(): Promise<HTMLElement> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: ApiClient, useValue: { lists: () => of([]), calendar: () => of([overdue]) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarPage);
+    const page = fixture.componentInstance as unknown as {
+      month: { set(value: string): void };
+      selected: { set(value: string): void };
+    };
+    page.month.set(yesterday.slice(0, 7));
+    page.selected.set(yesterday);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Vencida" where the time goes, and keeps the options button in the row', async () => {
+    const root = await open();
+    const row = root.querySelector('.day-panel .row-entry')!;
+    expect(row.querySelector('.line .badge')).toBeNull();
+    expect(row.querySelector('.sub .badge')?.textContent?.trim()).toBe('Vencida');
+    expect(row.querySelector('.sub .time')).toBeNull();
+    const menu = row.querySelector<HTMLElement>('button.row-menu')!;
+    expect(menu.getAttribute('aria-label')).toContain('Opciones');
+    expect(menu.parentElement).toBe(row);
+  });
+
+  it('lets the text of the row be tapped to edit it', async () => {
+    const root = await open();
+    const body = root.querySelector('.day-panel .row-entry .body')!;
+    expect(body.getAttribute('role')).toBe('button');
+    expect(body.getAttribute('tabindex')).toBe('0');
+  });
+});

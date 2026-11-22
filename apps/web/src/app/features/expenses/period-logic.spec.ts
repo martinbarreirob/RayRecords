@@ -3,7 +3,6 @@ import {
   monthInPeriod,
   periodPresets,
   rangeBetween,
-  shiftPeriod,
   wholeYear,
   yearPeriod,
 } from './period-logic';
@@ -37,16 +36,4 @@ describe('period-logic', () => {
     expect(monthInPeriod('2026-03', { from: '2026-01', to: '2026-02' })).toBe(false);
   });
 
-  it('shiftPeriod jumps by years, or by as many months as the range spans', () => {
-    expect(shiftPeriod(yearPeriod('2025'), 1)).toEqual(yearPeriod('2026'));
-    expect(shiftPeriod({ from: '2026-01', to: '2026-03' }, -1)).toEqual({
-      from: '2025-10',
-      to: '2025-12',
-    });
-    expect(shiftPeriod({ from: '2026-05', to: '2026-05' }, 1)).toEqual({
-      from: '2026-06',
-      to: '2026-06',
-    });
-    expect(shiftPeriod({ from: null, to: null }, 1)).toBeNull();
-  });
 });

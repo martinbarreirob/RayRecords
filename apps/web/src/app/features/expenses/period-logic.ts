@@ -1,5 +1,5 @@
 import { shiftMonth } from '../calendar/calendar-grid';
-import { periodSpan, type Period } from './movements-logic';
+import type { Period } from './movements-logic';
 
 export interface PeriodPreset {
   id: string;
@@ -56,15 +56,4 @@ export function rangeBetween(a: string, b: string): Period {
 /** Whether the month is inside the period. An open period includes every month. */
 export function monthInPeriod(month: string, period: Period): boolean {
   return (!period.from || month >= period.from) && (!period.to || month <= period.to);
-}
-
-/**
- * Previous (`-1`) or next (`1`) period of the same size: a full year moves by years, any other
- * range moves by as many months as it spans. `null` if the period lacks either end.
- */
-export function shiftPeriod(period: Period, direction: -1 | 1): Period | null {
-  const { from, to } = period;
-  if (!from || !to) return null;
-  const span = wholeYear(period) ? 12 : (periodSpan({ from, to }) ?? 1);
-  return { from: shiftMonth(from, direction * span), to: shiftMonth(to, direction * span) };
 }

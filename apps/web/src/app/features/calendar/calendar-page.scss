@@ -285,25 +285,31 @@ td.outside .chips {
   min-width: 0;
 }
 
-.row-entry .more {
+/* The options button never shrinks or hides: a long title wraps inside the body instead. */
+.row-entry .row-menu {
   flex: none;
 }
 
+.row-entry .body.tappable {
+  cursor: pointer;
+}
+
 .row-entry .line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
   font-weight: 500;
   overflow-wrap: anywhere;
 }
 
-.row-entry.done {
-  opacity: 0.6;
+/* A long title takes two lines at most, so the row keeps its shape. */
+.row-entry .line .t {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
-.row-entry.overdue .time {
-  color: var(--danger);
+.row-entry.done {
+  opacity: 0.6;
 }
 
 .list-link {
@@ -520,5 +526,11 @@ td.outside .chips {
 
   .row-entry {
     padding: var(--space-3) 0;
+  }
+
+  /* A touch-sized options button, and the whole text of the row opens the editor too. */
+  .row-entry .row-menu {
+    width: var(--touch-target);
+    min-height: var(--touch-target);
   }
 }

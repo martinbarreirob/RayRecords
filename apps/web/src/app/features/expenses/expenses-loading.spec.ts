@@ -43,8 +43,8 @@ describe('Expenses: loading states', () => {
 
       expect(q(fixture, 'tr.mv-row.skel-in').length).toBeGreaterThanOrEqual(6);
       // The totals card and the category list show their ghosts, not zeros.
-      expect(q(fixture, '.balance .skel-in').length).toBe(1);
-      expect(q(fixture, '.balance-value').length).toBe(0);
+      expect(q(fixture, '.figures .skel-in').length).toBe(1);
+      expect(q(fixture, '.fig-value').length).toBe(0);
       expect(q(fixture, '.sections.skel-in').length).toBe(1);
       expect(q(fixture, '.sections [aria-pressed]').length).toBe(0);
       expect(text(fixture)).toContain('Cargando movimientos');
@@ -64,7 +64,7 @@ describe('Expenses: loading states', () => {
       expect(q(fixture, '.skel-in').length).toBe(0);
       expect(text(fixture)).toContain('Sin movimientos en este periodo');
       expect(text(fixture)).not.toContain('Cargando movimientos');
-      expect(q(fixture, '.balance-value').length).toBe(1);
+      expect(q(fixture, '.fig-balance .fig-value').length).toBe(1);
     });
   });
 

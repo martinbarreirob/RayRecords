@@ -52,10 +52,10 @@ const items = [
 
 describe('MovementsPanel', () => {
   /**
-   * Mounts the panel. The panel starts grouped, but most tests are about the plain table, so they
-   * start with grouping off; pass `'default'` to get the real starting state.
+   * Mounts the panel as it starts: the movements as a feed, a heading per day. Pass `true` to
+   * start grouped by place.
    */
-  function setup(page: Transaction[] = items, grouped: boolean | 'default' = false) {
+  function setup(page: Transaction[] = items, grouped = false) {
     const api = {
       accounts: () => of([{ id: ACCOUNT, name: 'Cuenta de prueba' } as AccountSummary]),
       categories: () => of(categories),
@@ -73,7 +73,7 @@ describe('MovementsPanel', () => {
       providers: [provideRouter([]), providePrimeNgTheme(), { provide: ApiClient, useValue: api }],
     });
     const fixture = TestBed.createComponent(MovementsPanel);
-    if (grouped !== 'default') {
+    if (grouped) {
       (fixture.componentInstance as unknown as { grouped: WritableSignal<boolean> }).grouped.set(
         grouped,
       );
@@ -124,17 +124,16 @@ describe('MovementsPanel', () => {
     expect(text(title())).toBe('Hogar · 1 movimiento');
   });
 
-  it('ends the summary with Importar and Reglas, then what is left to review', async () => {
+  it('ends the categories card with Importar and Reglas, then what is left to review', async () => {
     const { fixture } = setup();
     await settle(fixture);
-    const foot = el(fixture).querySelector('.side-foot')!;
-    expect(foot.previousElementSibling).toBe(el(fixture).querySelector('.cats'));
-    const [tools, review] = [...foot.children];
+    const foot = el(fixture).querySelector('.cats .cats-foot')!;
+    const [, tools, review] = [...foot.children];
     expect([...tools!.querySelectorAll('button')].map((b) => text(b))).toEqual([
       'Importar',
       'Reglas',
     ]);
-    expect(text(review)).toBe('24 sin categoría en 5 comerciosRevisar');
+    expect(text(review)).toBe('24 sin categoríaRevisar');
   });
 
   it('gives every category in the list a badge, "Sin categoría" included', async () => {
@@ -145,12 +144,14 @@ describe('MovementsPanel', () => {
     for (const row of rows) expect(row.querySelector('app-category-badge')).not.toBeNull();
   });
 
-  it('puts the period on the left of the top band and the text filter on the right', async () => {
+  it('puts the period and the group switch on the left of the top band and the text filter after them', async () => {
     const { fixture } = setup();
     await settle(fixture);
     const band = el(fixture).querySelector('.topline')!;
     const children = [...band.children].map((child) => child.className.split(' ')[0]);
-    expect(children.slice(0, 2)).toEqual(['period', 'search']);
+    expect(children.slice(0, 3)).toEqual(['period', 'btn', 'search']);
+    // The categories are filtered from the summary, not from a dropdown.
+    expect(band.querySelector('.cat-filter')).toBeNull();
     expect(band.querySelector('.search input')).not.toBeNull();
     // It sits in the column of the movements, not across the whole screen.
     expect(band.closest('.main')).not.toBeNull();
@@ -164,14 +165,40 @@ describe('MovementsPanel', () => {
     const foot = card.querySelector('.cats-foot')!;
     expect(foot.previousElementSibling).toBe(card.querySelector('.sections'));
     expect(text(foot.querySelector('button'))).toBe('Categorías');
+    expect(foot.querySelector('.categories-btn app-icon')).not.toBeNull();
   });
 
-  it('puts the expenses on the left and the income on the right of the balance', async () => {
+  it('shows the balance, the expenses and the income as the figures above the table', async () => {
     const { fixture } = setup();
     await settle(fixture);
-    const [expenses, income] = [...el(fixture).querySelectorAll('.balance-split > div')];
-    expect(text(expenses)).toContain('Gastos');
-    expect(text(income)).toContain('Ingresos');
+    const figures = el(fixture).querySelector('.figures')!;
+    expect(figures.closest('.main')).not.toBeNull();
+    expect(text(figures.querySelector('.fig-balance'))).toBe('Balance -661,83 €');
+    expect(text(figures.querySelector('.fig-expenses'))).toContain('Gastos');
+    expect(text(figures.querySelector('.fig-income'))).toContain('Ingresos');
+    expect(el(fixture).querySelector('.side .figures')).toBeNull();
+  });
+
+  it('heads each day of the feed with its date and what it added up to', async () => {
+    const { fixture } = setup();
+    await settle(fixture);
+    const days = [...el(fixture).querySelectorAll('tr.day-row')];
+    // All the movements are of one day.
+    expect(days).toHaveLength(1);
+    expect(text(days[0]!.querySelector('.day-name'))).toMatch(/^\p{Lu}\p{L}+ 10 \p{L}+$/u);
+    expect(text(days[0]!.querySelector('.day-total'))).toBe('-661,83 €');
+    // The heading carries the date: no column for it.
+    expect(el(fixture).querySelector('.c-date')).toBeNull();
+  });
+
+  it('gives the plain table, with its date column, when it is sorted by another column', async () => {
+    const { fixture } = setup();
+    await settle(fixture);
+    fixture.componentInstance['sortField'].set('amountCents');
+    await settle(fixture);
+    expect(el(fixture).querySelector('tr.day-row')).toBeNull();
+    expect(el(fixture).querySelector('th.c-date')).not.toBeNull();
+    expectColumns(fixture, 6);
   });
 
   it('has no "create rule" option', async () => {
@@ -220,10 +247,10 @@ describe('MovementsPanel', () => {
   const groupToggle = (fixture: ComponentFixture<MovementsPanel>) =>
     el(fixture).querySelector<HTMLButtonElement>('.topline .group-toggle')!;
 
-  it('keeps the table to its six cells in every row and in the footer', async () => {
+  it('keeps the feed to its five cells in every row and in the footer', async () => {
     const { fixture } = setup();
     await settle(fixture);
-    expectColumns(fixture, 6);
+    expectColumns(fixture, 5);
   });
 
   it('drops the category column when a category is chosen on the left', async () => {
@@ -232,10 +259,10 @@ describe('MovementsPanel', () => {
     await chooseSection(fixture, 'Hogar');
     expect(el(fixture).querySelector('.c-cat')).toBeNull();
     expect(text(el(fixture).querySelector('.p-datatable-thead'))).not.toContain('Categoría');
-    expectColumns(fixture, 5);
+    expectColumns(fixture, 4);
 
     await chooseSection(fixture, 'Hogar'); // clicking again shows all of them
-    expectColumns(fixture, 6);
+    expectColumns(fixture, 5);
   });
 
   it('drops the category column for "Sin categoría" too', async () => {
@@ -243,7 +270,7 @@ describe('MovementsPanel', () => {
     await settle(fixture);
     await chooseSection(fixture, 'Sin categoría');
     expect(el(fixture).querySelector('.c-cat')).toBeNull();
-    expectColumns(fixture, 5);
+    expectColumns(fixture, 4);
   });
 
   it('draws the empty message as wide as the visible columns', async () => {
@@ -252,7 +279,7 @@ describe('MovementsPanel', () => {
     await chooseSection(fixture, 'Hogar');
     fixture.componentInstance['query'].set('zzz');
     await settle(fixture);
-    expect(el(fixture).querySelector<HTMLTableCellElement>('td.empty-cell')!.colSpan).toBe(5);
+    expect(el(fixture).querySelector<HTMLTableCellElement>('td.empty-cell')!.colSpan).toBe(4);
   });
 
   it('opens the movement in a dialog from the pencil at the end of its row', async () => {
@@ -304,19 +331,22 @@ describe('MovementsPanel', () => {
         .find((r) => text(r).includes('MERCADONA'))!
         .querySelector<HTMLButtonElement>('.group-btn')!;
 
-    it('puts a pressed-state toggle next to the filter, and starts grouped', async () => {
-      const { fixture } = setup(repeated, 'default');
+    it('puts a pressed-state toggle next to the filter, and starts as a feed', async () => {
+      const { fixture } = setup(repeated);
       await settle(fixture);
       const button = groupToggle(fixture);
-      expect(text(button)).toContain('Agrupar');
-      expect(button.getAttribute('aria-pressed')).toBe('true');
-      expect(el(fixture).querySelector('.topline .search')!.nextElementSibling).toBe(button);
-      expect(groupRows(fixture).length).toBeGreaterThan(0);
-      // Switching it off gives the plain table.
+      expect(text(button)).toContain('Agrupar por comercio');
+      expect(button.getAttribute('aria-pressed')).toBe('false');
+      expect(el(fixture).querySelector('.topline .period')!.nextElementSibling).toBe(button);
+      expect(button.nextElementSibling!.classList.contains('search')).toBe(true);
+      expect(groupRows(fixture)).toHaveLength(0);
+      expect(el(fixture).querySelector('tr.day-row')).not.toBeNull();
+      // Switching it on groups the movements by place, and the day headings go.
       button.click();
       await settle(fixture);
-      expect(button.getAttribute('aria-pressed')).toBe('false');
-      expect(groupRows(fixture)).toHaveLength(0);
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+      expect(groupRows(fixture).length).toBeGreaterThan(0);
+      expect(el(fixture).querySelector('tr.day-row')).toBeNull();
     });
 
     it('lists one row per description with its count, total and category', async () => {
@@ -325,30 +355,33 @@ describe('MovementsPanel', () => {
       await group(fixture);
 
       expect(groupToggle(fixture).getAttribute('aria-pressed')).toBe('true');
-      // A place with a single movement stays a plain row: there is nothing to open.
+      // Every place is a group, a single movement included.
       const rows = groupRows(fixture);
-      expect(rows).toHaveLength(1);
+      expect(rows).toHaveLength(3);
       const mercadona = rows.find((r) => text(r).includes('MERCADONA'))!;
       expect(text(mercadona.querySelector('.group-count'))).toBe('3 mov.');
       expect(text(mercadona.querySelector('td.c-amount'))).toContain('70,00');
       expect(text(mercadona.querySelector('td.c-cat'))).toBe('Varias');
-      const cines = [...el(fixture).querySelectorAll('tr.mv-row')].find((r) =>
-        text(r).includes('CINES'),
-      )!;
-      expect(cines.classList.contains('mv-group')).toBe(false);
-      expect(cines.querySelector('.group-btn')).toBeNull();
+      const cines = rows.find((r) => text(r).includes('CINES'))!;
+      expect(text(cines.querySelector('.group-count'))).toBe('1 mov.');
+      expect(cines.querySelector('.group-btn')).not.toBeNull();
       expect(text(cines.querySelector('td.c-cat'))).toBe('Ocio');
       expect(el(fixture).querySelectorAll('tr.mv-child')).toHaveLength(0);
     });
 
-    it('shows a date on every row: the latest one on a group, each one on its movements', async () => {
+    it('shows the dates only once a group is open, one on each of its movements', async () => {
       const { fixture } = setup(repeated);
       await settle(fixture);
       await group(fixture);
+      for (const row of groupRows(fixture)) {
+        expect(text(row.querySelector('td.c-date')), text(row)).toBe('');
+      }
       mercadonaButton(fixture).click();
       await settle(fixture);
-      for (const row of el(fixture).querySelectorAll('tr.mv-row')) {
-        expect(text(row.querySelector('td.c-date')), text(row)).not.toBe('');
+      const children = [...el(fixture).querySelectorAll('tr.mv-child')];
+      expect(children).toHaveLength(3);
+      for (const child of children) {
+        expect(text(child.querySelector('.child-day')), text(child)).not.toBe('');
       }
     });
 

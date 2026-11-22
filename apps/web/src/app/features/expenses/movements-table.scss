@@ -316,6 +316,23 @@
       background: var(--accent-soft);
     }
 
+    /* The feed: the day heading carries the date, so a row is its description over its category. */
+    .p-datatable-tbody > tr.day-row {
+      display: block;
+
+      > td {
+        display: block;
+        width: 100%;
+      }
+    }
+
+    :host(.day-feed) .p-datatable-tbody > tr.mv-row:not(.mv-child) {
+      grid-template-columns: 40px minmax(0, 1fr) auto;
+      grid-template-areas:
+        'check desc amount'
+        'check cat amount';
+    }
+
     .p-datatable-tfoot > tr.mv-foot {
       display: flex;
       justify-content: space-between;

@@ -5,7 +5,6 @@ import {
   monthInPeriod,
   periodPresets,
   rangeBetween,
-  shiftPeriod,
   wholeYear,
   yearPeriod,
 } from './period-logic';
@@ -29,7 +28,7 @@ const MONTH_NAMES = [
 /**
  * Custom period picker: shortcuts (this month, 3 or 12 months, a year, all), a whole year in one
  * click, and month ranges that can cross years. First click on a month selects it; the second
- * selects the range up to it. The arrows jump to the previous or next period of the same size.
+ * selects the range up to it.
  */
 @Component({
   selector: 'app-period-picker',
@@ -43,16 +42,6 @@ const MONTH_NAMES = [
     <div class="pp">
       <button
         type="button"
-        class="btn icon ghost"
-        aria-label="Periodo anterior"
-        [disabled]="!canShift()"
-        (click)="shift(-1)"
-      >
-        <app-icon name="chevron-left" />
-      </button>
-
-      <button
-        type="button"
         class="btn pp-trigger"
         aria-haspopup="dialog"
         [attr.aria-expanded]="open()"
@@ -61,16 +50,6 @@ const MONTH_NAMES = [
         <app-icon name="calendar" />
         <span>{{ label() }}</span>
         <app-icon name="chevron-down" />
-      </button>
-
-      <button
-        type="button"
-        class="btn icon ghost"
-        aria-label="Periodo siguiente"
-        [disabled]="!canShift()"
-        (click)="shift(1)"
-      >
-        <app-icon name="chevron-right" />
       </button>
 
       @if (open()) {
@@ -152,7 +131,6 @@ export class PeriodPicker {
   protected readonly presets = computed(() =>
     periodPresets(monthOf(todayIn(DEFAULT_TIME_ZONE)), this.allowAll()),
   );
-  protected readonly canShift = computed(() => shiftPeriod(this.period(), 1) !== null);
 
   protected toggle(): void {
     if (this.open()) {
@@ -204,10 +182,5 @@ export class PeriodPicker {
   protected apply(period: Period): void {
     this.periodChange.emit(period);
     this.close();
-  }
-
-  protected shift(direction: -1 | 1): void {
-    const next = shiftPeriod(this.period(), direction);
-    if (next) this.periodChange.emit(next);
   }
 }

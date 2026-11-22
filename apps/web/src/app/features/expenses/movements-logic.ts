@@ -150,6 +150,19 @@ export function periodLabel(period: Period): string {
 }
 
 /** "28 oct" (with the year if not the current one) from `YYYY-MM-DD`. */
+const DAY_HEADING = new Intl.DateTimeFormat('es-ES', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+});
+
+/** The heading of a day of the feed: "Viernes 20 nov". */
+export function formatDayHeading(date: string): string {
+  const [year, month, day] = date.split('-').map(Number);
+  const text = DAY_HEADING.format(new Date(year!, month! - 1, day!)).replace(/[.,]/g, '');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function formatDay(date: string, currentYear: number): string {
   const [year, month, day] = date.split('-').map(Number);
   const value = new Date(year!, month! - 1, day!);

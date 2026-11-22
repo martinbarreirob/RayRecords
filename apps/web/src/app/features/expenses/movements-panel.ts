@@ -46,6 +46,7 @@ import {
   SORT_CHOICES,
   filterMovements,
   formatDay,
+  formatDayHeading,
   groupMovements,
   inPeriod,
   periodTotals,
@@ -89,6 +90,8 @@ const ROW_FALLBACK = 45;
 const PAGER_FALLBACK = 52;
 /** Slack under the table (card border, gaps) so the page does not scroll by a few pixels. */
 const FIT_MARGIN = 8;
+/** Height of a day heading until one can be measured. */
+const DAY_FALLBACK = 36;
 /** The border of the table card, top and bottom. */
 const CARD_BORDER = 2;
 
@@ -127,7 +130,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
     PeriodPicker,
   ],
   styleUrls: ['./movements-panel.scss', './movements-table.scss', './movements-bulk.scss'],
-  host: { '(document:keydown.escape)': 'onEscape($event)' },
+  host: { '[class.day-feed]': 'dayFeed()', '(document:keydown.escape)': 'onEscape($event)' },
   template: `
     <div class="layout">
       <!--
@@ -139,37 +142,6 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
           <h2>Resumen</h2>
           <span class="muted num">{{ count(periodRows().length) }}</span>
         </div>
-        <section
-          class="card balance"
-          aria-label="Totales del periodo"
-          aria-live="polite"
-          [attr.aria-busy]="pending()"
-        >
-          @if (pending()) {
-            <div class="skel-in" aria-hidden="true">
-              <span class="skeleton ghost-balance"></span>
-              <span class="skeleton ghost-split"></span>
-            </div>
-          } @else {
-            <div class="balance-main">
-              <span class="balance-label">Balance</span>
-              <span class="balance-value num" [class.negative]="totals().balanceCents < 0">
-                {{ money(totals().balanceCents) }}
-              </span>
-            </div>
-            <dl class="balance-split">
-              <div>
-                <dt>Gastos</dt>
-                <dd class="num">{{ money(totals().expensesCents) }}</dd>
-              </div>
-              <div>
-                <dt>Ingresos</dt>
-                <dd class="num positive">{{ money(totals().incomeCents) }}</dd>
-              </div>
-            </dl>
-          }
-        </section>
-
         <section class="card cats" aria-label="Categorías">
           @if (pending()) {
             <div class="sections skel-in" aria-hidden="true">
@@ -239,34 +211,31 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
               <app-icon name="tag" />
               <span class="categories-label">Categorías</span>
             </button>
+            <!-- Importar and Reglas are desktop only: on a phone the tabs of the page lead there. -->
+            <div class="side-tools">
+              <button type="button" class="btn" (click)="open('importar')">
+                <app-icon name="upload" />
+                Importar
+              </button>
+              <button type="button" class="btn" (click)="open('reglas')">
+                <app-icon name="adjustments-horizontal" />
+                Reglas
+              </button>
+            </div>
+            @if (review().pendingTransactions > 0) {
+              <button type="button" class="alert warning review-link" (click)="open('revisar')">
+                <span>{{ reviewText() }}</span>
+                <strong>Revisar</strong>
+              </button>
+            }
           </div>
         </section>
-
-        <!-- Desktop only: on a phone the tabs of the page are these shortcuts. -->
-        <div class="side-foot">
-          <div class="side-tools">
-            <button type="button" class="btn" (click)="open('importar')">
-              <app-icon name="upload" />
-              Importar
-            </button>
-            <button type="button" class="btn" (click)="open('reglas')">
-              <app-icon name="adjustments-horizontal" />
-              Reglas
-            </button>
-          </div>
-          @if (review().pendingTransactions > 0) {
-            <button type="button" class="alert warning review-link" (click)="open('revisar')">
-              <span>{{ reviewText() }}</span>
-              <strong>Revisar</strong>
-            </button>
-          }
-        </div>
       </aside>
 
       <!-- Right: the movements. -->
       <div class="main">
         <!--
-          The period on the left, the text filter and the group switch on the right (on a phone the
+          The period and the group switch on the left, the text filter filling the rest (on a phone the
           options fold under them).
         -->
         <div class="topline">
@@ -277,18 +246,6 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
               (periodChange)="setPeriod($event)"
             />
           </div>
-          <label class="search">
-            <span class="sr-only">Filtrar por descripción</span>
-            <input
-              class="input"
-              type="search"
-              autocomplete="off"
-              enterkeyhint="search"
-              placeholder="Filtrar por descripción…"
-              [ngModel]="query()"
-              (ngModelChange)="setQuery($event)"
-            />
-          </label>
           <button
             type="button"
             class="btn group-toggle"
@@ -302,6 +259,18 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
             </span>
             <span class="group-toggle-label">Agrupar por comercio</span>
           </button>
+          <label class="search">
+            <span class="sr-only">Filtrar por descripción</span>
+            <input
+              class="input"
+              type="search"
+              autocomplete="off"
+              enterkeyhint="search"
+              placeholder="Filtrar por descripción…"
+              [ngModel]="query()"
+              (ngModelChange)="setQuery($event)"
+            />
+          </label>
           <button
             type="button"
             class="btn icon opts-toggle"
@@ -325,6 +294,37 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
             />
           </div>
         </div>
+
+        <!-- The figures of the period: the balance, and what went out and came in. -->
+        <section
+          class="figures"
+          aria-label="Totales del periodo"
+          aria-live="polite"
+          [attr.aria-busy]="pending()"
+        >
+          @if (pending()) {
+            <div class="skel-in figures-ghost" aria-hidden="true">
+              @for (row of ghostFigures; track $index) {
+                <span class="skeleton ghost-figure"></span>
+              }
+            </div>
+          } @else {
+            <div class="card fig fig-balance">
+              <span class="fig-label">Balance</span>
+              <span class="fig-value num" [class.negative]="totals().balanceCents < 0">
+                {{ money(totals().balanceCents) }}
+              </span>
+            </div>
+            <div class="card fig fig-expenses">
+              <span class="fig-label">Gastos</span>
+              <span class="fig-value num">{{ money(totals().expensesCents) }}</span>
+            </div>
+            <div class="card fig fig-income">
+              <span class="fig-label">Ingresos</span>
+              <span class="fig-value num positive">{{ money(totals().incomeCents) }}</span>
+            </div>
+          }
+        </section>
 
         <!-- With a category chosen, its name and how many movements it holds; else only read aloud. -->
         <h2 class="main-title" [class.is-all]="section() === 'all'">
@@ -360,6 +360,8 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
             [rows]="pageSize()"
             [first]="first()"
             [rowHover]="true"
+            [rowGroupMode]="dayFeed() ? 'subheader' : undefined"
+            groupRowsBy="date"
             styleClass="movements-table"
           >
             <ng-template #header>
@@ -369,9 +371,11 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                     <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
                   }
                 </th>
-                <th class="c-date" pSortableColumn="date">
-                  <span class="th-sort">Fecha <p-sorticon field="date" /></span>
-                </th>
+                @if (!dayFeed()) {
+                  <th class="c-date" pSortableColumn="date">
+                    <span class="th-sort">Fecha <p-sorticon field="date" /></span>
+                  </th>
+                }
                 <th class="c-desc" pSortableColumn="description">
                   <span class="th-sort">Descripción <p-sorticon field="description" /></span>
                 </th>
@@ -410,7 +414,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                       <app-icon [name]="isExpanded(row.id) ? 'chevron-down' : 'chevron-right'" />
                     </button>
                   </td>
-                  <td class="c-date" title="Último movimiento">{{ day(row.date) }}</td>
+                  <td class="c-date"></td>
                   <td class="c-desc" [title]="row.description">
                     <span class="group-name">{{ row.description }}</span>
                     <span class="group-count">{{ row.count }} mov.</span>
@@ -503,7 +507,9 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                   <td class="c-check">
                     <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
                   </td>
-                  <td class="c-date">{{ day(row.date) }}</td>
+                  @if (!dayFeed()) {
+                    <td class="c-date">{{ day(row.date) }}</td>
+                  }
                   <td class="c-desc" [title]="row.description">{{ row.description }}</td>
                   <td class="c-amount num" [class.positive]="row.amountCents > 0">
                     {{ money(row.amountCents) }}
@@ -533,10 +539,24 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
               }
             </ng-template>
 
+            <!-- Each day opens with its date and what it added up to. -->
+            <ng-template #groupheader let-row>
+              <tr class="day-row">
+                <td [attr.colspan]="columns()">
+                  <div class="day-band">
+                    <span class="day-name">{{ dayHeading(row.date) }}</span>
+                    <span class="day-total num" [class.positive]="dayTotal(row.date) > 0">
+                      {{ money(dayTotal(row.date)) }}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+
             <ng-template #footer>
               @if (visible().length) {
                 <tr class="mv-foot">
-                  <td class="f-label" colspan="3">
+                  <td class="f-label" [attr.colspan]="labelSpan()">
                     @if (grouped()) {
                       {{ tableRows().length }}
                       {{ tableRows().length === 1 ? 'lugar' : 'lugares' }} ·
@@ -548,7 +568,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                   <td class="c-amount num f-total" [class.positive]="visibleTotal() > 0">
                     {{ money(visibleTotal()) }}
                   </td>
-                  <td class="f-end" [attr.colspan]="columns() - 4"></td>
+                  <td class="f-end" [attr.colspan]="columns() - labelSpan() - 1"></td>
                 </tr>
               }
             </ng-template>
@@ -563,7 +583,9 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                 @for (row of ghostRows; track $index) {
                   <tr class="mv-row skel-in" aria-hidden="true">
                     <td class="c-check"><span class="skeleton ghost-box"></span></td>
-                    <td class="c-date"><span class="skeleton ghost-date"></span></td>
+                    @if (!dayFeed()) {
+                      <td class="c-date"><span class="skeleton ghost-date"></span></td>
+                    }
                     <td class="c-desc">
                       <span class="skeleton ghost-desc" [style.width.%]="row"></span>
                     </td>
@@ -673,8 +695,8 @@ export class MovementsPanel {
     { initialValue: { pendingTransactions: 0, pendingGroups: 0 } },
   );
   protected readonly reviewText = computed(() => {
-    const { pendingTransactions: n, pendingGroups: g } = this.review();
-    return `${n} sin categoría en ${g} ${g === 1 ? 'comercio' : 'comercios'}`;
+    const { pendingTransactions: n } = this.review();
+    return `${n} sin categoría`;
   });
   private readonly currentYear = Number(todayIn(DEFAULT_TIME_ZONE).slice(0, 4));
 
@@ -731,28 +753,46 @@ export class MovementsPanel {
   /** One ghost row per category while the first load is on its way. */
   protected readonly ghostSections = [1, 2, 3, 4, 5, 6];
   protected readonly ghostRows = [72, 54, 66, 48, 78, 60, 70, 52];
+  protected readonly ghostFigures = [1, 2, 3];
 
   protected readonly visibleTotal = computed(() => sumCents(this.visible()));
   /**
-   * Group the movements by place: one row per description, open to see each amount. On from the
-   * start: a long list of movements reads better as places.
+   * Group the movements by place: one row per description, open to see each amount. Off from the
+   * start: the movements come as a feed, a heading per day.
    */
-  protected readonly grouped = signal(true);
+  protected readonly grouped = signal(false);
   /** Keys of the groups that are open; it does not depend on the data, so it survives reloads. */
   protected readonly expanded = signal<ReadonlySet<string>>(new Set());
   /**
    * What the table lists: the movements, or the groups of what is visible (filters apply before
-   * grouping). A place with a single movement has nothing to open, so it stays a plain row.
+   * grouping). Every place is a group, even with a single movement: its date shows once open.
    */
   protected readonly tableRows = computed<(MovementRow | MovementGroup)[]>(() =>
     this.grouped()
-      ? groupMovements(this.visible()).map((group) => (group.count === 1 ? group.rows[0]! : group))
+      ? groupMovements(this.visible())
       : this.visible(),
   );
   /** The category is implicit when the list on the left already filters by one. */
   protected readonly showCategory = computed(() => this.section() === 'all');
-  /** Columns of the table: checkbox, date, description, amount, [category], edit. */
-  protected readonly columns = computed(() => (this.showCategory() ? 6 : 5));
+  /**
+   * The feed: movements (not places) by date, with a heading per day. The date is then the heading,
+   * not a column; sorting by another column gives the plain table back.
+   */
+  protected readonly dayFeed = computed(() => !this.grouped() && this.sortField() === 'date');
+  /** What each day of the visible movements adds up to (the whole filter, not just the page). */
+  private readonly dayTotals = computed(() => {
+    const totals = new Map<string, number>();
+    for (const row of this.visible()) {
+      totals.set(row.date, (totals.get(row.date) ?? 0) + row.amountCents);
+    }
+    return totals;
+  });
+  /** Columns of the table: checkbox, [date], description, amount, [category], edit. */
+  protected readonly columns = computed(
+    () => 4 + (this.dayFeed() ? 0 : 1) + (this.showCategory() ? 1 : 0),
+  );
+  /** What the totals label spans: the checkbox, the description and the date when it is a column. */
+  protected readonly labelSpan = computed(() => (this.dayFeed() ? 2 : 3));
   protected readonly selectedTotal = computed(() => sumCents(this.selection()));
   protected readonly totals = computed(() => periodTotals(this.periodRows()));
   private readonly selectedIds = computed(() => new Set(this.selection().map((row) => row.id)));
@@ -810,6 +850,14 @@ export class MovementsPanel {
   private readonly maxSection = computed(() =>
     Math.max(1, ...this.sections().map((card) => Math.abs(card.totalCents))),
   );
+
+  protected dayHeading(date: string): string {
+    return formatDayHeading(date);
+  }
+
+  protected dayTotal(date: string): number {
+    return this.dayTotals().get(date) ?? 0;
+  }
 
   protected count(total: number): string {
     return `${total} ${total === 1 ? 'movimiento' : 'movimientos'}`;
@@ -879,6 +927,9 @@ export class MovementsPanel {
     });
     effect(() => {
       this.tableRows();
+      this.dayFeed();
+      // The figures above the table take their final height when the first load ends.
+      this.pending();
       untracked(() => queueMicrotask(() => this.fit()));
     });
     effect(() => {
@@ -1020,7 +1071,7 @@ export class MovementsPanel {
     // Like the totals row, the height of a row is remembered for when there is no row to measure.
     const rowNow = card.querySelector('tr.mv-row')?.getBoundingClientRect().height;
     if (rowNow) this.rowHeight = rowNow;
-    const row = this.rowHeight;
+    const row = this.rowHeight + this.dayExtra(card);
     const pager = this.pager()?.nativeElement;
     const pagerHeight = pager?.getBoundingClientRect().height || PAGER_FALLBACK;
     // The totals row only exists with movements: its height is remembered for the empty states.
@@ -1044,6 +1095,15 @@ export class MovementsPanel {
     if (size === this.pageSize()) return;
     this.pageSize.set(size);
     this.first.update((first) => Math.floor(first / size) * size);
+  }
+
+  /** What the day headings add to each row on average, so a page of them still fits the window. */
+  private dayExtra(card: HTMLElement): number {
+    const rows = this.visible().length;
+    if (!this.dayFeed() || !rows) return 0;
+    const heading =
+      card.querySelector('tr.day-row')?.getBoundingClientRect().height || DAY_FALLBACK;
+    return (heading * this.dayTotals().size) / rows;
   }
 
   // Category changes
