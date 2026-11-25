@@ -1,4 +1,4 @@
-import { shiftMonth } from '../calendar/calendar-grid';
+import { monthTitle, shiftMonth } from '../calendar/calendar-grid';
 import type { Period } from './movements-logic';
 
 export interface PeriodPreset {
@@ -33,6 +33,24 @@ export function periodPresets(currentMonth: string, allowAll: boolean): PeriodPr
   ];
   if (allowAll) presets.push({ id: 'all', label: 'Todo', period: { from: null, to: null } });
   return presets;
+}
+
+/** Shortcuts for the single-month picker: this month and its neighbours. */
+export function singleMonthPresets(currentMonth: string): PeriodPreset[] {
+  const month = (id: string, label: string, delta: number): PeriodPreset => {
+    const target = shiftMonth(currentMonth, delta);
+    return { id, label, period: { from: target, to: target } };
+  };
+  return [
+    month('this-month', 'Este mes', 0),
+    month('last-month', 'Mes anterior', -1),
+    month('next-month', 'Mes siguiente', 1),
+  ];
+}
+
+/** `2026-11` to `noviembre 2026`. */
+export function singleMonthLabel(month: string): string {
+  return monthTitle(month).replace(' de ', ' ').toLowerCase();
 }
 
 /** January to December of the year. */

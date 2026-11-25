@@ -29,6 +29,16 @@ export type ListDoc = Omit<List, 'id' | 'createdAt' | 'updatedAt'> & Timestamps 
 export type ItemDoc = Omit<Item, 'id' | 'listId' | 'doneAt' | 'createdAt' | 'updatedAt'> &
   Timestamps & { _id: ObjectId; listId: ObjectId; doneAt?: Date };
 
+/** A change made to an item (internal log, see `modules/items/history.ts`). */
+export interface ItemHistoryDoc {
+  _id?: ObjectId;
+  itemId: ObjectId;
+  listId: ObjectId;
+  at: Date;
+  type: 'created' | 'updated' | 'moved';
+  changes: Record<string, { from: unknown; to: unknown }>;
+}
+
 export type EventDoc = Omit<CalendarEvent, 'id' | 'doneAt' | 'createdAt' | 'updatedAt'> &
   Timestamps & { _id: ObjectId; doneAt?: Date };
 

@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 /**
  * Header shared by every main screen: the title with a small line next to it (a date, the month
@@ -31,6 +31,19 @@ import { Component, input } from '@angular/core';
 
     h1 {
       font-size: var(--text-xl);
+    }
+
+    .title-link {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--accent);
+      }
     }
 
     .page-eyebrow {
@@ -114,7 +127,15 @@ import { Component, input } from '@angular/core';
   template: `
     <header class="page-header">
       <div class="title-block" [class.compact]="hideEyebrowOnMobile() || !eyebrow()">
-        <h1>{{ title() }}</h1>
+        <h1>
+          @if (titleLink()) {
+            <button type="button" class="title-link" (click)="titlePressed.emit()">
+              {{ title() }}
+            </button>
+          } @else {
+            {{ title() }}
+          }
+        </h1>
         @if (eyebrow()) {
           <span class="page-eyebrow" aria-live="polite">{{ eyebrow() }}</span>
         }
@@ -128,6 +149,9 @@ import { Component, input } from '@angular/core';
 export class PageHeader {
   readonly title = input.required<string>();
   readonly eyebrow = input('');
+  /** Renders the title as a button that emits `titlePressed` (a way back to the section). */
+  readonly titleLink = input(false);
+  readonly titlePressed = output<void>();
   /** On a phone, lets the screen lay its actions out over several rows (see the calendar). */
   readonly split = input(false);
   /** On a phone, the actions take the full row width (a child with flex: 1 then fills what is left). */

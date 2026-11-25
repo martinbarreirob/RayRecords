@@ -14,17 +14,20 @@ import type { Item, List } from '@rayrecords/shared';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
-import { ApiClient, type ItemFilters } from '../../core/api/api-client';
+import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
 import { RefreshBus } from '../../core/refresh';
-import { applyMove, columnKey, summaryText } from './board-logic';
+import { AddButton } from '../../core/ui/add-button';
+import { Icon } from '../../core/ui/icon';
+import { applyMove, makeMatcher, moveToRequest, summaryText } from './board-logic';
 import { ItemDialog } from './item-dialog';
+import { ItemSidebar } from './item-sidebar';
 import { ListBoard, type BoardMove } from './list-board';
+import { ListSettings } from './list-settings';
 import { ListTable } from './list-table';
 import { ListsSkeleton } from './lists-skeleton';
 import { ListsStore } from './lists.store';
-
-type View = 'list' | 'board';
+import { isConfigurable } from './settings-logic';
 
 @Component({
   selector: 'app-list-detail-page',
@@ -33,8 +36,12 @@ type View = 'list' | 'board';
     FormsModule,
     SelectModule,
     ConfirmDialogModule,
+    AddButton,
+    Icon,
     ItemDialog,
+    ItemSidebar,
     ListBoard,
+    ListSettings,
     ListTable,
     ListsSkeleton,
   ],
@@ -71,6 +78,12 @@ type View = 'list' | 'board';
     h1 {
       overflow-wrap: anywhere;
       font-size: var(--text-xl);
+    }
+
+    .head-tools {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
     }
 
     .summary {
@@ -147,6 +160,7 @@ type View = 'list' | 'board';
         margin-left: 0;
       }
 
+      .head-tools .btn,
       .toolbar .input,
       .toolbar .select,
       .toolbar .btn,
@@ -170,29 +184,29 @@ type View = 'list' | 'board';
           <div class="title">
             <span class="crumb"><a routerLink="/listas">Listas</a> /</span>
             <h1>{{ list.name }}</h1>
-            @if (items(); as items) {
+            @if (visible()) {
               <span class="summary">{{ summary() }}</span>
             }
           </div>
 
-          @if (list.board) {
-            <div class="segmented" role="group" aria-label="Vista">
+          <div class="head-tools">
+            @if (configurable()) {
               <button
                 type="button"
-                [attr.aria-pressed]="view() === 'list'"
-                (click)="view.set('list')"
+                class="btn"
+                aria-label="Configurar la lista"
+                (click)="settingsOpen.set(true)"
               >
-                Lista
+                <app-icon name="settings" />
+                <span class="cfg-text">Configurar</span>
               </button>
-              <button
-                type="button"
-                [attr.aria-pressed]="view() === 'board'"
-                (click)="view.set('board')"
-              >
-                Tablero
-              </button>
-            </div>
-          }
+            }
+            <app-add-button
+              label="Nuevo elemento"
+              [iconOnMobile]="true"
+              (pressed)="creating.set(true)"
+            />
+          </div>
         </header>
 
         <div class="toolbar" role="search">
@@ -215,7 +229,14 @@ type View = 'list' | 'board';
             placeholder="Todas las etiquetas"
             ariaLabel="Filtrar por etiqueta"
             appendTo="body"
-          />
+          >
+            <ng-template #selectedItem let-label>
+              <span class="tag-chip">{{ label }}</span>
+            </ng-template>
+            <ng-template #item let-label>
+              <span class="tag-chip">{{ label }}</span>
+            </ng-template>
+          </p-select>
 
           @if (!showBoard()) {
             <form class="quick" (submit)="add($event)">
@@ -229,9 +250,6 @@ type View = 'list' | 'board';
                 [value]="newTitle()"
                 (input)="newTitle.set(titleInput.value)"
               />
-              <button type="submit" class="btn primary" [disabled]="!newTitle().trim()">
-                Añadir
-              </button>
             </form>
           }
         </div>
@@ -240,18 +258,17 @@ type View = 'list' | 'board';
           <p class="alert" role="alert">{{ message }}</p>
         }
 
-        @if (items(); as items) {
+        @if (visible(); as items) {
           @if (showBoard() && list.board) {
             <app-list-board
               [columns]="list.board.columns"
               [items]="items"
+              [openId]="sidebarId()"
               [fieldDefs]="list.fieldDefs"
               (move)="move($event)"
               (add)="addInColumn($event.column, $event.title)"
-              (addColumn)="addColumn(list, $event)"
-              (open)="editing.set($event)"
+              (open)="sidebarId.set($event.id)"
               (remove)="askRemove($event)"
-              (toggleDone)="toggleDone($event.item, $event.done)"
             />
           } @else if (items.length === 0 && !filtering()) {
             <p class="empty">Esta lista está vacía. Escribe un título arriba y pulsa Intro.</p>
@@ -271,8 +288,29 @@ type View = 'list' | 'board';
           />
         }
 
+        @if (sidebarItem(); as card) {
+          @if (list.board; as board) {
+            <app-item-sidebar
+              [item]="card"
+              [columns]="board.columns"
+              (moveTo)="moveCard(card, $event)"
+              (remove)="askRemove(card)"
+              (closed)="sidebarId.set(null)"
+            />
+          }
+        }
+
+        <app-list-settings
+          [list]="list"
+          [items]="items()"
+          [open]="settingsOpen()"
+          (closed)="settingsOpen.set(false)"
+          (saved)="settingsOpen.set(false)"
+        />
+
         <app-item-dialog
           [item]="editing()"
+          [creating]="creating()"
           [list]="list"
           (saved)="saved()"
           (closed)="closeDialog()"
@@ -308,15 +346,35 @@ export class ListDetailPage {
   protected readonly newTitle = signal('');
   protected readonly q = signal('');
   protected readonly tag = signal('');
-  protected readonly view = signal<View>('board');
   protected readonly editing = signal<Item | null>(null);
-  /** Labels seen in the list (accumulated so the filter does not lose options when applied). */
-  protected readonly knownTags = signal<string[]>([]);
+  /** The dialog is open to create an element (Alt N). */
+  protected readonly creating = signal(false);
+  protected readonly settingsOpen = signal(false);
+  /** Boards and tables (also the old media and shopping presets) have settings; simple lists do not. */
+  protected readonly configurable = computed(() => {
+    const list = this.list();
+    return !!list && isConfigurable(list);
+  });
+  /** The card open in the side panel of a board. */
+  protected readonly sidebarId = signal<string | null>(null);
+  protected readonly sidebarItem = computed(
+    () => this.items()?.find((item) => item.id === this.sidebarId()) ?? null,
+  );
+  /** The labels in the list: the options of the filter. */
+  protected readonly knownTags = computed(() =>
+    [...new Set((this.items() ?? []).flatMap((item) => item.tags))].sort(),
+  );
+  /** What the search box and the label filter leave. */
+  protected readonly visible = computed(() => {
+    const items = this.items();
+    if (!items || !this.filtering()) return items;
+    return items.filter(makeMatcher(this.q(), this.tag()));
+  });
 
   protected readonly filtering = computed(() => !!this.q().trim() || !!this.tag());
-  protected readonly showBoard = computed(() => !!this.list()?.board && this.view() === 'board');
+  protected readonly showBoard = computed(() => !!this.list()?.board);
   protected readonly summary = computed(() =>
-    summaryText(this.items() ?? [], this.showBoard() ? 'card' : 'item'),
+    summaryText(this.visible() ?? [], this.showBoard() ? 'card' : 'item'),
   );
 
   private readonly board = viewChild(ListBoard);
@@ -324,39 +382,35 @@ export class ListDetailPage {
   private pendingMoves = 0;
 
   constructor() {
-    // Reload when the list or filters change, or when another screen reports changes.
+    // A label that no card has any more cannot stay as the filter.
+    effect(() => {
+      const tag = this.tag();
+      if (tag && this.items() && !this.knownTags().includes(tag)) untracked(() => this.tag.set(''));
+    });
+    // Reload when the list changes or another screen reports changes. The search and the label
+    // filter are applied here, on the loaded items.
     effect(() => {
       const list = this.list();
-      const filters: ItemFilters = {
-        ...(this.q().trim() && { q: this.q().trim() }),
-        ...(this.tag() && { tag: this.tag() }),
-      };
       this.bus.version();
-      if (list) untracked(() => this.load(list, filters));
+      if (list) untracked(() => this.load(list));
     });
   }
 
-  private load(list: List, filters: ItemFilters): void {
+  private load(list: List): void {
     if (list.id !== this.currentListId) {
-      // Another list: start from scratch (filters, known labels, view).
+      // Another list: start from scratch (filters, view).
       this.currentListId = list.id;
       this.items.set(null);
       this.error.set('');
-      this.knownTags.set([]);
+      this.q.set('');
+      this.tag.set('');
       this.editing.set(null);
-      this.view.set(list.board ? 'board' : 'list');
-      if (this.q() || this.tag()) {
-        this.q.set('');
-        this.tag.set('');
-        return; // the filter change triggers the load again
-      }
+      this.creating.set(false);
+      this.settingsOpen.set(false);
+      this.sidebarId.set(null);
     }
-    this.api.items(list.id, filters).subscribe({
-      next: (items) => {
-        this.items.set(items);
-        const tags = new Set([...this.knownTags(), ...items.flatMap((i) => i.tags)]);
-        if (tags.size !== this.knownTags().length) this.knownTags.set([...tags].sort());
-      },
+    this.api.items(list.id).subscribe({
+      next: (items) => this.items.set(items),
       error: (error: unknown) => this.error.set(apiErrorMessage(error)),
     });
   }
@@ -399,20 +453,6 @@ export class ListDetailPage {
       });
   }
 
-  protected addColumn(list: List, label: string): void {
-    if (!list.board) return;
-    const columns = list.board.columns;
-    const key = columnKey(
-      label,
-      columns.map((c) => c.key),
-    );
-    this.error.set('');
-    this.store
-      // `fieldDefs` is forwarded because the API's edit schema clears it when absent.
-      .update(list, { fieldDefs: list.fieldDefs, board: { columns: [...columns, { key, label }] } })
-      .subscribe({ error: this.fail });
-  }
-
   protected toggleDone(item: Item, done: boolean): void {
     this.api
       .updateItem(item.id, { done })
@@ -439,14 +479,22 @@ export class ListDetailPage {
     });
   }
 
+  /** Moves a card to the end of another column, from the side panel. */
+  protected moveCard(card: Item, column: string): void {
+    const request = moveToRequest(this.items() ?? [], card.id, column);
+    if (request) this.move({ id: card.id, request });
+  }
+
   protected saved(): void {
     this.editing.set(null);
+    this.creating.set(false);
     this.reload();
     this.refocusBoard();
   }
 
   protected closeDialog(): void {
     this.editing.set(null);
+    this.creating.set(false);
     this.refocusBoard();
   }
 
@@ -472,6 +520,7 @@ export class ListDetailPage {
     this.api.deleteItem(item.id).subscribe({
       next: () => {
         if (this.editing()?.id === item.id) this.editing.set(null);
+        if (this.sidebarId() === item.id) this.sidebarId.set(null);
         this.reload();
       },
       error: this.fail,

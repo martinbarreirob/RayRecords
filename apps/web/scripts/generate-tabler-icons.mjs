@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 /** Interface icons, on top of the ones categories can pick. */
 const UI_ICONS = [
   'adjustments-horizontal',
+  'settings',
   'printer',
   'alert-circle',
   'arrow-down',

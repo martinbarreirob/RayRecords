@@ -4,6 +4,7 @@ import type { Collections } from '../../db/client';
 import type { ItemDoc, ListDoc } from '../../db/documents';
 import { ApiError } from '../../http/errors';
 import { validateExtra } from './extra';
+import { recordHistory } from './history';
 import { ORDER_STEP } from './ordering';
 
 /** Filter for an item's column: boards use it; lists without a board have no column. */
@@ -65,5 +66,6 @@ export async function createItem(
     updatedAt: now,
   };
   await c.items.insertOne(doc);
+  await recordHistory(c, doc, 'created', {}, now);
   return doc;
 }

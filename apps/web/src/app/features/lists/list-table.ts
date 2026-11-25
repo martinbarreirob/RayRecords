@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TableModule } from 'primeng/table';
 import { formatField } from './field-format';
-import { shortDate, tagHue, todayLocal } from './board-logic';
+import { shortDate, todayLocal } from './board-logic';
 import { Icon } from '../../core/ui/icon';
 
 /**
@@ -197,14 +197,14 @@ import { Icon } from '../../core/ui/icon';
                   }
                 }
                 @for (tag of item.tags; track tag) {
-                  <span [class]="'tag-chip hue-' + hue(tag)">{{ tag }}</span>
+                  <span [class]="'tag-chip'">{{ tag }}</span>
                 }
               </span>
             </td>
             @for (field of list().fieldDefs; track field.key) {
               <td class="col-opt" [class.num]="field.type === 'number' || field.type === 'money'">
                 @if (field.type === 'select' && show(field, item.extra); as value) {
-                  <span [class]="'tag-chip hue-' + hue(value)">{{ value }}</span>
+                  <span [class]="'tag-chip'">{{ value }}</span>
                 } @else {
                   {{ show(field, item.extra) }}
                 }
@@ -219,7 +219,7 @@ import { Icon } from '../../core/ui/icon';
             <td class="col-opt">
               <span class="tags">
                 @for (tag of item.tags; track tag) {
-                  <span [class]="'tag-chip hue-' + hue(tag)">{{ tag }}</span>
+                  <span [class]="'tag-chip'">{{ tag }}</span>
                 }
               </span>
             </td>
@@ -270,10 +270,6 @@ export class ListTable {
 
   protected show(def: FieldDef, extra: Extra): string {
     return formatField(def, extra[def.key]);
-  }
-
-  protected hue(tag: string): string {
-    return tagHue(tag);
   }
 
   protected date(iso: string): string {

@@ -5,15 +5,22 @@
   gap: var(--space-3);
 }
 
-.nav {
-  flex-wrap: nowrap;
-  gap: var(--space-1);
+/* Right-hand column: the Mes / Agenda control above the day detail (or alone in the agenda). */
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
-/* Phone only (see the media query at the end). */
-.break,
-.today-row {
-  display: none;
+.view-switch {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+
+  > button {
+    flex: 1 1 0;
+  }
 }
 
 .alert {
@@ -419,6 +426,23 @@ td.outside .chips {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* One column: the control goes first, then the grid or agenda, then the day detail. */
+  .side {
+    display: contents;
+  }
+
+  .view-switch {
+    order: -1;
+  }
+
+  .day-panel {
+    order: 1;
+  }
+
+  .agenda {
+    max-width: none;
+  }
+
   .add {
     grid-template-columns: minmax(0, 1fr) 1fr;
   }
@@ -460,39 +484,22 @@ td.outside .chips {
   }
 
   /*
-   * The header's actions flow into two rows: [title + month ... arrows] and then
-   * [Mes|Agenda  Hoy ... Nuevo evento]. The header lets them through (display: contents).
+   * The header's actions flow into one row next to the title: the month selector takes the free
+   * width and "Nuevo evento" sits at the end. The header lets them through (display: contents).
    */
   .tools {
     display: contents;
   }
 
-  .nav {
+  app-period-picker {
     order: 1;
+    /* The basis makes it wrap under the title, next to "Nuevo evento". */
+    flex: 1 1 160px;
+    width: auto;
+    min-width: 0;
   }
-
-  .break {
-    display: block;
-    order: 2;
-    flex: 0 0 100%;
-    height: 0;
-  }
-
-  .segmented {
-    order: 3;
-  }
-
-  .today-row {
-    display: inline-flex;
-    order: 4;
-  }
-
-  .nav .today {
-    display: none;
-  }
-
   app-add-button {
-    order: 5;
+    order: 2;
     margin-left: auto;
   }
 
@@ -500,17 +507,9 @@ td.outside .chips {
     min-height: var(--touch-target);
   }
 
-  .tools .btn.icon {
-    width: var(--touch-target);
-  }
-
-  .segmented > button {
+  .view-switch > button {
     min-height: calc(var(--touch-target) - 6px);
     padding: 0 var(--space-3);
-  }
-
-  .today-row {
-    padding: 0 var(--space-2);
   }
 
   .add .btn,

@@ -117,8 +117,8 @@ interface Draft {
   `,
   template: `
     <p-dialog
-      header="Editar elemento"
-      [visible]="!!item()"
+      [header]="creating() ? 'Nuevo elemento' : 'Editar elemento'"
+      [visible]="!!item() || creating()"
       (visibleChange)="$event || closed.emit()"
       (onShow)="focusTitle()"
       [modal]="true"
@@ -269,11 +269,13 @@ interface Draft {
           @if (error(); as message) {
             <p class="alert" role="alert">{{ message }}</p>
           }
-          <button type="button" class="btn danger" (click)="removed.emit(item()!)">Borrar</button>
+          @if (item(); as current) {
+            <button type="button" class="btn danger" (click)="removed.emit(current)">Borrar</button>
+          }
           <span class="spacer"></span>
           <button type="button" class="btn" (click)="closed.emit()">Cancelar</button>
           <button type="submit" form="item-form" class="btn primary" [disabled]="saving()">
-            Guardar
+            {{ creating() ? 'Crear' : 'Guardar' }}
           </button>
         </div>
       </ng-template>
@@ -286,6 +288,8 @@ export class ItemDialog {
   /** Item to edit; `null` keeps the dialog closed. */
   readonly item = input<Item | null>(null);
   readonly list = input.required<List>();
+  /** Open with an empty draft to create a new item in the list. */
+  readonly creating = input(false);
 
   readonly saved = output<Item>();
   readonly closed = output<void>();
@@ -305,19 +309,23 @@ export class ItemDialog {
     effect(() => {
       const item = this.item();
       const list = this.list();
+      const creating = this.creating();
       this.error.set('');
       this.titleInvalid.set(false);
-      const draft: Draft | null = item && {
-        title: item.title,
-        text: item.text ?? '',
-        dueDate: item.dueDate ?? '',
-        url: item.url ?? '',
-        tags: item.tags.join(', '),
-        column: item.column ?? '',
-        fields: Object.fromEntries(
-          list.fieldDefs.map((def) => [def.key, toInputValue(def, item.extra[def.key])]),
-        ),
-      };
+      const draft: Draft | null =
+        item || creating
+          ? {
+              title: item?.title ?? '',
+              text: item?.text ?? '',
+              dueDate: item?.dueDate ?? '',
+              url: item?.url ?? '',
+              tags: (item?.tags ?? []).join(', '),
+              column: item ? (item.column ?? '') : (list.board?.columns[0]?.key ?? ''),
+              fields: Object.fromEntries(
+                list.fieldDefs.map((def) => [def.key, toInputValue(def, item?.extra[def.key])]),
+              ),
+            }
+          : null;
       this.initial.set(JSON.stringify(draft));
       this.draft.set(draft);
     });
@@ -340,7 +348,7 @@ export class ItemDialog {
     event.preventDefault();
     const item = this.item();
     const d = this.draft();
-    if (!item || !d || this.saving()) return;
+    if ((!item && !this.creating()) || !d || this.saving()) return;
     this.titleInvalid.set(false);
     if (!d.title.trim()) {
       this.error.set('El título no puede estar vacío');
@@ -364,7 +372,7 @@ export class ItemDialog {
         return;
       }
       // Only send what changed or already existed (an empty field that did not exist is not needed).
-      if (value !== null || item.extra[def.key] !== undefined) extra[def.key] = value;
+      if (value !== null || item?.extra[def.key] !== undefined) extra[def.key] = value;
     }
 
     const update: UpdateItem = {
@@ -377,11 +385,24 @@ export class ItemDialog {
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean),
       extra,
-      ...(d.column && d.column !== item.column && { column: d.column }),
+      ...(d.column && d.column !== item?.column && { column: d.column }),
     };
     this.error.set('');
     this.saving.set(true);
-    this.api.updateItem(item.id, update).subscribe({
+    const request = item
+      ? this.api.updateItem(item.id, update)
+      : this.api.createItem({
+          listId: this.list().id,
+          title: update.title!,
+          tags: update.tags ?? [],
+          extra,
+          source: 'manual',
+          ...(update.text && { text: update.text }),
+          ...(update.dueDate && { dueDate: update.dueDate }),
+          ...(update.url && { url: update.url }),
+          ...(d.column && { column: d.column }),
+        });
+    request.subscribe({
       next: (saved) => {
         this.saving.set(false);
         this.saved.emit(saved);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BOARD_COLORS, COLUMN_ICONS, HEX_COLOR } from '../presets/list-presets';
 import { FieldKey, IsoDateTime, ObjectIdString } from './common';
 
 /**
@@ -29,6 +30,10 @@ export type FieldDef = z.infer<typeof FieldDef>;
 export const BoardColumn = z.object({
   key: FieldKey,
   label: z.string().trim().min(1).max(60),
+  /** Accent colour (one of the named tones or any `#rrggbb`); without it the web picks one. */
+  color: z.union([z.enum(BOARD_COLORS), z.string().regex(HEX_COLOR)]).optional(),
+  /** State icon; without it the web shows one by position (first, middle, last). */
+  icon: z.enum(COLUMN_ICONS).optional(),
 });
 export type BoardColumn = z.infer<typeof BoardColumn>;
 

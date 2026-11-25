@@ -5,6 +5,8 @@ import {
   monthInPeriod,
   periodPresets,
   rangeBetween,
+  singleMonthLabel,
+  singleMonthPresets,
   wholeYear,
   yearPeriod,
 } from './period-logic';
@@ -53,7 +55,11 @@ const MONTH_NAMES = [
       </button>
 
       @if (open()) {
-        <div class="pp-pop card" role="dialog" aria-label="Elegir periodo">
+        <div
+          class="pp-pop card"
+          role="dialog"
+          [attr.aria-label]="single() ? 'Elegir mes' : 'Elegir periodo'"
+        >
           <div class="pp-presets">
             @for (preset of presets(); track preset.id) {
               <button type="button" class="pp-preset" (click)="apply(preset.period)">
@@ -80,7 +86,9 @@ const MONTH_NAMES = [
             >
               <app-icon name="chevron-right" />
             </button>
-            <button type="button" class="btn sm" (click)="apply(yearOf())">Todo el año</button>
+            @if (!single()) {
+              <button type="button" class="btn sm" (click)="apply(yearOf())">Todo el año</button>
+            }
           </div>
 
           <div class="pp-months" role="group" aria-label="Meses del año">
@@ -98,13 +106,15 @@ const MONTH_NAMES = [
             }
           </div>
 
-          <p class="pp-hint muted" aria-live="polite">
-            @if (anchor()) {
-              Pulsa otro mes para completar el rango.
-            } @else {
-              Pulsa un mes, o dos para elegir un rango.
-            }
-          </p>
+          @if (!single()) {
+            <p class="pp-hint muted" aria-live="polite">
+              @if (anchor()) {
+                Pulsa otro mes para completar el rango.
+              } @else {
+                Pulsa un mes, o dos para elegir un rango.
+              }
+            </p>
+          }
         </div>
       }
     </div>
@@ -117,6 +127,11 @@ export class PeriodPicker {
   readonly period = input.required<Period>();
   /** Whether the screen allows no limit (Movements does, Summary does not). */
   readonly allowAll = input(false);
+  /**
+   * Single-month mode (the calendar): one click picks a month and closes the popover; the period
+   * in and out is always a single month (`from === to`).
+   */
+  readonly single = input(false);
   readonly periodChange = output<Period>();
 
   protected readonly monthNames = MONTH_NAMES;
@@ -126,11 +141,13 @@ export class PeriodPicker {
 
   protected readonly label = computed(() => {
     const period = this.period();
+    if (this.single() && period.from) return singleMonthLabel(period.from);
     return wholeYear(period) ?? periodLabel(period);
   });
-  protected readonly presets = computed(() =>
-    periodPresets(monthOf(todayIn(DEFAULT_TIME_ZONE)), this.allowAll()),
-  );
+  protected readonly presets = computed(() => {
+    const current = monthOf(todayIn(DEFAULT_TIME_ZONE));
+    return this.single() ? singleMonthPresets(current) : periodPresets(current, this.allowAll());
+  });
 
   protected toggle(): void {
     if (this.open()) {
@@ -169,6 +186,10 @@ export class PeriodPicker {
 
   protected pick(index: number): void {
     const month = this.monthKey(index);
+    if (this.single()) {
+      this.apply({ from: month, to: month });
+      return;
+    }
     const anchor = this.anchor();
     if (anchor === null) {
       this.anchor.set(month);

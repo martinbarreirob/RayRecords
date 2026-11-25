@@ -1,4 +1,11 @@
-import type { BoardColumn, Item, MoveItem } from '@rayrecords/shared';
+import {
+  BOARD_COLORS,
+  HEX_COLOR,
+  type BoardColor,
+  type BoardColumn,
+  type Item,
+  type MoveItem,
+} from '@rayrecords/shared';
 
 /** Same rule as `FIELD_KEY_RE` in shared (copied here to keep Zod out of the web bundle). */
 const FIELD_KEY = /^[a-z][a-zA-Z0-9_]{0,39}$/;
@@ -154,12 +161,49 @@ export function summaryText(items: readonly Item[], kind: 'card' | 'item'): stri
 }
 
 /** Tones of the categorical palette (`.hue-*` in styles/_components.scss). */
-export type Hue = 'blue' | 'green' | 'amber' | 'rose' | 'violet' | 'teal';
+export type Hue = BoardColor;
 
-const HUES: readonly Hue[] = ['blue', 'green', 'amber', 'rose', 'violet', 'teal'];
+/** Whether a column colour is an RGB one (`#rrggbb`) and not a named tone. */
+export function isHexColor(color: string | undefined): color is string {
+  return !!color && HEX_COLOR.test(color);
+}
 
-/** Colour of a board column: by name when recognisable, otherwise by position. */
-export function columnHue(label: string, index: number): Hue {
+/** The `--hue` variables of an RGB colour, for a `[style]` binding (named tones use a `.hue-*` class). */
+export function hueStyle(color: string | undefined): Record<string, string> | null {
+  if (!isHexColor(color)) return null;
+  return {
+    '--hue': color,
+    '--hue-soft': `color-mix(in srgb, ${color} 16%, var(--surface))`,
+    '--hue-text': `color-mix(in srgb, ${color} 60%, var(--text))`,
+  };
+}
+
+/** Lower case without accents, for comparing what the user types with what is stored. */
+function plain(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/** A test for the search box (any part of the title, notes or labels) and the label chosen. */
+export function makeMatcher(
+  query: string,
+  tag: string,
+): (item: Pick<Item, 'title' | 'text' | 'tags'>) => boolean {
+  const words = plain(query).split(/\s+/).filter(Boolean);
+  return (item) => {
+    if (tag && !item.tags.includes(tag)) return false;
+    if (words.length === 0) return true;
+    const haystack = plain([item.title, item.text ?? '', ...item.tags].join(' '));
+    return words.every((word) => haystack.includes(word));
+  };
+}
+
+/** Colour of a board column: the one chosen for it, else by name when recognisable, else by position. */
+export function columnHue(label: string, index: number, color?: string): Hue | 'custom' {
+  if (isHexColor(color)) return 'custom';
+  if (color && BOARD_COLORS.includes(color as Hue)) return color as Hue;
   const name = label.trim().toLowerCase();
   if (/(hech|termin|complet|done|cerrad|finaliz)/.test(name)) return 'green';
   if (/(curso|progres|doing|revis|test)/.test(name)) return 'amber';
@@ -167,28 +211,4 @@ export function columnHue(label: string, index: number): Hue {
   // Skip blue, green and amber, used by the recognisable names, so their meaning is not repeated.
   const rest: readonly Hue[] = ['violet', 'teal', 'rose'];
   return rest[index % rest.length]!;
-}
-
-const KNOWN_TAG_HUES: Readonly<Record<string, Hue>> = {
-  urgente: 'rose',
-  alta: 'rose',
-  media: 'amber',
-  baja: 'green',
-  bug: 'rose',
-  error: 'rose',
-  mejora: 'blue',
-  idea: 'violet',
-  trabajo: 'blue',
-  casa: 'amber',
-  personal: 'teal',
-};
-
-/** Colour of a label: fixed for the usual ones (priority, type) and stable per text for the rest. */
-export function tagHue(tag: string): Hue {
-  const key = tag.trim().toLowerCase();
-  const known = KNOWN_TAG_HUES[key];
-  if (known) return known;
-  let hash = 0;
-  for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return HUES[hash % HUES.length]!;
 }

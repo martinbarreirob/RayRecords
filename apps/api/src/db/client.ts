@@ -10,6 +10,7 @@ import type {
   EventDoc,
   ImportBatchDoc,
   ItemDoc,
+  ItemHistoryDoc,
   ListDoc,
   NoteCardDoc,
   NoteGroupDoc,
@@ -28,6 +29,7 @@ export function getCollections(db: Db, prefix = '') {
   return {
     lists: data<ListDoc>('lists'),
     items: data<ItemDoc>('items'),
+    itemHistory: data<ItemHistoryDoc>('item_history'),
     events: data<EventDoc>('events'),
     dailyNotes: data<DailyNoteDoc>('daily_notes'),
     noteCards: data<NoteCardDoc>('note_cards'),

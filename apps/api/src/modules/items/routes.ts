@@ -10,6 +10,7 @@ import { ObjectId, type Filter } from 'mongodb';
 import { z } from 'zod';
 import type { ItemDoc } from '../../db/documents';
 import { ApiError } from '../../http/errors';
+import { diffItem, recordHistory } from './history';
 import { toItem } from './mapper';
 import { orderBetween, renumber } from './ordering';
 import { assertValidExtra, createItem, groupFilter, nextOrder, resolveColumn } from './service';
@@ -106,6 +107,13 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
         { $set, ...(Object.keys($unset).length > 0 && { $unset }) },
         { returnDocument: 'after' },
       );
+      const changes = diffItem(item, doc!);
+      await recordHistory(
+        c,
+        doc!,
+        column !== undefined && 'column' in changes ? 'moved' : 'updated',
+        changes,
+      );
       return toItem(doc!);
     },
   );
@@ -159,6 +167,8 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
         { $set: { order, updatedAt: new Date(), ...(column !== undefined && { column }) } },
         { returnDocument: 'after' },
       );
+      // Only a change of column is recorded: reordering inside a column is not worth a line.
+      await recordHistory(c, doc!, 'moved', diffItem(item, doc!));
       return toItem(doc!);
     },
   );
@@ -167,8 +177,10 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/items/:id',
     { schema: { params: IdParams, response: { 204: z.null() } } },
     async (request, reply) => {
-      const { deletedCount } = await c.items.deleteOne({ _id: new ObjectId(request.params.id) });
+      const _id = new ObjectId(request.params.id);
+      const { deletedCount } = await c.items.deleteOne({ _id });
       if (!deletedCount) throw new ApiError(404, 'not_found', 'El elemento no existe');
+      await c.itemHistory.deleteMany({ itemId: _id });
       return reply.status(204).send(null);
     },
   );

@@ -1,11 +1,10 @@
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import {
   CdkDrag,
-  CdkDragPlaceholder,
-  CdkDragPreview,
   CdkDropList,
   CdkDropListGroup,
   type CdkDragDrop,
+  type CdkDragStart,
 } from '@angular/cdk/drag-drop';
 import {
   Component,
@@ -18,24 +17,33 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import type { BoardColumn, Extra, FieldDef, Item, MoveItem } from '@rayrecords/shared';
-import { SelectModule } from 'primeng/select';
 import {
   columnHue,
+  hueStyle,
   dropRequest,
   isOverdue,
   itemsInColumn,
-  moveToRequest,
   neighbourId,
   shiftRequest,
   shortDate,
   stepRequest,
-  tagHue,
   todayLocal,
 } from './board-logic';
 import { formatField } from './field-format';
 import { Icon } from '../../core/ui/icon';
+import { PriorityIcon } from './priority-icon';
+import { StatusIcon, columnIcon } from './status-icon';
+import { LEGACY_PRIORITY_KEY, priorityOf, type Priority } from './priority-logic';
+
+/** The second line of a card: priority, a badge, up to two labels (and the rest), and extra fields. */
+interface CardMeta {
+  priority: Priority | null;
+  badge: string | null;
+  tags: string[];
+  more: string[];
+  extras: string;
+}
 
 /** Move a card: which card and where it ends up. Run (and saved) by whoever uses the board. */
 export interface BoardMove {
@@ -58,17 +66,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
  */
 @Component({
   selector: 'app-list-board',
-  imports: [
-    Icon,
-    CdkScrollable,
-    CdkDrag,
-    CdkDragPlaceholder,
-    CdkDragPreview,
-    CdkDropList,
-    CdkDropListGroup,
-    FormsModule,
-    SelectModule,
-  ],
+  imports: [Icon, PriorityIcon, StatusIcon, CdkScrollable, CdkDrag, CdkDropList, CdkDropListGroup],
   styles: `
     :host {
       display: block;
@@ -105,6 +103,8 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       font-size: var(--text-base);
     }
 
+    /* The accent circle of the column. */
+
     .count {
       margin-left: 6px;
       padding: 0 var(--space-2);
@@ -140,9 +140,25 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       background: var(--surface);
-      cursor: grab;
+      /* The pointing hand says the card can be opened; the grabbing one shows while it is held to drag. */
+      cursor: pointer;
+      transition:
+        background-color 0.12s ease,
+        border-color 0.12s ease;
 
-      &.selected {
+      &:active {
+        cursor: grab;
+      }
+
+      @media (hover: hover) {
+        &:hover:not(.cdk-drag-placeholder, .cdk-drag-preview) {
+          border-color: var(--line-strong);
+          background: var(--row-hover);
+        }
+      }
+
+      &.selected,
+      &:has(.kbody:focus-visible) {
         border-color: var(--accent);
         box-shadow: 0 0 0 1px var(--accent);
       }
@@ -186,16 +202,6 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       text-decoration: line-through;
     }
 
-    .ktext {
-      display: -webkit-box;
-      overflow: hidden;
-      color: var(--muted);
-      font-size: var(--text-sm);
-      line-height: 1.5;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-
     .kmeta {
       display: flex;
       flex-wrap: wrap;
@@ -209,23 +215,7 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       color: var(--danger);
     }
 
-    .tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
-      margin: 0 calc(var(--space-1) * -1);
-      padding-top: var(--space-1);
-      border-top: 1px solid var(--line);
-    }
-
-    /* «Mover a…»: alternative to dragging on touch; takes its own row. */
-    .move-to {
-      flex: 1 1 100%;
-      margin: var(--space-1) var(--space-1) 0;
-    }
-
-    .add-card,
-    .add-column {
+    .add-card {
       padding: 12px 14px;
       border: 1.5px dashed var(--line-strong);
       border-radius: var(--radius-lg);
@@ -256,51 +246,137 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       font-size: var(--text-xs);
     }
 
-    .side {
-      flex: none;
-      width: 140px;
-      padding-top: 34px;
+    /* While dragging, the card's slot stays open as an empty dashed outline of the same size. */
+    .cards .kcard.cdk-drag-placeholder {
+      border: 1px dashed var(--line-strong);
+      box-shadow: none;
+      background: var(--surface-2);
+      opacity: 1;
+
+      > * {
+        visibility: hidden;
+      }
     }
 
-    .insert-line {
-      height: 3px;
-      margin: -2px var(--space-1);
-      border-radius: 2px;
-      background: var(--accent);
+    /* The card in the hand keeps its size and content (it is a clone), a little larger and lifted. */
+    .kcard.cdk-drag-preview {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-lg);
+      scale: 1.02;
+      cursor: grabbing;
+      animation: lift 0.16s ease-out;
     }
 
-    .kpreview {
-      box-sizing: border-box;
+    @keyframes lift {
+      from {
+        box-shadow: 0 0 0 0 transparent;
+        scale: 1;
+      }
     }
 
-    .kpreview-card {
+    .cards .kcard:not(.cdk-drag-placeholder) {
+      transition: transform 250ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cards .kcard:not(.cdk-drag-placeholder) {
+        transition: none;
+      }
+
+      .kcard.cdk-drag-preview {
+        animation: none;
+      }
+    }
+
+    /* While a card is being dragged every column is a tall drop area. */
+    .column {
+      position: relative;
+    }
+
+    .status {
+      margin-right: var(--space-2);
+      vertical-align: -0.2em;
+    }
+
+    /* The list of cards: the drop area covers this and not the header. */
+    .lane {
+      position: relative;
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .board.dragging .column {
+      min-height: 320px;
+    }
+
+    .board.dragging .cards {
+      flex: 1 1 auto;
+    }
+
+    /* The column the card would go to: blurred, with the invitation to drop it. */
+    .drop-zone {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 14px;
-      border: 1.5px solid var(--accent);
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      padding: var(--space-4);
+      border: 1.5px dashed var(--hue, var(--line-strong));
       border-radius: var(--radius-lg);
+      background: color-mix(in srgb, var(--surface) 72%, transparent);
+      backdrop-filter: blur(4px);
+      color: var(--muted);
+      font-size: var(--text-sm);
+      text-align: center;
+      pointer-events: none;
+
+      strong {
+        color: var(--text);
+        font-size: var(--text-base);
+      }
+    }
+
+    .slot {
+      box-sizing: border-box;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      background: var(--surface-2);
+      list-style: none;
+    }
+
+    .column.receiving .cdk-drag-placeholder {
+      display: none;
+    }
+
+    .more {
+      position: relative;
+      cursor: default;
+    }
+
+    .more .pop {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 0;
+      z-index: 5;
+      display: none;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+      width: max-content;
+      max-width: 220px;
+      padding: var(--space-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-control);
       background: var(--surface);
-      box-shadow: var(--shadow-lg);
-      transform: rotate(2deg);
-      font-size: var(--text-base);
+      box-shadow: var(--shadow-md);
     }
 
-    .kpreview-card strong {
-      font-weight: 500;
-    }
-
-    .kpreview-card small {
-      color: var(--accent);
-      font-size: var(--text-xs);
-    }
-
-    .kpreview.cdk-drag-animating {
-      transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
-    }
-
-    .cards.cdk-drop-list-dragging .kcard:not(.cdk-drag-placeholder) {
-      transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+    .more:hover .pop {
+      display: flex;
     }
 
     .hints {
@@ -335,34 +411,24 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
         scroll-snap-align: start;
       }
 
-      .side {
-        flex: 0 0 120px;
-        scroll-snap-align: end;
-      }
-
-      .tools .btn,
       .col-head .btn {
         min-width: var(--touch-target);
         min-height: var(--touch-target);
       }
 
-      .add-card,
-      .add-column {
+      .add-card {
         min-height: var(--touch-target);
       }
 
       .kcard {
         cursor: default;
       }
-
-      .move-to ::ng-deep .p-select {
-        min-height: var(--touch-target);
-      }
     }
   `,
   template: `
     <div
       class="board"
+      [class.dragging]="drag() !== null"
       cdkScrollable
       cdkDropListGroup
       role="group"
@@ -370,14 +436,18 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
       (keydown)="onKeydown($event)"
     >
       @for (column of columns(); track column.key; let ci = $index) {
+        @let view = views()[ci]!;
         <section
           class="column"
-          [class]="'column hue-' + hue(column.label, ci)"
+          [class]="'column hue-' + view.hue"
+          [style]="view.style"
+          [class.receiving]="receiving(column.key)"
           [attr.aria-labelledby]="'col-' + column.key"
         >
           <header class="col-head">
             <h2 [id]="'col-' + column.key">
-              {{ column.label }} <span class="count">{{ cardsOf(column.key).length }}</span>
+              <app-status-icon class="status" [kind]="view.icon" />{{ column.label }}
+              <span class="count">{{ cardsOf(column.key).length }}</span>
             </h2>
             <button
               type="button"
@@ -389,158 +459,88 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
             </button>
           </header>
 
-          <ul
-            class="cards"
-            cdkDropList
-            [cdkDropListData]="column.key"
-            [cdkDropListDisabled]="dragOff()"
-            [attr.aria-label]="'Tarjetas de ' + column.label"
-            (cdkDropListDropped)="drop($event)"
-            (cdkDropListEntered)="hoverColumn.set(column.label)"
-          >
-            @for (item of cardsOf(column.key); track item.id; let i = $index; let last = $last) {
-              <li
-                class="kcard"
-                cdkDrag
-                [cdkDragData]="item"
-                [cdkDragDisabled]="dragOff()"
-                [class.selected]="item.id === selectedId()"
-                [class.done]="item.doneAt"
-                (cdkDragStarted)="hoverColumn.set(column.label)"
-              >
-                <div *cdkDragPlaceholder class="insert-line"></div>
-                <div *cdkDragPreview matchSize class="kpreview">
-                  <div class="kpreview-card">
-                    <strong>{{ item.title }}</strong>
-                    <small>Arrastrando a «{{ hoverColumn() }}»</small>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  class="kbody"
-                  [attr.data-card]="item.id"
-                  [tabindex]="item.id === rovingId() ? 0 : -1"
-                  [attr.aria-label]="item.title"
-                  (focus)="selectedId.set(item.id)"
-                  (dblclick)="open.emit(item)"
+          <div class="lane">
+            <ul
+              class="cards"
+              cdkDropList
+              [cdkDropListData]="column.key"
+              [cdkDropListDisabled]="dragOff()"
+              [attr.aria-label]="'Tarjetas de ' + column.label"
+              (cdkDropListDropped)="drop($event)"
+              [cdkDropListSortingDisabled]="sortingOff(column.key)"
+              (cdkDropListEntered)="enter(column.key)"
+            >
+              @for (item of cardsOf(column.key); track item.id; let i = $index; let last = $last) {
+                <li
+                  class="kcard"
+                  cdkDrag
+                  [cdkDragData]="item"
+                  [cdkDragDisabled]="dragOff()"
+                  [class.selected]="item.id === openId()"
+                  [class.done]="item.doneAt"
+                  (cdkDragStarted)="onDragStart($event, column.key, item.id)"
+                  (cdkDragEnded)="drag.set(null)"
                 >
-                  <span class="krow">
-                    <span class="ktitle">{{ item.title }}</span>
-                    @if (leadOf(item); as lead) {
-                      <span [class]="'tag-chip hue-' + tagColor(lead)">{{ lead }}</span>
-                    }
-                  </span>
-                  @if (item.text) {
-                    <span class="ktext">{{ item.text }}</span>
-                  }
-                  @if (restTags(item).length || item.dueDate || item.doneAt || extrasOf(item)) {
-                    <span class="kmeta">
-                      @for (tag of restTags(item); track tag) {
-                        <span [class]="'tag-chip hue-' + tagColor(tag)">{{ tag }}</span>
-                      }
-                      @if (item.doneAt) {
-                        <span>{{ date(item.doneAt) }}</span>
-                      } @else if (item.dueDate) {
-                        <span [class.overdue]="overdue(item)">vence {{ date(item.dueDate) }}</span>
-                      }
-                      @if (extrasOf(item); as text) {
-                        <span>{{ text }}</span>
-                      }
+                  <button
+                    type="button"
+                    class="kbody"
+                    [attr.data-card]="item.id"
+                    [tabindex]="item.id === rovingId() ? 0 : -1"
+                    [attr.aria-label]="item.title"
+                    (focus)="selectedId.set(item.id)"
+                    (click)="open.emit(item)"
+                  >
+                    <span class="krow">
+                      <span class="ktitle">{{ item.title }}</span>
                     </span>
-                  }
-                </button>
-
-                @if (item.id === selectedId()) {
-                  <div class="tools" role="group" [attr.aria-label]="'Acciones de ' + item.title">
-                    <button
-                      type="button"
-                      class="btn ghost sm icon"
-                      aria-label="Mover a la columna anterior"
-                      title="Columna anterior (←)"
-                      [disabled]="!canShift(item, -1)"
-                      (click)="shift(item, -1)"
-                    >
-                      <app-icon name="arrow-left" />
-                    </button>
-                    <button
-                      type="button"
-                      class="btn ghost sm icon"
-                      aria-label="Mover a la columna siguiente"
-                      title="Columna siguiente (→)"
-                      [disabled]="!canShift(item, 1)"
-                      (click)="shift(item, 1)"
-                    >
-                      <app-icon name="arrow-right" />
-                    </button>
-                    <button
-                      type="button"
-                      class="btn ghost sm icon"
-                      aria-label="Subir en la columna"
-                      title="Subir (Alt ↑)"
-                      [disabled]="i === 0"
-                      (click)="step(item, -1)"
-                    >
-                      <app-icon name="arrow-up" />
-                    </button>
-                    <button
-                      type="button"
-                      class="btn ghost sm icon"
-                      aria-label="Bajar en la columna"
-                      title="Bajar (Alt ↓)"
-                      [disabled]="last"
-                      (click)="step(item, 1)"
-                    >
-                      <app-icon name="arrow-down" />
-                    </button>
-                    <span class="spacer"></span>
-                    <button
-                      type="button"
-                      class="btn ghost sm icon"
-                      [attr.aria-label]="
-                        item.doneAt ? 'Marcar como pendiente' : 'Marcar como hecha'
-                      "
-                      [title]="item.doneAt ? 'Marcar como pendiente' : 'Marcar como hecha'"
-                      (click)="toggleDone.emit({ item, done: !item.doneAt })"
-                    >
-                      <app-icon name="check" />
-                    </button>
-                    <button
-                      type="button"
-                      class="btn ghost sm icon"
-                      aria-label="Editar tarjeta"
-                      title="Editar (Espacio)"
-                      (click)="open.emit(item)"
-                    >
-                      <app-icon name="pencil" />
-                    </button>
-                    <button
-                      type="button"
-                      class="btn ghost sm icon danger"
-                      aria-label="Borrar tarjeta"
-                      title="Borrar (Supr)"
-                      (click)="remove.emit(item)"
-                    >
-                      <app-icon name="trash" />
-                    </button>
-                    @if (dragOff()) {
-                      <p-select
-                        class="move-to"
-                        [options]="otherColumns(item)"
-                        optionLabel="label"
-                        optionValue="key"
-                        [ngModel]="null"
-                        (onChange)="moveTo(item, $event.value)"
-                        placeholder="Mover a…"
-                        ariaLabel="Mover la tarjeta a otra columna"
-                        appendTo="body"
-                      />
+                    @if (metaOf(item.id); as meta) {
+                      <span class="kmeta">
+                        @if (meta.priority; as priority) {
+                          <app-priority-icon [priority]="priority" />
+                        }
+                        @if (meta.badge; as badge) {
+                          <span class="tag-chip">{{ badge }}</span>
+                        }
+                        @for (tag of meta.tags; track tag) {
+                          <span class="tag-chip">{{ tag }}</span>
+                        }
+                        @if (meta.more.length > 0) {
+                          <span class="tag-chip more" [attr.aria-label]="meta.more.join(', ')"
+                            >+{{ meta.more.length }}
+                            <span class="pop" aria-hidden="true">
+                              @for (tag of meta.more; track tag) {
+                                <span class="tag-chip">{{ tag }}</span>
+                              }
+                            </span>
+                          </span>
+                        }
+                        @if (item.doneAt) {
+                          <span>{{ date(item.doneAt) }}</span>
+                        } @else if (item.dueDate) {
+                          <span [class.overdue]="overdue(item)"
+                            >vence {{ date(item.dueDate) }}</span
+                          >
+                        }
+                        @if (meta.extras; as text) {
+                          <span>{{ text }}</span>
+                        }
+                      </span>
                     }
-                  </div>
+                  </button>
+                </li>
+                @if (item.id === drag()?.id && leaving()) {
+                  <li class="slot" aria-hidden="true" [style.height.px]="drag()?.height"></li>
                 }
-              </li>
+              }
+            </ul>
+
+            @if (receiving(column.key)) {
+              <div class="drop-zone" aria-hidden="true">
+                <strong>Suelta la tarea aquí</strong>
+                <span>para cambiar su estado a «{{ column.label }}»</span>
+              </div>
             }
-          </ul>
+          </div>
 
           @if (adding() === column.key) {
             <form class="add-form" (submit)="submitAdd($event, column.key)">
@@ -565,28 +565,6 @@ function extras(defs: readonly FieldDef[], extra: Extra): string {
           }
         </section>
       }
-
-      <div class="side">
-        @if (addingColumn()) {
-          <form class="add-form" (submit)="submitColumn($event)">
-            <input
-              #columnInput
-              class="input"
-              type="text"
-              autocomplete="off"
-              aria-label="Nombre de la nueva columna"
-              placeholder="Nombre"
-              [value]="newColumn()"
-              (input)="newColumn.set(columnInput.value)"
-              (keydown.escape)="addingColumn.set(false)"
-              (blur)="blurColumn()"
-            />
-            <small>Intro para crear</small>
-          </form>
-        } @else {
-          <button type="button" class="add-column" (click)="startColumn()">+ Columna</button>
-        }
-      </div>
     </div>
 
     <p class="hints">
@@ -609,21 +587,57 @@ export class ListBoard {
   readonly columns = input.required<BoardColumn[]>();
   readonly items = input.required<Item[]>();
   readonly fieldDefs = input<FieldDef[]>([]);
+  /** The card whose detail is open: it is the one shown as selected. */
+  readonly openId = input<string | null>(null);
 
   readonly move = output<BoardMove>();
   readonly add = output<{ column: string; title: string }>();
-  readonly addColumn = output<string>();
   readonly open = output<Item>();
   readonly remove = output<Item>();
-  readonly toggleDone = output<{ item: Item; done: boolean }>();
 
   protected readonly selectedId = signal<string | null>(null);
   protected readonly adding = signal<string | null>(null);
   protected readonly newTitle = signal('');
-  protected readonly addingColumn = signal(false);
-  protected readonly newColumn = signal('');
   /** Column the dragged card is over (for the ghost card text). */
-  protected readonly hoverColumn = signal('');
+  /** The card being dragged: where it comes from, the column it is over and its height. */
+  protected readonly drag = signal<{
+    id: string;
+    from: string;
+    over: string;
+    height: number;
+  } | null>(null);
+
+  /** The dragged card is over a column that is not its own: its slot here stays open. */
+  protected leaving(): boolean {
+    const drag = this.drag();
+    return !!drag && drag.over !== drag.from;
+  }
+
+  /** Only the column the card comes from sorts: the others show the drop invitation. */
+  protected sortingOff(column: string): boolean {
+    const drag = this.drag();
+    return !!drag && drag.from !== column;
+  }
+
+  protected enter(column: string): void {
+    this.drag.update((drag) => drag && { ...drag, over: column });
+  }
+
+  protected onDragStart(event: CdkDragStart<Item>, column: string, id: string): void {
+    const element = event.source.getPlaceholderElement() ?? event.source.element.nativeElement;
+    this.drag.set({
+      id,
+      from: column,
+      over: column,
+      height: element.getBoundingClientRect().height,
+    });
+  }
+
+  /** The column a dragged card would change to: it shows the drop invitation. */
+  protected receiving(column: string): boolean {
+    const drag = this.drag();
+    return !!drag && drag.over === column && column !== drag.from;
+  }
 
   /** On mobile and touch screens dragging is disabled: the board scrolls there and buttons are used. */
   protected readonly dragOff = signal(false);
@@ -654,39 +668,42 @@ export class ListBoard {
     return this.cards().get(column) ?? [];
   }
 
-  /** The first «select» field (e.g. priority) acts as the card's coloured identifier. */
-  private badgeField(): FieldDef | undefined {
-    return this.fieldDefs().find((def) => def.type === 'select');
-  }
+  /** What a column looks like: its colour, its style when the colour is RGB and its state icon. */
+  protected readonly views = computed(() =>
+    this.columns().map((column, index) => ({
+      hue: columnHue(column.label, index, column.color),
+      style: hueStyle(column.color),
+      icon: columnIcon(column, index, this.columns().length),
+    })),
+  );
 
-  /** Identifier next to the title: the select field value and, if none, the first label. */
-  protected leadOf(item: Item): string | null {
-    const field = this.badgeField();
-    const value = field ? item.extra[field.key] : undefined;
-    if (typeof value === 'string' && value !== '') return value;
-    return item.tags[0] ?? null;
-  }
+  /**
+   * The second line of each card (priority, badge, labels, extras), worked out once per change and
+   * not once per card on every pass; cards with nothing to show have no entry.
+   */
+  private readonly metas = computed(() => {
+    const defs = this.fieldDefs().filter((def) => def.key !== LEGACY_PRIORITY_KEY);
+    // The first «select» field acts as a grey badge on the card.
+    const badge = defs.find((def) => def.type === 'select');
+    const rest = defs.filter((def) => def !== badge);
+    const metas = new Map<string, CardMeta>();
+    for (const item of this.items()) {
+      const value = badge ? item.extra[badge.key] : undefined;
+      const meta: CardMeta = {
+        priority: priorityOf(item),
+        badge: typeof value === 'string' && value !== '' ? value : null,
+        tags: item.tags.slice(0, 2),
+        more: item.tags.slice(2),
+        extras: extras(rest, item.extra),
+      };
+      const empty = !meta.priority && !meta.badge && !item.tags.length && !meta.extras;
+      if (!empty || item.dueDate || item.doneAt) metas.set(item.id, meta);
+    }
+    return metas;
+  });
 
-  /** Labels left for the data row (the one already used as identifier is not repeated). */
-  protected restTags(item: Item): string[] {
-    const usedTag = this.leadOf(item) === item.tags[0] && item.tags[0] !== undefined;
-    return item.tags.slice(usedTag ? 1 : 0, usedTag ? 3 : 2);
-  }
-
-  protected extrasOf(item: Item): string {
-    const badge = this.badgeField();
-    return extras(
-      this.fieldDefs().filter((def) => def !== badge),
-      item.extra,
-    );
-  }
-
-  protected hue(label: string, index: number): string {
-    return columnHue(label, index);
-  }
-
-  protected tagColor(tag: string): string {
-    return tagHue(tag);
+  protected metaOf(id: string): CardMeta | undefined {
+    return this.metas().get(id);
   }
 
   protected date(iso: string): string {
@@ -698,34 +715,23 @@ export class ListBoard {
   }
 
   protected drop(event: CdkDragDrop<string, string, Item>): void {
-    this.hoverColumn.set('');
+    this.drag.set(null);
     const item = event.item.data;
     const column = event.container.data;
-    if (event.previousContainer === event.container && event.previousIndex === event.currentIndex) {
-      return;
-    }
+    const sameColumn = event.previousContainer === event.container;
+    if (sameColumn && event.previousIndex === event.currentIndex) return;
     this.selectedId.set(item.id);
     this.move.emit({
       id: item.id,
-      request: dropRequest(this.items(), item.id, column, event.currentIndex),
+      request: dropRequest(
+        this.items(),
+        item.id,
+        column,
+        // Into another column the card goes to the end of it.
+        sameColumn ? event.currentIndex : this.cardsOf(column).length,
+      ),
     });
     this.focusCard(item.id);
-  }
-
-  protected otherColumns(item: Item): BoardColumn[] {
-    return this.columns().filter((c) => c.key !== item.column);
-  }
-
-  /** «Mover a…» menu: the card goes to the end of the chosen column. */
-  protected moveTo(item: Item, column: string | null): void {
-    const request = column ? moveToRequest(this.items(), item.id, column) : null;
-    if (!request) return;
-    this.move.emit({ id: item.id, request });
-    this.focusCard(item.id);
-  }
-
-  protected canShift(item: Item, direction: -1 | 1): boolean {
-    return shiftRequest(this.items(), this.columns(), item.id, direction) !== null;
   }
 
   protected shift(item: Item, direction: -1 | 1): void {
@@ -791,8 +797,8 @@ export class ListBoard {
     );
   }
 
-  protected startAdd(column: string): void {
-    this.addingColumn.set(false);
+  /** Opens the new-card field of a column (the first one by default). */
+  startAdd(column: string = this.columns()[0]?.key ?? ''): void {
     this.newTitle.set('');
     this.adding.set(column);
     afterNextRender(
@@ -817,27 +823,5 @@ export class ListBoard {
   /** Leaving the field with text typed does not lose it: it only closes if empty. */
   protected blurAdd(): void {
     if (!this.newTitle().trim()) this.adding.set(null);
-  }
-
-  protected startColumn(): void {
-    this.cancelAdd();
-    this.newColumn.set('');
-    this.addingColumn.set(true);
-    afterNextRender(
-      () => this.host.nativeElement.querySelector<HTMLInputElement>('.side input')?.focus(),
-      { injector: this.injector },
-    );
-  }
-
-  protected submitColumn(event: Event): void {
-    event.preventDefault();
-    const label = this.newColumn().trim();
-    if (!label) return;
-    this.addColumn.emit(label);
-    this.addingColumn.set(false);
-  }
-
-  protected blurColumn(): void {
-    if (!this.newColumn().trim()) this.addingColumn.set(false);
   }
 }

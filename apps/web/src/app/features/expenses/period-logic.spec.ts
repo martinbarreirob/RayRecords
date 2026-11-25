@@ -3,6 +3,8 @@ import {
   monthInPeriod,
   periodPresets,
   rangeBetween,
+  singleMonthLabel,
+  singleMonthPresets,
   wholeYear,
   yearPeriod,
 } from './period-logic';
@@ -17,6 +19,18 @@ describe('period-logic', () => {
     expect(by['this-year']).toEqual({ from: '2026-01', to: '2026-12' });
     expect(by['all']).toEqual({ from: null, to: null });
     expect(periodPresets('2026-02', false).some((p) => p.id === 'all')).toBe(false);
+  });
+
+  it('singleMonthPresets offers this month and its neighbours, across year ends', () => {
+    const presets = singleMonthPresets('2026-12');
+    expect(presets.map((p) => p.id)).toEqual(['this-month', 'last-month', 'next-month']);
+    expect(presets[0]!.period).toEqual({ from: '2026-12', to: '2026-12' });
+    expect(presets[1]!.period).toEqual({ from: '2026-11', to: '2026-11' });
+    expect(presets[2]!.period).toEqual({ from: '2027-01', to: '2027-01' });
+  });
+
+  it('singleMonthLabel writes the month name and year', () => {
+    expect(singleMonthLabel('2026-11')).toBe('noviembre 2026');
   });
 
   it('wholeYear recognises only full calendar years', () => {
@@ -35,5 +49,4 @@ describe('period-logic', () => {
     expect(monthInPeriod('2020-01', { from: null, to: null })).toBe(true);
     expect(monthInPeriod('2026-03', { from: '2026-01', to: '2026-02' })).toBe(false);
   });
-
 });

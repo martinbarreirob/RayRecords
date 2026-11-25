@@ -431,27 +431,60 @@
   }
 }
 
-/* Colored label: use together with `.hue-*`. */
+/* A floating menu (app-dropdown) and its options: used by the pickers of state, priority, icon and colour. */
+.dd-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dd-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--row-hover);
+    outline: none;
+  }
+
+  &[aria-selected='true'] {
+    font-weight: 500;
+  }
+}
+
+@media (width <= 767px) {
+  .dd-opt {
+    min-height: var(--touch-target);
+  }
+}
+
+/* A label: always grey (soft background, near-black text, thin border) and small. */
 .tag-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 1px var(--space-2);
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: var(--hue-soft, var(--surface-2));
-  color: var(--hue-text, var(--muted));
-  font-size: var(--text-xs);
-  font-weight: 500;
-  line-height: 1.5;
+  background: var(--surface-2);
+  color: color-mix(in srgb, var(--text) 55%, var(--muted));
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.55;
   white-space: nowrap;
-
-  &::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--hue, var(--muted));
-  }
 }
 
 /* External link as an icon next to a title (no button or text). */

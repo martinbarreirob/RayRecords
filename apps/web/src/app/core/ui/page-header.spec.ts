@@ -31,4 +31,21 @@ describe('PageHeader and AddButton phone layout', () => {
     expect(root.querySelector('.page-actions')!.classList.contains('stretch')).toBe(true);
     expect(root.querySelector('app-add-button')!.classList.contains('fill')).toBe(true);
   });
+
+  it('renders the title as plain text unless titleLink is set, and then emits titlePressed', () => {
+    const fixture = TestBed.createComponent(PageHeader);
+    fixture.componentRef.setInput('title', 'Listas');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('h1 button')).toBeNull();
+
+    let pressed = 0;
+    fixture.componentInstance.titlePressed.subscribe(() => pressed++);
+    fixture.componentRef.setInput('titleLink', true);
+    fixture.detectChanges();
+    const button = root.querySelector<HTMLButtonElement>('h1 button')!;
+    expect(button.textContent?.trim()).toBe('Listas');
+    button.click();
+    expect(pressed).toBe(1);
+  });
 });

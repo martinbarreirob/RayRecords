@@ -12,7 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { MenuItem } from 'primeng/api';
+import { ConfirmationService, type MenuItem } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Menu, MenuModule } from 'primeng/menu';
 import type { Observable } from 'rxjs';
 import {
@@ -22,6 +23,8 @@ import {
   monthOf,
   todayIn,
   type CalendarEntry,
+  type Item,
+  type List,
 } from '@rayrecords/shared';
 import { ApiClient } from '../../core/api/api-client';
 import { apiErrorMessage } from '../../core/api/errors';
@@ -31,6 +34,8 @@ import { PageHeader } from '../../core/ui/page-header';
 import { DateField } from '../../core/ui/date-field';
 import { TimeField } from '../../core/ui/time-field';
 import { EventDialog } from './event-dialog';
+import { ItemDialog } from '../lists/item-dialog';
+import { ListsStore } from '../lists/lists.store';
 import {
   arrowTarget,
   buildMonthGrid,
@@ -42,11 +47,12 @@ import {
   isOverdueEntry,
   monthTitle,
   rangeKey,
-  shiftMonth,
   sortDayEntries,
   splitVisible,
 } from './calendar-grid';
 import { Icon } from '../../core/ui/icon';
+import type { Period } from '../expenses/movements-logic';
+import { PeriodPicker } from '../expenses/period-picker';
 
 type CalendarView = 'month' | 'agenda';
 
@@ -61,47 +67,26 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
     Icon,
     AddButton,
     PageHeader,
+    PeriodPicker,
     RouterLink,
     NgTemplateOutlet,
     DateField,
     TimeField,
     EventDialog,
+    ItemDialog,
     MenuModule,
+    ConfirmDialogModule,
   ],
+  providers: [ConfirmationService],
   template: `
     <div class="page">
       <app-page-header title="Calendario" [eyebrow]="monthLabel()" [split]="true">
         <div class="tools">
-          <div class="row nav" role="group" aria-label="Cambiar de mes">
-            <button type="button" class="btn icon" aria-label="Mes anterior" (click)="go(-1)">
-              <app-icon name="chevron-left" />
-            </button>
-            <button type="button" class="btn today" (click)="goToday()">Hoy</button>
-            <button type="button" class="btn icon" aria-label="Mes siguiente" (click)="go(1)">
-              <app-icon name="chevron-right" />
-            </button>
-          </div>
-
-          <span class="break" aria-hidden="true"></span>
-
-          <div class="segmented" role="group" aria-label="Vista">
-            <button
-              type="button"
-              [attr.aria-pressed]="view() === 'month'"
-              (click)="setView('month')"
-            >
-              Mes
-            </button>
-            <button
-              type="button"
-              [attr.aria-pressed]="view() === 'agenda'"
-              (click)="setView('agenda')"
-            >
-              Agenda
-            </button>
-          </div>
-
-          <button type="button" class="btn ghost today-row" (click)="goToday()">Hoy</button>
+          <app-period-picker
+            [single]="true"
+            [period]="monthPeriod()"
+            (periodChange)="onMonthPicked($event)"
+          />
 
           <app-add-button label="Nuevo evento" (pressed)="openAdd(selected())" />
         </div>
@@ -240,87 +225,106 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
             </table>
           </section>
 
-          <aside
-            class="card day-panel"
-            aria-label="Detalle del día"
+          <div class="side">
+            <ng-container *ngTemplateOutlet="viewSwitch" />
+            <aside
+              class="card day-panel"
+              aria-label="Detalle del día"
+              [class.is-refreshing]="refreshing()"
+              [attr.aria-busy]="loading()"
+            >
+              <div class="day-head">
+                <h2>{{ selectedLabel() }}</h2>
+                @if (selected() === today) {
+                  <span class="badge accent">Hoy</span>
+                }
+              </div>
+              @if (loading()) {
+                <ul class="rows skel-in" aria-hidden="true">
+                  @for (n of ghostRows; track n) {
+                    <ng-container *ngTemplateOutlet="ghostRow" />
+                  }
+                </ul>
+              } @else if (selectedEntries().length) {
+                <ul class="rows">
+                  @for (entry of selectedEntries(); track entry.id) {
+                    <ng-container *ngTemplateOutlet="row; context: { $implicit: entry }" />
+                  }
+                </ul>
+              } @else {
+                <p class="empty">No hay nada este día.</p>
+              }
+              <button type="button" class="btn sm add-here" (click)="openAdd(selected())">
+                <app-icon name="plus" />
+                Añadir evento
+              </button>
+            </aside>
+          </div>
+        </div>
+      } @else {
+        <div class="month-layout">
+          <section
+            class="agenda"
+            aria-label="Agenda"
             [class.is-refreshing]="refreshing()"
             [attr.aria-busy]="loading()"
           >
-            <div class="day-head">
-              <h2>{{ selectedLabel() }}</h2>
-              @if (selected() === today) {
-                <span class="badge accent">Hoy</span>
-              }
-            </div>
             @if (loading()) {
-              <ul class="rows skel-in" aria-hidden="true">
-                @for (n of ghostRows; track n) {
-                  <ng-container *ngTemplateOutlet="ghostRow" />
-                }
-              </ul>
-            } @else if (selectedEntries().length) {
-              <ul class="rows">
-                @for (entry of selectedEntries(); track entry.id) {
-                  <ng-container *ngTemplateOutlet="row; context: { $implicit: entry }" />
-                }
-              </ul>
+              @for (count of ghostAgenda; track $index) {
+                <article class="card agenda-day skel-in" aria-hidden="true">
+                  <div class="agenda-date">
+                    <span class="skeleton ghost-wd"></span>
+                    <span class="skeleton ghost-dn"></span>
+                  </div>
+                  <div class="agenda-body">
+                    <ul class="rows">
+                      @for (n of ghostRows.slice(0, count); track n) {
+                        <ng-container *ngTemplateOutlet="ghostRow" />
+                      }
+                    </ul>
+                  </div>
+                </article>
+              }
             } @else {
-              <p class="empty">No hay nada este día.</p>
+              @for (group of agenda(); track group.date) {
+                <article class="card agenda-day" [class.today]="group.date === today">
+                  <div class="agenda-date" aria-hidden="true">
+                    <span class="wd">{{ group.weekday }}</span>
+                    <span class="dn">{{ group.day }}</span>
+                  </div>
+                  <div class="agenda-body">
+                    <h2 class="sr-only">{{ group.title }}</h2>
+                    <ul class="rows">
+                      @for (entry of group.entries; track entry.id) {
+                        <ng-container *ngTemplateOutlet="row; context: { $implicit: entry }" />
+                      }
+                    </ul>
+                  </div>
+                </article>
+              } @empty {
+                <p class="empty">
+                  No hay nada con fecha en {{ monthLabel() }}. Pulsa «Añadir» para crear un evento.
+                </p>
+              }
             }
-            <button type="button" class="btn sm add-here" (click)="openAdd(selected())">
-              <app-icon name="plus" />
-              Añadir evento
-            </button>
-          </aside>
+          </section>
+          <div class="side">
+            <ng-container *ngTemplateOutlet="viewSwitch" />
+          </div>
         </div>
-      } @else {
-        <section
-          class="agenda"
-          aria-label="Agenda"
-          [class.is-refreshing]="refreshing()"
-          [attr.aria-busy]="loading()"
-        >
-          @if (loading()) {
-            @for (count of ghostAgenda; track $index) {
-              <article class="card agenda-day skel-in" aria-hidden="true">
-                <div class="agenda-date">
-                  <span class="skeleton ghost-wd"></span>
-                  <span class="skeleton ghost-dn"></span>
-                </div>
-                <div class="agenda-body">
-                  <ul class="rows">
-                    @for (n of ghostRows.slice(0, count); track n) {
-                      <ng-container *ngTemplateOutlet="ghostRow" />
-                    }
-                  </ul>
-                </div>
-              </article>
-            }
-          } @else {
-            @for (group of agenda(); track group.date) {
-              <article class="card agenda-day" [class.today]="group.date === today">
-                <div class="agenda-date" aria-hidden="true">
-                  <span class="wd">{{ group.weekday }}</span>
-                  <span class="dn">{{ group.day }}</span>
-                </div>
-                <div class="agenda-body">
-                  <h2 class="sr-only">{{ group.title }}</h2>
-                  <ul class="rows">
-                    @for (entry of group.entries; track entry.id) {
-                      <ng-container *ngTemplateOutlet="row; context: { $implicit: entry }" />
-                    }
-                  </ul>
-                </div>
-              </article>
-            } @empty {
-              <p class="empty">
-                No hay nada con fecha en {{ monthLabel() }}. Pulsa «Añadir» para crear un evento.
-              </p>
-            }
-          }
-        </section>
       }
     </div>
+
+    <ng-template #viewSwitch>
+      <div class="segmented view-switch" role="group" aria-label="Vista">
+        <button type="button" [attr.aria-pressed]="view() === 'month'" (click)="setView('month')">
+          Mes
+        </button>
+        <button type="button" [attr.aria-pressed]="view() === 'agenda'" (click)="setView('agenda')">
+          Agenda
+        </button>
+      </div>
+    </ng-template>
 
     <ng-template #ghostRow>
       <li class="row-entry">
@@ -343,10 +347,9 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
           (change)="toggleDone(entry, check.checked)"
         />
         <div
-          class="body"
-          [class.tappable]="entry.kind === 'event'"
-          [attr.role]="entry.kind === 'event' ? 'button' : null"
-          [attr.tabindex]="entry.kind === 'event' ? 0 : null"
+          class="body tappable"
+          role="button"
+          tabindex="0"
           (click)="onBody(entry, $event)"
           (keydown.enter)="onBody(entry, $event)"
         >
@@ -370,17 +373,15 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
             </a>
           </div>
         </div>
-        @if (entry.kind === 'event') {
-          <button
-            type="button"
-            class="btn icon ghost row-menu"
-            aria-haspopup="menu"
-            [attr.aria-label]="'Opciones: ' + entry.title"
-            (click)="openMenu($event, entry, menu)"
-          >
-            <app-icon name="dots" />
-          </button>
-        }
+        <button
+          type="button"
+          class="btn icon ghost row-menu"
+          aria-haspopup="menu"
+          [attr.aria-label]="'Opciones: ' + entry.title"
+          (click)="openMenu($event, entry, menu)"
+        >
+          <app-icon name="dots" />
+        </button>
       </li>
     </ng-template>
 
@@ -392,6 +393,18 @@ const GRID_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'E
         </a>
       </ng-template>
     </p-menu>
+
+    @if (editingItem(); as target) {
+      <app-item-dialog
+        [item]="target.item"
+        [list]="target.list"
+        (saved)="onItemSaved($event)"
+        (closed)="editingItem.set(null)"
+        (removed)="askRemoveItem($event)"
+      />
+    }
+
+    <p-confirmdialog />
 
     <app-event-dialog
       [open]="!!editing()"
@@ -407,6 +420,8 @@ export class CalendarPage {
   private readonly bus = inject(RefreshBus);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly confirmation = inject(ConfirmationService);
+  private readonly lists = inject(ListsStore);
 
   /** An event belongs to the locked «Eventos» list, like an item belongs to its own. */
   protected readonly eventsName = EVENTS_LIST_NAME;
@@ -440,6 +455,8 @@ export class CalendarPage {
   protected readonly newTime = signal('');
   /** The event open in the edit dialog. */
   protected readonly editing = signal<CalendarEntry | null>(null);
+  /** A list item opened from the calendar, with the list it belongs to (its fields and columns). */
+  protected readonly editingItem = signal<{ item: Item; list: List } | null>(null);
   /**
    * The form date follows the selected calendar day until the user types a date in the form
    * itself; from then on the form keeps their choice.
@@ -461,6 +478,10 @@ export class CalendarPage {
   protected readonly refreshing = computed(
     () => this.pendingKey() === this.key() && this.cache().has(this.key()),
   );
+  protected readonly monthPeriod = computed<Period>(() => ({
+    from: this.month(),
+    to: this.month(),
+  }));
   protected readonly monthLabel = computed(() => monthTitle(this.month()));
   protected readonly selectedLabel = computed(() => dayTitle(this.selected()));
 
@@ -565,15 +586,12 @@ export class CalendarPage {
     return isOverdueEntry(entry, this.today);
   }
 
-  protected go(delta: number): void {
-    const month = shiftMonth(this.month(), delta);
+  /** A month picked in the selector: shows it and selects today (if it is that month) or day 1. */
+  protected onMonthPicked(period: Period): void {
+    const month = period.from;
+    if (!month) return;
     this.month.set(month);
     this.selected.set(defaultSelection(month, this.today));
-  }
-
-  protected goToday(): void {
-    this.month.set(monthOf(this.today));
-    this.selected.set(this.today);
   }
 
   protected openAdd(date: string): void {
@@ -586,13 +604,16 @@ export class CalendarPage {
   protected readonly menuItems = signal<MenuItem[]>([]);
 
   protected openMenu(event: Event, entry: CalendarEntry, menu: Menu): void {
+    const edit = { label: 'Editar', icon: 'pencil', command: () => this.openEdit(entry) };
     this.menuItems.set([
-      { label: 'Editar', icon: 'pencil', command: () => this.openEdit(entry) },
+      edit,
       {
         label: 'Eliminar',
         icon: 'trash',
         styleClass: 'menu-danger',
-        command: () => this.removeEvent(entry),
+        // A list item is removed with a confirmation: it belongs to a list, not to the calendar.
+        command: () =>
+          entry.kind === 'item' ? this.askRemoveItem(entry) : this.removeEvent(entry),
       },
     ]);
     menu.toggle(event);
@@ -603,14 +624,62 @@ export class CalendarPage {
     return entry.time ? `${entry.time} · ${entry.title}` : entry.title;
   }
 
-  /** Clicking or pressing Enter on the text of an event edits it; the link to its list does not. */
+  /** Clicking or pressing Enter on the text of a row edits it; the link to its list does not. */
   protected onBody(entry: CalendarEntry, event: Event): void {
-    if (entry.kind !== 'event' || (event.target as Element).closest('a')) return;
+    if ((event.target as Element).closest('a')) return;
     this.openEdit(entry);
   }
 
+  /** An event opens its own dialog; a list item opens the editor of its list, with its fields. */
   protected openEdit(entry: CalendarEntry): void {
-    if (entry.kind === 'event') this.editing.set(entry);
+    if (entry.kind === 'event') {
+      this.editing.set(entry);
+      return;
+    }
+    const list = this.lists.lists()?.find((candidate) => candidate.slug === entry.listSlug);
+    if (!list) {
+      this.error.set('No se encontró la lista de este elemento.');
+      return;
+    }
+    this.api.items(list.id).subscribe({
+      next: (items) => {
+        const item = items.find((candidate) => candidate.id === entry.id);
+        if (item) this.editingItem.set({ item, list });
+        else this.error.set('El elemento ya no existe.');
+      },
+      error: (error: unknown) => this.error.set(apiErrorMessage(error)),
+    });
+  }
+
+  /** After saving, the calendar shows the day where the item ended up. */
+  protected onItemSaved(item: Item): void {
+    this.editingItem.set(null);
+    this.error.set('');
+    if (item.dueDate) {
+      this.month.set(monthOf(item.dueDate));
+      this.selected.set(item.dueDate);
+    }
+    this.bus.changed();
+  }
+
+  protected askRemoveItem(item: Pick<Item, 'id' | 'title'>): void {
+    this.confirmation.confirm({
+      header: 'Borrar elemento',
+      message: `¿Borrar «${item.title}»? No se puede deshacer.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Borrar',
+      rejectLabel: 'Cancelar',
+      acceptButtonProps: { severity: 'danger' },
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () =>
+        this.api.deleteItem(item.id).subscribe({
+          next: () => {
+            this.editingItem.set(null);
+            this.bus.changed();
+          },
+          error: (error: unknown) => this.error.set(apiErrorMessage(error)),
+        }),
+    });
   }
 
   /** After saving, the calendar shows the day where the event ended up. */
@@ -664,7 +733,6 @@ export class CalendarPage {
     });
   }
 
-  /** Only events can be removed here; list items are managed from their list. */
   protected removeEvent(entry: CalendarEntry): void {
     this.api.deleteEvent(entry.id).subscribe({
       next: () => this.bus.changed(),

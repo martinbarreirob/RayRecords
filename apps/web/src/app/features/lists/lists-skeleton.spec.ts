@@ -197,3 +197,39 @@ describe('ListDetailPage: loading', () => {
     expect(el.querySelector('app-list-board')).not.toBeNull();
   });
 });
+
+describe('ListsPage: creating', () => {
+  function render() {
+    const api = { lists: () => of([]), items: () => of([] as Item[]), events: () => of([]) };
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(ListsPage);
+    fixture.detectChanges();
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('keeps the Listas header without the add button, and both ways back return to the lists', async () => {
+    const { fixture, el } = render();
+    el.querySelector<HTMLElement>('app-add-button button')!.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('app-list-create')).not.toBeNull();
+    expect(el.querySelector('app-page-header h1')!.textContent).toContain('Listas');
+    expect(el.querySelector('.page-eyebrow')).not.toBeNull();
+    expect(el.querySelector('app-add-button')).toBeNull();
+
+    // The gray back button of the first step.
+    el.querySelector<HTMLElement>('app-list-create .back')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-list-create')).toBeNull();
+    expect(el.querySelector('app-add-button')).not.toBeNull();
+
+    // The clickable title.
+    el.querySelector<HTMLElement>('app-add-button button')!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLElement>('app-page-header h1 button')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-list-create')).toBeNull();
+  });
+});

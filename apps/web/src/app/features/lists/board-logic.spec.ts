@@ -1,5 +1,6 @@
 import type { BoardColumn, Item } from '@rayrecords/shared';
 import {
+  makeMatcher,
   applyMove,
   columnHue,
   columnKey,
@@ -12,7 +13,6 @@ import {
   shortDate,
   stepRequest,
   summaryText,
-  tagHue,
   todayLocal,
 } from './board-logic';
 
@@ -225,15 +225,34 @@ describe('board colours', () => {
     expect(columnHue('Bloqueado', 1)).toBe('teal');
     expect(columnHue('Bloqueado', 3)).toBe('violet');
   });
+});
 
-  it('priority labels have a fixed colour', () => {
-    expect(tagHue('alta')).toBe('rose');
-    expect(tagHue('Media')).toBe('amber');
-    expect(tagHue('baja')).toBe('green');
+describe('makeMatcher', () => {
+  const card = {
+    title: 'Reserva online',
+    text: 'Probar con el calendario',
+    tags: ['web', 'cliente'],
+  };
+
+  it('matches any part of the title, notes or labels, without accents or case', () => {
+    expect(makeMatcher('', '')(card)).toBe(true);
+    expect(makeMatcher('reser', '')(card)).toBe(true);
+    expect(makeMatcher('CALEND', '')(card)).toBe(true);
+    expect(makeMatcher('clien', '')(card)).toBe(true);
+    expect(makeMatcher('online calendario', '')(card)).toBe(true);
+    expect(makeMatcher('zzz', '')(card)).toBe(false);
   });
 
-  it('other labels have a stable colour per text', () => {
-    expect(tagHue('cocina')).toBe(tagHue('Cocina '));
-    expect(['blue', 'green', 'amber', 'rose', 'violet', 'teal']).toContain(tagHue('lo que sea'));
+  it('the label filter needs exactly that label', () => {
+    expect(makeMatcher('', 'web')(card)).toBe(true);
+    expect(makeMatcher('', 'bug')(card)).toBe(false);
+    expect(makeMatcher('reserva', 'bug')(card)).toBe(false);
+  });
+});
+
+describe('columnHue with a chosen colour', () => {
+  it('uses the colour of the column over its name or position', () => {
+    expect(columnHue('Hecho', 2, 'rose')).toBe('rose');
+    expect(columnHue('Hecho', 2)).toBe('green');
   });
 });

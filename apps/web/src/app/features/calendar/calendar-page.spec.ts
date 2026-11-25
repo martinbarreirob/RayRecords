@@ -198,8 +198,14 @@ describe('CalendarPage: loading', () => {
     await settle(fixture);
   }
 
-  const click = (fixture: ComponentFixture<CalendarPage>, label: string) =>
-    el(fixture).querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!.click();
+  /** Opens the month selector and presses one of its shortcuts. */
+  const preset = (fixture: ComponentFixture<CalendarPage>, label: string) => {
+    el(fixture).querySelector<HTMLButtonElement>('.pp-trigger')!.click();
+    fixture.detectChanges();
+    [...el(fixture).querySelectorAll<HTMLButtonElement>('.pp-preset')]
+      .find((button) => button.textContent?.trim() === label)!
+      .click();
+  };
 
   it('on first load draws the ghost grid and not the empty state', () => {
     const fixture = setup();
@@ -235,7 +241,7 @@ describe('CalendarPage: loading', () => {
     const fixture = setup();
     await respond(fixture, 0, [entry]);
 
-    click(fixture, 'Mes siguiente');
+    preset(fixture, 'Mes siguiente');
     await settle(fixture);
     expect(requests.length).toBe(2);
     expect(ghostCells(fixture)).toBeGreaterThanOrEqual(35);
@@ -243,7 +249,7 @@ describe('CalendarPage: loading', () => {
     await respond(fixture, 1, []);
     expect(ghostCells(fixture)).toBe(0);
 
-    click(fixture, 'Mes anterior');
+    preset(fixture, 'Este mes');
     await settle(fixture);
     // The previous month was already seen: what was there is shown, dimmed while it refreshes.
     expect(ghostCells(fixture)).toBe(0);
@@ -286,7 +292,9 @@ describe('CalendarPage: overdue events with a long title', () => {
     .slice(0, 10);
   const overdue = {
     id: 'c'.repeat(24),
-    title: 'Renovar el seguro del coche antes de que termine el plazo de la póliza actual'.repeat(2),
+    title: 'Renovar el seguro del coche antes de que termine el plazo de la póliza actual'.repeat(
+      2,
+    ),
     dueDate: yesterday,
     time: '09:30',
     kind: 'event',
@@ -328,5 +336,156 @@ describe('CalendarPage: overdue events with a long title', () => {
     const body = root.querySelector('.day-panel .row-entry .body')!;
     expect(body.getAttribute('role')).toBe('button');
     expect(body.getAttribute('tabindex')).toBe('0');
+  });
+});
+
+describe('CalendarPage: editing a list item', () => {
+  const list = {
+    id: 'd'.repeat(24),
+    slug: 'tareas',
+    name: 'Tareas',
+    fieldDefs: [],
+    order: 0,
+  } as unknown as import('@rayrecords/shared').List;
+  const item = {
+    id: 'a'.repeat(24),
+    listId: list.id,
+    title: 'Llamar al dentista',
+    tags: [],
+    dueDate: today,
+    extra: {},
+    order: 0,
+    source: 'manual',
+  } as unknown as import('@rayrecords/shared').Item;
+
+  it('opens the editor of the list for an item, and removes it only after confirming', async () => {
+    const asked: string[] = [];
+    const api = {
+      lists: () => of([list]),
+      calendar: () => of([entry]),
+      items: (listId: string) => {
+        asked.push(listId);
+        return of([item]);
+      },
+    };
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: ApiClient, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    root.querySelector<HTMLElement>('.day-panel .row-entry .body')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(asked).toEqual([list.id]);
+    expect(root.querySelector('app-item-dialog')).not.toBeNull();
+    expect(root.querySelector('button.row-menu')).not.toBeNull();
+  });
+});
+
+describe('CalendarPage: view switch and month selector', () => {
+  const thisMonth = today.slice(0, 7);
+  const nextMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 1))
+    .toISOString()
+    .slice(0, 7);
+
+  async function open(): Promise<ComponentFixture<CalendarPage>> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: ApiClient, useValue: { lists: () => of([]), calendar: () => of([entry]) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const root = (fixture: ComponentFixture<CalendarPage>) => fixture.nativeElement as HTMLElement;
+  const page = (fixture: ComponentFixture<CalendarPage>) =>
+    fixture.componentInstance as unknown as {
+      month(): string;
+      selected(): string;
+    };
+
+  it('has no arrows or "Hoy" button in the header any more', async () => {
+    const fixture = await open();
+    expect(root(fixture).querySelector('.page-actions .segmented')).toBeNull();
+    expect(root(fixture).querySelector('button[aria-label="Mes siguiente"]')).toBeNull();
+    expect(root(fixture).querySelector('.page-actions .btn.today')).toBeNull();
+    expect(root(fixture).querySelector('.page-actions app-period-picker')).not.toBeNull();
+  });
+
+  it('puts the Mes / Agenda control in the day column, right above the day detail', async () => {
+    const fixture = await open();
+    const side = root(fixture).querySelector('.month-layout > .side')!;
+    const control = side.querySelector('.view-switch')!;
+    expect(control.nextElementSibling).toBe(side.querySelector('.day-panel'));
+    expect(control.querySelectorAll('button').length).toBe(2);
+    expect(control.querySelector('button')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps the control in the same column in the agenda, and switches back', async () => {
+    const fixture = await open();
+    root(fixture).querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click();
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('.agenda')).not.toBeNull();
+    expect(root(fixture).querySelector('.day-panel')).toBeNull();
+    const control = root(fixture).querySelector('.month-layout > .side > .view-switch')!;
+    expect(control.querySelectorAll('button')[1]?.getAttribute('aria-pressed')).toBe('true');
+
+    control.querySelectorAll('button')[0]!.dispatchEvent(new Event('click'));
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('.grid-card')).not.toBeNull();
+  });
+
+  it('shows the month as "mes año" and picks another one with a single click', async () => {
+    const fixture = await open();
+    const trigger = root(fixture).querySelector<HTMLButtonElement>('.pp-trigger')!;
+    expect(trigger.textContent).toMatch(/^\s*[a-záéíóú]+ \d{4}\s*$/);
+
+    trigger.click();
+    fixture.detectChanges();
+    const pop = root(fixture).querySelector('.pp-pop')!;
+    expect([...pop.querySelectorAll('.pp-preset')].map((b) => b.textContent?.trim())).toEqual([
+      'Este mes',
+      'Mes anterior',
+      'Mes siguiente',
+    ]);
+    expect(pop.textContent).not.toContain('Todo el año');
+    expect(pop.querySelector('.pp-hint')).toBeNull();
+
+    const months = pop.querySelectorAll<HTMLButtonElement>('.pp-month');
+    months[Number(thisMonth.slice(5)) - 1]!.click();
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('.pp-pop')).toBeNull();
+    expect(page(fixture).month()).toBe(thisMonth);
+  });
+
+  it('a month change selects day 1, and "Este mes" brings back today', async () => {
+    const fixture = await open();
+    const click = (label: string) => {
+      root(fixture).querySelector<HTMLButtonElement>('.pp-trigger')!.click();
+      fixture.detectChanges();
+      [...root(fixture).querySelectorAll<HTMLButtonElement>('.pp-preset')]
+        .find((b) => b.textContent?.trim() === label)!
+        .click();
+      fixture.detectChanges();
+    };
+
+    click('Mes siguiente');
+    expect(page(fixture).month()).toBe(nextMonth);
+    expect(page(fixture).selected()).toBe(`${nextMonth}-01`);
+
+    click('Este mes');
+    expect(page(fixture).month()).toBe(thisMonth);
+    expect(page(fixture).selected()).toBe(today);
   });
 });
