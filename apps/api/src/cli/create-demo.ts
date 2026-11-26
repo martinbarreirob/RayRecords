@@ -40,6 +40,7 @@ async function main() {
     const own = [
       c.lists,
       c.items,
+      c.itemHistory,
       c.events,
       c.dailyNotes,
       c.noteCards,

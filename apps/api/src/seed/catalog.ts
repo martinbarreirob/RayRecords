@@ -4,10 +4,18 @@ import {
   slugify,
   type DateOnly,
   type Extra,
+  type BoardColumn,
   type ListPreset,
 } from '@rayrecords/shared';
 import { ObjectId } from 'mongodb';
-import type { EventDoc, ItemDoc, ListDoc, NoteCardDoc, NoteGroupDoc } from '../db/documents';
+import type {
+  EventDoc,
+  ItemDoc,
+  ItemHistoryDoc,
+  ListDoc,
+  NoteCardDoc,
+  NoteGroupDoc,
+} from '../db/documents';
 
 interface ItemSeed {
   title: string;
@@ -20,6 +28,25 @@ interface ItemSeed {
   column?: string;
   done?: boolean;
 }
+
+/**
+ * The columns of the sample board: every state icon the new column editor offers in use, and one
+ * custom RGB colour next to the named ones.
+ */
+const BOARD_COLUMNS: BoardColumn[] = [
+  { key: 'backlog', label: 'Backlog', color: 'violet', icon: 'backlog' },
+  { key: 'porHacer', label: 'Por hacer', color: 'blue', icon: 'todo' },
+  { key: 'enCurso', label: 'En curso', color: 'amber', icon: 'progress' },
+  { key: 'enRevision', label: 'En revisión', color: '#0d9488', icon: 'review' },
+  { key: 'hecho', label: 'Hecho', color: 'green', icon: 'done' },
+];
+
+/** The priority of a card (`extra.priority`), plus the old «prioridad» select the preset still has. */
+const LEGACY_PRIORITY = { low: 'baja', medium: 'media', high: 'alta', urgent: 'alta' } as const;
+const priority = (value: keyof typeof LEGACY_PRIORITY): Extra => ({
+  priority: value,
+  prioridad: LEGACY_PRIORITY[value],
+});
 
 function makeList(
   preset: ListPreset,
@@ -78,7 +105,10 @@ export function buildCatalog(now: Date, today: DateOnly) {
     icon: 'check-square',
     captureAlias: 'tarea',
   });
-  const board = makeList(LIST_PRESETS.board, 5000, now, { name: 'Portfolio web' });
+  const board = makeList(LIST_PRESETS.board, 5000, now, {
+    name: 'Portfolio web',
+    board: { columns: BOARD_COLUMNS },
+  });
   const ideas = makeList(LIST_PRESETS.free, 6000, now, { name: 'Ideas', icon: 'lightbulb' });
 
   const media = (
@@ -209,44 +239,78 @@ export function buildCatalog(now: Date, today: DateOnly) {
       [
         {
           title: 'Definir la arquitectura del monorepo',
+          text: 'Paquetes `web`, `api` y `shared`; el esquema Zod vive en `shared`.',
+          tags: ['arquitectura'],
           column: 'hecho',
           done: true,
-          extra: { prioridad: 'alta' },
+          extra: priority('high'),
         },
         {
           title: 'Parser de captura rápida',
+          text: 'Prefijos de fecha (`hoy`, `mañana`) y alias de lista.',
+          tags: ['api', 'captura'],
           column: 'hecho',
           done: true,
-          extra: { prioridad: 'alta' },
+          extra: priority('high'),
         },
         {
           title: 'Esqueleto de Angular y pantallas',
-          column: 'enCurso',
-          extra: { prioridad: 'alta' },
+          text: 'Rutas, cabecera y pestañas de cada sección.',
+          tags: ['web'],
+          column: 'enRevision',
+          extra: priority('high'),
+        },
+        {
+          title: 'Tablero con columnas y estados',
+          text: 'Iconos de estado y colores propios por columna.',
+          tags: ['web', 'listas'],
+          column: 'enRevision',
+          extra: priority('medium'),
         },
         {
           title: 'Seeder de datos de demostración',
+          tags: ['api'],
           column: 'enCurso',
-          extra: { prioridad: 'media' },
+          extra: priority('medium'),
         },
         {
           title: 'Autenticación y sesión persistente',
-          column: 'porHacer',
-          extra: { prioridad: 'alta' },
+          text: 'Cookie de sesión, expiración deslizante y cierre en todos los equipos.',
+          tags: ['api', 'seguridad'],
+          column: 'enCurso',
+          extra: priority('urgent'),
         },
         {
           title: 'Importación del CSV del banco',
+          tags: ['gastos'],
           column: 'porHacer',
-          extra: { prioridad: 'alta' },
+          extra: priority('high'),
         },
         {
           title: 'Gráficos de gastos por mes y categoría',
+          tags: ['gastos', 'web'],
           column: 'porHacer',
-          extra: { prioridad: 'media' },
+          extra: priority('medium'),
         },
-        { title: 'Vista de calendario', column: 'porHacer', extra: { prioridad: 'media' } },
-        { title: 'Passkeys (WebAuthn)', column: 'porHacer', extra: { prioridad: 'baja' } },
-        { title: 'Tokens de diseño y tema', column: 'porHacer', extra: { prioridad: 'baja' } },
+        {
+          title: 'Vista de calendario',
+          tags: ['web'],
+          column: 'porHacer',
+          extra: priority('medium'),
+        },
+        {
+          title: 'Passkeys (WebAuthn)',
+          tags: ['seguridad'],
+          column: 'backlog',
+          extra: priority('low'),
+        },
+        {
+          title: 'Tokens de diseño y tema',
+          tags: ['web'],
+          column: 'backlog',
+          extra: priority('low'),
+        },
+        { title: 'Exportar los datos a CSV', tags: ['api'], column: 'backlog' },
       ],
       now,
     ),
@@ -329,11 +393,51 @@ export function buildCatalog(now: Date, today: DateOnly) {
     card('Renovar el carné de la biblioteca', 40, 380, { doneAt: hoursAgo(30) }),
   ];
 
+  const lists = [films, series, shopping, tasks, board, ideas];
+
   return {
-    lists: [films, series, shopping, tasks, board, ideas],
+    lists,
     items,
+    history: buildHistory(lists, items),
     events,
     noteGroups: [group],
     noteCards,
   };
+}
+
+/**
+ * The internal log of changes (`item_history`) that the API writes as items are used: every item
+ * was created; a card of a board went through the columns up to the one it is in; a finished one
+ * was ticked off. Entries come an hour apart, from when the item was created.
+ */
+export function buildHistory(
+  lists: readonly ListDoc[],
+  items: readonly ItemDoc[],
+): ItemHistoryDoc[] {
+  const hour = 3_600_000;
+  const history: ItemHistoryDoc[] = [];
+  for (const item of items) {
+    const base = { itemId: item._id, listId: item.listId };
+    history.push({ ...base, at: item.createdAt, type: 'created', changes: {} });
+
+    const columns = lists.find((list) => list._id.equals(item.listId))?.board?.columns ?? [];
+    const target = columns.findIndex((column) => column.key === item.column);
+    for (let step = 1; step <= target; step++) {
+      history.push({
+        ...base,
+        at: new Date(item.createdAt.getTime() + step * hour),
+        type: 'moved',
+        changes: { column: { from: columns[step - 1]!.key, to: columns[step]!.key } },
+      });
+    }
+    if (item.doneAt) {
+      history.push({
+        ...base,
+        at: item.doneAt,
+        type: 'updated',
+        changes: { done: { from: null, to: true } },
+      });
+    }
+  }
+  return history;
 }

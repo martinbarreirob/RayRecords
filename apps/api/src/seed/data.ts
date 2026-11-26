@@ -19,6 +19,7 @@ export interface SeedCounts {
   rules: number;
   lists: number;
   items: number;
+  history: number;
   events: number;
   notes: number;
   noteGroups: number;
@@ -47,6 +48,7 @@ export async function seedData(c: Collections, now = new Date()): Promise<SeedCo
   const catalog = buildCatalog(now, today);
   await c.lists.insertMany(catalog.lists);
   await c.items.insertMany(catalog.items);
+  await c.itemHistory.insertMany(catalog.history);
   await c.events.insertMany(catalog.events);
   await c.noteGroups.insertMany(catalog.noteGroups);
   await c.noteCards.insertMany(catalog.noteCards);
@@ -108,6 +110,7 @@ export async function seedData(c: Collections, now = new Date()): Promise<SeedCo
     rules: DEFAULT_RULES.length,
     lists: catalog.lists.length,
     items: catalog.items.length,
+    history: catalog.history.length,
     events: catalog.events.length,
     notes: catalog.noteCards.length,
     noteGroups: catalog.noteGroups.length,
@@ -124,7 +127,7 @@ export function formatSeedCounts(n: SeedCounts): string {
     `  categories:    ${n.categories}`,
     `  rules:         ${n.rules}`,
     `  lists:         ${n.lists}`,
-    `  items:         ${n.items}`,
+    `  items:         ${n.items} (with ${n.history} history entries)`,
     `  events:        ${n.events} (the «Eventos» list)`,
     `  notes:         ${n.notes} (in ${n.noteGroups} group)`,
     `  products:      ${n.products} (in ${n.stockCategories} categories)`,

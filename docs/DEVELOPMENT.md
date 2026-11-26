@@ -158,14 +158,14 @@ List aliases are not coded: they are each list's `captureAlias` and are passed t
 | What               | Amount                                                                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Categories / rules | 9 / 18                                                                                                                                         |
-| Lists              | 6: Películas (movies), Series (shows), Compras (shopping), Tareas (tasks), Portfolio web (board), Ideas                                        |
-| Items              | 42 (three of them tasks, two with a date)                                                                                                      |
+| Lists              | 6: Películas (movies), Series (shows), Compras (shopping), Tareas (tasks), Portfolio web (board with five columns, each with its state icon and colour, cards with description, labels and priority), Ideas |
+| Items              | 44, with 69 entries in `item_history` (a creation each, the column moves of every board card and the finished ones). Three are tasks, two with a date |
 | Events             | 6, in the calendar's own collection: they are what the locked «Eventos» list shows                                                             |
 | Notes              | 10 cards: one group of 3, one done 3 h ago, another 22 h ago (hidden soon) and another 30 h ago (already hidden; shows in "Terminadas" / done) |
 | Stock              | A shop of accessories, bags, jewellery and clothes: 4 categories and 37 products (two without a category), some low on stock or sold out       |
 | Tickets            | About 47 sales over the last 30 days, within shop hours; the product quantities are what is left after them                                    |
-| Accounts           | 2 (checking and savings)                                                                                                                       |
-| Transactions       | 130 over 6 months, with one manual correction, several uncategorized and two identical coffees on the same day to exercise deduplication       |
+| Accounts           | 1 (checking)                                                                                                                                   |
+| Transactions       | About 150 over 6 months, with one manual correction, several uncategorized and two identical coffees on the same day to exercise deduplication |
 
 The seeder keeps `credentials` but **replaces the user and closes the sessions**: it creates the development user defined in `apps/api/src/seed/user.ts` (default credentials are there; they can be changed with `SEED_USERNAME` and `SEED_PASSWORD`). For a real DB use `create-user`.
 
