@@ -20,6 +20,14 @@ export class FinanceStore {
   readonly error = signal('');
   /** The category manager is open; any panel can ask for it, the expenses page hosts it. */
   readonly categoriesOpen = signal(false);
+  /** The category the manager opens on (its key); `null` opens it on the first one. */
+  readonly categoryToEdit = signal<string | null>(null);
+
+  /** Opens the manager with a category already in its editor. */
+  manageCategory(key: string): void {
+    this.categoryToEdit.set(key);
+    this.categoriesOpen.set(true);
+  }
 
   /** Accounts and categories have loaded (or failed); before that, "no accounts" would be wrong. */
   readonly ready = computed(() => this.accounts() !== null || this.error() !== '');

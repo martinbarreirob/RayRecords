@@ -10,35 +10,68 @@
   margin: 0;
 }
 
-.head {
+/* The title and the explanation head the table of rules. */
+.rules-head {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
+
+  h2 {
+    margin: 0;
+    font-size: var(--text-lg);
+  }
 
   p {
-    max-width: 62ch;
-    margin-top: var(--space-1);
+    max-width: 70ch;
+    margin: var(--space-1) 0 0;
     font-size: var(--text-sm);
   }
 }
 
-h2 + p {
-  margin: var(--space-1) 0 var(--space-4);
-  max-width: 62ch;
-  font-size: var(--text-sm);
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.head h2 + p {
-  margin-bottom: 0;
+/* Categories on the left, the rules that use them on the right. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+/* The title of the categories sits above their card, like a heading of the column. */
+.cats-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+
+  h2 {
+    margin: 0 var(--space-1);
+    font-size: var(--text-lg);
+  }
+}
+
+.cats-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2);
+}
+
+.manage {
+  width: 100%;
 }
 
 .rules {
   display: flex;
   flex-direction: column;
-  margin: 0 0 var(--space-5);
+  margin: 0;
   padding: 0;
   list-style: none;
 
@@ -65,18 +98,27 @@ h2 + p {
 }
 
 .pattern {
+  min-width: 0;
+  overflow: hidden;
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* The bin is for the phone, where the button is only that. */
-.del-icon {
-  display: none;
+/* One line per rule, the same columns in every row: pattern, how it matches, category, priority, switch, bin. */
+.rules li.rule {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9rem 1rem minmax(0, 11rem) 6.5rem auto auto;
+  gap: var(--space-3);
 }
 
-@media (width <= 767px) {
-  .del-icon {
-    display: inline-flex;
-  }
+.rule .match {
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.rule .priority {
+  white-space: nowrap;
 }
 
 .arrow,
@@ -85,13 +127,10 @@ h2 + p {
 }
 
 .empty {
-  margin-bottom: var(--space-5);
+  margin: 0;
 }
 
 .add {
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--line);
-
   h3 {
     margin-bottom: var(--space-3);
     font-size: var(--text-base);
@@ -150,16 +189,71 @@ h2 + p {
   }
 }
 
+/* One category per row, as in the summary of the movements: its badge and its name, no container. */
 .cats {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-5);
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
   padding: 0;
   list-style: none;
 
-  .chip {
-    padding-right: var(--space-1);
+  /* A category is a button: its badge and name, the same room above and below. */
+  .cat-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 var(--space-2);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--text-sm);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--surface-2);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+  }
+}
+
+/*
+ * Both lists stay inside the window (less the page header and the buttons): when they do not fit,
+ * they scroll inside their card. A phone just scrolls the page.
+ */
+@media (width > 767px) {
+  /* The whole card is bounded, so its head and its button stay in view and the list scrolls. */
+  .rules-card {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 22rem);
+  }
+
+  .cats-card {
+    max-height: calc(100dvh - 24rem);
+  }
+
+  .cats,
+  .rules {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .rules-head {
+    flex: none;
+  }
+
+  .rules {
+    scrollbar-gutter: stable;
   }
 }
 
@@ -186,8 +280,26 @@ h2 + p {
 }
 
 .ghost-cat {
-  height: 30px;
+  height: 24px;
   border-radius: var(--radius-pill);
+}
+
+@media (width <= 1279px) {
+  .rules li.rule {
+    grid-template-columns: minmax(0, 1fr) 8rem 1rem minmax(0, 8rem) 5.5rem auto auto;
+    gap: var(--space-2);
+  }
+}
+
+@media (width <= 1023px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .submit {
+    margin-top: 0;
+    grid-column: 1 / -1;
+  }
 }
 
 @media (width <= 767px) {
@@ -195,9 +307,19 @@ h2 + p {
     grid-template-columns: 1fr;
   }
 
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
   .head .btn {
     width: 100%;
     min-height: var(--touch-target);
+    justify-content: center;
   }
 
   .grid .btn {
@@ -228,7 +350,8 @@ h2 + p {
    * A rule on a phone is two lines and a button: the pattern and how it matches, with its switch
    * at the right; then the category and the priority. The bin spans both lines.
    */
-  .rules li {
+  .rules li,
+  .rules li.rule {
     display: grid;
     grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto;
     grid-template-areas:
@@ -283,10 +406,6 @@ h2 + p {
       grid-area: del;
       width: var(--touch-target);
       padding: 0;
-    }
-
-    .del-label {
-      display: none;
     }
 
     .ghost-toggle {

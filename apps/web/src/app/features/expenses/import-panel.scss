@@ -4,6 +4,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  /* A reading width, like the review: the content is small and not worth the whole screen. */
+  max-width: 720px;
+  margin-inline: auto;
 }
 
 h2 {

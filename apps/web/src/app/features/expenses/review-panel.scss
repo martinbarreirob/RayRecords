@@ -121,6 +121,8 @@
 
 .rv-chip {
   min-width: 0;
+  /* The badge is 24 px in a 44 px button: as much room on the left as above and below it. */
+  padding-left: calc((var(--touch-target) - 24px) / 2);
 
   .chip-name {
     min-width: 0;

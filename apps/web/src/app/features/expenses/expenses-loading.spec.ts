@@ -6,6 +6,7 @@ import { ApiClient } from '../../core/api/api-client';
 import { ImportPanel } from './import-panel';
 import { MovementsPanel } from './movements-panel';
 import { RulesPanel } from './rules-panel';
+import { ConfirmationService } from 'primeng/api';
 
 /** Loading is not the same as empty: the skeleton shows while data arrives and the empty state only after. */
 describe('Expenses: loading states', () => {
@@ -17,7 +18,11 @@ describe('Expenses: loading states', () => {
 
   function mount<T>(component: new () => T, api: object): ComponentFixture<T> {
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), { provide: ApiClient, useValue: { ...baseApi, ...api } }],
+      providers: [
+        provideRouter([]),
+        ConfirmationService,
+        { provide: ApiClient, useValue: { ...baseApi, ...api } },
+      ],
     });
     const fixture = TestBed.createComponent(component);
     fixture.detectChanges();

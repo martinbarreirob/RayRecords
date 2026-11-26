@@ -155,12 +155,13 @@ export const VIEW_SWITCH_MS = 300;
 
     <app-categories-dialog
       [open]="store.categoriesOpen()"
+      [focusId]="store.categoryToEdit()"
       [categories]="managed()"
       [counts]="usage()"
       [ops]="categoryOps"
       [texts]="categoryTexts"
       (changed)="categoriesChanged()"
-      (closed)="store.categoriesOpen.set(false)"
+      (closed)="store.categoriesOpen.set(false); store.categoryToEdit.set(null)"
     />
     <p-confirmdialog />
   `,

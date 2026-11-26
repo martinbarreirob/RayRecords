@@ -47,14 +47,11 @@ import {
   filterMovements,
   formatDay,
   formatDayHeading,
-  groupMovements,
   inPeriod,
   periodTotals,
   sectionTotals,
   singleMonth,
   sumCents,
-  toggleExpanded,
-  type MovementGroup,
   type MovementRow,
   type Period,
   type SectionFilter,
@@ -63,10 +60,11 @@ import { Icon } from '../../core/ui/icon';
 import { injectIsPhone } from '../../core/ui/viewport';
 import { DEFAULT_PAGE_SIZE, fitPageSize } from '../../core/ui/page-size';
 import { AllCategoryStore } from '../categories/all-category';
+import { CategoryBadge } from '../categories/category-badge';
 import { CategoryLabel } from '../categories/category-label';
 import { CategorySelect, type CategoryOption } from '../categories/category-select';
 import { MovementDialog } from './movement-dialog';
-import { NO_CATEGORY } from '../categories/uncategorized';
+import { NO_CATEGORY, UNCATEGORIZED_LOOK } from '../categories/uncategorized';
 
 /** Size of each API request (its maximum) and cap on movements loaded at once. */
 const FETCH_SIZE = 500;
@@ -119,6 +117,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
 @Component({
   selector: 'app-movements-panel',
   imports: [
+    CategoryBadge,
     CategoryLabel,
     CategorySelect,
     MovementDialog,
@@ -158,16 +157,10 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                 [attr.aria-pressed]="section() === 'all'"
                 (click)="pick('all')"
               >
-                <span class="section-row">
-                  <app-category-label
-                    class="section-name"
-                    size="sm"
-                    [look]="allLook()"
-                    name="Todas"
-                  />
-                  <span class="section-total num" [class.positive]="totals().balanceCents > 0">
-                    {{ money(totals().balanceCents) }}
-                  </span>
+                <app-category-badge class="section-icon" size="sm" [look]="allLook()" />
+                <span class="section-name">Todas</span>
+                <span class="section-total num" [class.positive]="totals().balanceCents > 0">
+                  {{ money(totals().balanceCents) }}
                 </span>
                 <span class="section-bar" aria-hidden="true"><i style="width: 100%"></i></span>
               </button>
@@ -179,21 +172,19 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
                   [attr.aria-pressed]="section() === card.id"
                   (click)="pick(card.id)"
                 >
-                  <span class="section-row">
-                    <app-category-label
-                      class="section-name"
-                      size="sm"
-                      [look]="card.look"
-                      [name]="card.name"
-                    />
-                    @if (card.count) {
-                      <span class="section-total num" [class.positive]="card.totalCents > 0">
-                        {{ money(card.totalCents) }}
-                      </span>
-                    } @else {
-                      <span class="section-total muted">vacía</span>
-                    }
-                  </span>
+                  <app-category-badge
+                    class="section-icon"
+                    size="sm"
+                    [look]="card.look ?? uncategorized"
+                  />
+                  <span class="section-name">{{ card.name }}</span>
+                  @if (card.count) {
+                    <span class="section-total num" [class.positive]="card.totalCents > 0">
+                      {{ money(card.totalCents) }}
+                    </span>
+                  } @else {
+                    <span class="section-total muted">vacía</span>
+                  }
                   <span class="section-bar" aria-hidden="true">
                     <i [style.width.%]="bar(card)"></i>
                   </span>
@@ -249,15 +240,15 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
           <button
             type="button"
             class="btn group-toggle"
-            aria-label="Agrupar por comercio"
-            [attr.aria-pressed]="grouped()"
-            (click)="toggleGrouped()"
+            aria-label="Agrupar por fecha"
+            [attr.aria-pressed]="byDate()"
+            (click)="toggleByDate()"
           >
             <span class="group-icons" aria-hidden="true">
               <app-icon class="icon-off" name="list" />
-              <app-icon class="icon-on" name="stack-2" />
+              <app-icon class="icon-on" name="calendar" />
             </span>
-            <span class="group-toggle-label">Agrupar por comercio</span>
+            <span class="group-toggle-label">Agrupar por fecha</span>
           </button>
           <label class="search">
             <span class="sr-only">Filtrar por descripción</span>
@@ -349,7 +340,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
           [attr.aria-busy]="loading()"
         >
           <p-table
-            [value]="tableRows()"
+            [value]="visible()"
             dataKey="id"
             [selection]="selection()"
             (selectionChange)="selection.set($event)"
@@ -361,182 +352,102 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
             [first]="first()"
             [rowHover]="true"
             [rowGroupMode]="dayFeed() ? 'subheader' : undefined"
-            groupRowsBy="date"
+            [groupRowsBy]="dayFeed() ? 'date' : undefined"
             styleClass="movements-table"
           >
             <ng-template #header>
               <tr>
                 <th class="c-check">
-                  @if (!grouped()) {
-                    <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
-                  }
+                  <p-tableheadercheckbox ariaLabel="Seleccionar todos los movimientos" />
                 </th>
                 @if (!dayFeed()) {
                   <th class="c-date" pSortableColumn="date">
                     <span class="th-sort">Fecha <p-sorticon field="date" /></span>
                   </th>
                 }
-                <th class="c-desc" pSortableColumn="description">
-                  <span class="th-sort">Descripción <p-sorticon field="description" /></span>
+                <th
+                  class="c-desc"
+                  pSortableColumn="description"
+                  [pSortableColumnDisabled]="dayFeed()"
+                >
+                  <span class="th-sort"
+                    >Descripción
+                    @if (!dayFeed()) {
+                      <p-sorticon field="description" />
+                    }
+                  </span>
                 </th>
-                <th class="c-amount num" pSortableColumn="amountCents">
-                  <span class="th-sort">Importe <p-sorticon field="amountCents" /></span>
+                <th
+                  class="c-amount num"
+                  pSortableColumn="amountCents"
+                  [pSortableColumnDisabled]="dayFeed()"
+                >
+                  <span class="th-sort"
+                    >Importe
+                    @if (!dayFeed()) {
+                      <p-sorticon field="amountCents" />
+                    }
+                  </span>
                 </th>
                 @if (showCategory()) {
-                  <th class="c-cat" pSortableColumn="categoryName">
-                    <span class="th-sort">Categoría <p-sorticon field="categoryName" /></span>
+                  <th
+                    class="c-cat"
+                    pSortableColumn="categoryName"
+                    [pSortableColumnDisabled]="dayFeed()"
+                  >
+                    <span class="th-sort"
+                      >Categoría
+                      @if (!dayFeed()) {
+                        <p-sorticon field="categoryName" />
+                      }
+                    </span>
                   </th>
                 }
                 <th class="c-edit"><span class="sr-only">Editar</span></th>
               </tr>
             </ng-template>
 
-            <!--
-              A group row stands for one place and its movements hang under it when it is open.
-              The paginator counts the groups, so an open group is never split across pages.
-            -->
             <ng-template #body let-row>
-              @if (row.rows; as children) {
-                <tr class="mv-row mv-group" (click)="toggleGroup(row.id)">
-                  <td class="c-check">
-                    <button
-                      type="button"
-                      class="group-btn"
-                      [attr.aria-expanded]="isExpanded(row.id)"
-                      [attr.aria-label]="
-                        (isExpanded(row.id) ? 'Contraer ' : 'Desplegar ') +
-                        row.description +
-                        ', ' +
-                        row.count +
-                        ' movimientos'
-                      "
-                    >
-                      <app-icon [name]="isExpanded(row.id) ? 'chevron-down' : 'chevron-right'" />
-                    </button>
-                  </td>
-                  <td class="c-date"></td>
-                  <td class="c-desc" [title]="row.description">
-                    <span class="group-name">{{ row.description }}</span>
-                    <span class="group-count">{{ row.count }} mov.</span>
-                  </td>
-                  <td class="c-amount num" [class.positive]="row.amountCents > 0">
-                    {{ money(row.amountCents) }}
-                  </td>
-                  @if (showCategory()) {
-                    <td class="c-cat">
-                      @if (row.mixed) {
-                        <span class="cat cat-none">{{ row.categoryName }}</span>
-                      } @else {
-                        <span class="cat" [class.cat-none]="row.category === null">
-                          <app-category-label
-                            size="sm"
-                            [look]="row.categoryLook"
-                            [name]="row.categoryName"
-                          />
-                        </span>
-                      }
-                    </td>
-                  }
-                  <td class="c-edit"></td>
-                </tr>
-                @if (isExpanded(row.id)) {
-                  @for (child of children; track child.id) {
-                    <tr
-                      class="mv-row mv-child"
-                      [class.row-selected]="isSelected(child.id)"
-                      [attr.role]="phone() ? 'button' : null"
-                      [attr.tabindex]="phone() ? 0 : null"
-                      (click)="onRowTap(child, $event)"
-                      (keydown.enter)="onRowTap(child, $event)"
-                    >
-                      <td class="c-check">
-                        <p-tablecheckbox
-                          [value]="child"
-                          [ariaLabel]="'Seleccionar ' + child.description"
-                        />
-                      </td>
-                      <!--
-                        Its date takes the room of the date and the description: the group row
-                        already says what it is, so the description only shows when it differs.
-                      -->
-                      <td class="c-date c-child" colspan="2">
-                        <span class="child-day">{{ day(child.date) }}</span>
-                        @if (child.description !== row.description) {
-                          <span class="child-desc" [title]="child.description">
-                            {{ child.description }}
-                          </span>
-                        }
-                      </td>
-                      <td class="c-amount num" [class.positive]="child.amountCents > 0">
-                        {{ money(child.amountCents) }}
-                      </td>
-                      @if (showCategory()) {
-                        <td class="c-cat">
-                          <!-- Always shown: each movement of a place can be moved on its own. -->
-                          <span class="cat" [class.cat-none]="child.category === null">
-                            <app-category-label
-                              size="sm"
-                              [look]="child.categoryLook"
-                              [name]="child.categoryName"
-                            />
-                          </span>
-                        </td>
-                      }
-                      <td class="c-edit">
-                        <button
-                          type="button"
-                          class="btn ghost icon"
-                          [attr.aria-label]="'Editar el movimiento ' + child.description"
-                          (click)="edit(child)"
-                        >
-                          <app-icon name="pencil" />
-                        </button>
-                      </td>
-                    </tr>
-                  }
+              <tr
+                class="mv-row"
+                [class.row-selected]="isSelected(row.id)"
+                [attr.role]="phone() ? 'button' : null"
+                [attr.tabindex]="phone() ? 0 : null"
+                (click)="onRowTap(row, $event)"
+                (keydown.enter)="onRowTap(row, $event)"
+              >
+                <td class="c-check">
+                  <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
+                </td>
+                @if (!dayFeed()) {
+                  <td class="c-date">{{ day(row.date) }}</td>
                 }
-              } @else {
-                <tr
-                  class="mv-row"
-                  [class.row-selected]="isSelected(row.id)"
-                  [attr.role]="phone() ? 'button' : null"
-                  [attr.tabindex]="phone() ? 0 : null"
-                  (click)="onRowTap(row, $event)"
-                  (keydown.enter)="onRowTap(row, $event)"
-                >
-                  <td class="c-check">
-                    <p-tablecheckbox [value]="row" [ariaLabel]="'Seleccionar ' + row.description" />
+                <td class="c-desc" [title]="row.description">{{ row.description }}</td>
+                <td class="c-amount num" [class.positive]="row.amountCents > 0">
+                  {{ money(row.amountCents) }}
+                </td>
+                @if (showCategory()) {
+                  <td class="c-cat">
+                    <span class="cat" [class.cat-none]="row.category === null">
+                      <app-category-label
+                        size="sm"
+                        [look]="row.categoryLook"
+                        [name]="row.categoryName"
+                      />
+                    </span>
                   </td>
-                  @if (!dayFeed()) {
-                    <td class="c-date">{{ day(row.date) }}</td>
-                  }
-                  <td class="c-desc" [title]="row.description">{{ row.description }}</td>
-                  <td class="c-amount num" [class.positive]="row.amountCents > 0">
-                    {{ money(row.amountCents) }}
-                  </td>
-                  @if (showCategory()) {
-                    <td class="c-cat">
-                      <span class="cat" [class.cat-none]="row.category === null">
-                        <app-category-label
-                          size="sm"
-                          [look]="row.categoryLook"
-                          [name]="row.categoryName"
-                        />
-                      </span>
-                    </td>
-                  }
-                  <td class="c-edit">
-                    <button
-                      type="button"
-                      class="btn ghost icon"
-                      [attr.aria-label]="'Editar el movimiento ' + row.description"
-                      (click)="edit(row)"
-                    >
-                      <app-icon name="pencil" />
-                    </button>
-                  </td>
-                </tr>
-              }
+                }
+                <td class="c-edit">
+                  <button
+                    type="button"
+                    class="btn ghost icon"
+                    [attr.aria-label]="'Editar el movimiento ' + row.description"
+                    (click)="edit(row)"
+                  >
+                    <app-icon name="pencil" />
+                  </button>
+                </td>
+              </tr>
             </ng-template>
 
             <!-- Each day opens with its date and what it added up to. -->
@@ -557,10 +468,6 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
               @if (visible().length) {
                 <tr class="mv-foot">
                   <td class="f-label" [attr.colspan]="labelSpan()">
-                    @if (grouped()) {
-                      {{ tableRows().length }}
-                      {{ tableRows().length === 1 ? 'lugar' : 'lugares' }} ·
-                    }
                     {{ visible().length }}
                     {{ visible().length === 1 ? 'movimiento' : 'movimientos' }} · Total
                     {{ section() === 'all' ? 'visible' : 'sección' }}
@@ -601,16 +508,18 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
               } @else {
                 <tr>
                   <td [attr.colspan]="columns()" class="empty-cell">
-                    @if (periodRows().length === 0) {
-                      <strong>Sin movimientos en este periodo.</strong>
-                      Cambia el periodo o importa un extracto en la pestaña «Importar».
-                    } @else {
-                      <strong>Filtro sin resultados.</strong>
-                      {{ noResults() }}
-                      <button type="button" class="btn sm" (click)="clearFilters()">
-                        Quitar filtros
-                      </button>
-                    }
+                    <div class="empty-stack">
+                      @if (periodRows().length === 0) {
+                        <strong>Sin movimientos en este periodo.</strong>
+                        Cambia el periodo o importa un extracto en la pestaña «Importar».
+                      } @else {
+                        <strong>Filtro sin resultados.</strong>
+                        {{ noResults() }}
+                        <button type="button" class="btn sm" (click)="clearFilters()">
+                          Quitar filtros
+                        </button>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -622,7 +531,7 @@ function spaceBelow(element: HTMLElement, limit: HTMLElement): number {
           <p-paginator
             [first]="first()"
             [rows]="pageSize()"
-            [totalRecords]="tableRows().length"
+            [totalRecords]="visible().length"
             (onPageChange)="onPage($event)"
           />
         </div>
@@ -677,6 +586,7 @@ export class MovementsPanel {
   protected readonly allLook = inject(AllCategoryStore).look;
 
   protected readonly money = formatCents;
+  protected readonly uncategorized = UNCATEGORIZED_LOOK;
   protected readonly sortChoices = SORT_CHOICES;
 
   /**
@@ -757,28 +667,17 @@ export class MovementsPanel {
 
   protected readonly visibleTotal = computed(() => sumCents(this.visible()));
   /**
-   * Group the movements by place: one row per description, open to see each amount. Off from the
-   * start: the movements come as a feed, a heading per day.
+   * Group the movements by date: a heading per day with what it added up to. Off from the start:
+   * the movements come as a plain table (date, description, amount, category).
    */
-  protected readonly grouped = signal(false);
-  /** Keys of the groups that are open; it does not depend on the data, so it survives reloads. */
-  protected readonly expanded = signal<ReadonlySet<string>>(new Set());
-  /**
-   * What the table lists: the movements, or the groups of what is visible (filters apply before
-   * grouping). Every place is a group, even with a single movement: its date shows once open.
-   */
-  protected readonly tableRows = computed<(MovementRow | MovementGroup)[]>(() =>
-    this.grouped()
-      ? groupMovements(this.visible())
-      : this.visible(),
-  );
+  protected readonly byDate = signal(false);
   /** The category is implicit when the list on the left already filters by one. */
   protected readonly showCategory = computed(() => this.section() === 'all');
   /**
    * The feed: movements (not places) by date, with a heading per day. The date is then the heading,
    * not a column; sorting by another column gives the plain table back.
    */
-  protected readonly dayFeed = computed(() => !this.grouped() && this.sortField() === 'date');
+  protected readonly dayFeed = computed(() => this.byDate() && this.sortField() === 'date');
   /** What each day of the visible movements adds up to (the whole filter, not just the page). */
   private readonly dayTotals = computed(() => {
     const totals = new Map<string, number>();
@@ -926,7 +825,7 @@ export class MovementsPanel {
       });
     });
     effect(() => {
-      this.tableRows();
+      this.visible();
       this.dayFeed();
       // The figures above the table take their final height when the first load ends.
       this.pending();
@@ -1020,17 +919,15 @@ export class MovementsPanel {
     return formatDay(date, this.currentYear);
   }
 
-  protected toggleGrouped(): void {
-    this.grouped.update((on) => !on);
+  /** Turning it on lists the newest day first, since the headings follow the date. */
+  protected toggleByDate(): void {
+    const on = !this.byDate();
+    this.byDate.set(on);
+    if (on && this.sortField() !== 'date') {
+      this.sortField.set('date');
+      this.sortOrder.set(-1);
+    }
     this.first.set(0);
-  }
-
-  protected isExpanded(key: string): boolean {
-    return this.expanded().has(key);
-  }
-
-  protected toggleGroup(key: string): void {
-    this.expanded.update((open) => toggleExpanded(open, key));
   }
 
   protected isSelected(id: string): boolean {
@@ -1038,7 +935,11 @@ export class MovementsPanel {
   }
 
   protected onSort(event: { field?: string; order?: number }): void {
-    if (event.field) this.sortField.set(event.field);
+    if (event.field) {
+      this.sortField.set(event.field);
+      // The day headings only follow the date: another column gives the plain table back.
+      if (event.field !== 'date') this.byDate.set(false);
+    }
     if (event.order === 1 || event.order === -1) this.sortOrder.set(event.order);
   }
 
@@ -1047,6 +948,7 @@ export class MovementsPanel {
     if (!choice) return;
     this.sortField.set(choice.field);
     this.sortOrder.set(choice.order);
+    if (choice.field !== 'date') this.byDate.set(false);
   }
 
   protected onPage(event: PaginatorState): void {

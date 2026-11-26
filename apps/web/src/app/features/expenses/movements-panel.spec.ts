@@ -52,10 +52,10 @@ const items = [
 
 describe('MovementsPanel', () => {
   /**
-   * Mounts the panel as it starts: the movements as a feed, a heading per day. Pass `true` to
-   * start grouped by place.
+   * Mounts the panel as it starts: the plain table, one row per movement. Pass `true` to start
+   * grouped by date (a heading per day).
    */
-  function setup(page: Transaction[] = items, grouped = false) {
+  function setup(page: Transaction[] = items, byDate = false) {
     const api = {
       accounts: () => of([{ id: ACCOUNT, name: 'Cuenta de prueba' } as AccountSummary]),
       categories: () => of(categories),
@@ -73,9 +73,9 @@ describe('MovementsPanel', () => {
       providers: [provideRouter([]), providePrimeNgTheme(), { provide: ApiClient, useValue: api }],
     });
     const fixture = TestBed.createComponent(MovementsPanel);
-    if (grouped) {
-      (fixture.componentInstance as unknown as { grouped: WritableSignal<boolean> }).grouped.set(
-        grouped,
+    if (byDate) {
+      (fixture.componentInstance as unknown as { byDate: WritableSignal<boolean> }).byDate.set(
+        byDate,
       );
     }
     fixture.detectChanges();
@@ -179,8 +179,8 @@ describe('MovementsPanel', () => {
     expect(el(fixture).querySelector('.side .figures')).toBeNull();
   });
 
-  it('heads each day of the feed with its date and what it added up to', async () => {
-    const { fixture } = setup();
+  it('heads each day with its date and what it added up to when grouped by date', async () => {
+    const { fixture } = setup(items, true);
     await settle(fixture);
     const days = [...el(fixture).querySelectorAll('tr.day-row')];
     // All the movements are of one day.
@@ -191,14 +191,50 @@ describe('MovementsPanel', () => {
     expect(el(fixture).querySelector('.c-date')).toBeNull();
   });
 
-  it('gives the plain table, with its date column, when it is sorted by another column', async () => {
+  it('starts as a plain table: date, description, amount and category, no day headings', async () => {
     const { fixture } = setup();
+    await settle(fixture);
+    expect(el(fixture).querySelector('tr.day-row')).toBeNull();
+    expect(el(fixture).querySelector('th.c-date')).not.toBeNull();
+    expectColumns(fixture, 6);
+  });
+
+  it('gives the plain table back when grouped by date but sorted by another column', async () => {
+    const { fixture } = setup(items, true);
     await settle(fixture);
     fixture.componentInstance['sortField'].set('amountCents');
     await settle(fixture);
     expect(el(fixture).querySelector('tr.day-row')).toBeNull();
     expect(el(fixture).querySelector('th.c-date')).not.toBeNull();
     expectColumns(fixture, 6);
+  });
+
+  it('sorts by the clicked column, whatever the dates of the rows', async () => {
+    const days = [
+      { ...movement('A', -500, 'hogar'), date: `${MONTH}-03` },
+      { ...movement('B', -9000, 'ocio'), date: `${MONTH}-20` },
+      { ...movement('C', -100, 'hogar'), date: `${MONTH}-11` },
+    ];
+    const { fixture } = setup(days);
+    await settle(fixture);
+    const amounts = () =>
+      [...el(fixture).querySelectorAll('tr.mv-row td.c-amount')].map((td) => text(td));
+    const header = el(fixture).querySelector<HTMLElement>('th.c-amount')!;
+    header.click();
+    await settle(fixture);
+    expect(amounts()).toEqual(['-90,00 €', '-5,00 €', '-1,00 €']);
+    header.click();
+    await settle(fixture);
+    expect(amounts()).toEqual(['-1,00 €', '-5,00 €', '-90,00 €']);
+  });
+
+  it('shows the empty message with its title, reason and button one under the other', async () => {
+    const { fixture } = setup();
+    await settle(fixture);
+    fixture.componentInstance['query'].set('zzz');
+    await settle(fixture);
+    const stack = el(fixture).querySelector('td.empty-cell .empty-stack')!;
+    expect([...stack.children].map((c) => c.tagName)).toEqual(['STRONG', 'BUTTON']);
   });
 
   it('has no "create rule" option', async () => {
@@ -247,8 +283,11 @@ describe('MovementsPanel', () => {
   const groupToggle = (fixture: ComponentFixture<MovementsPanel>) =>
     el(fixture).querySelector<HTMLButtonElement>('.topline .group-toggle')!;
 
-  it('keeps the feed to its five cells in every row and in the footer', async () => {
+  it('keeps the table to its six cells in every row and in the footer, five when grouped by date', async () => {
     const { fixture } = setup();
+    await settle(fixture);
+    expectColumns(fixture, 6);
+    groupToggle(fixture).click();
     await settle(fixture);
     expectColumns(fixture, 5);
   });
@@ -259,10 +298,10 @@ describe('MovementsPanel', () => {
     await chooseSection(fixture, 'Hogar');
     expect(el(fixture).querySelector('.c-cat')).toBeNull();
     expect(text(el(fixture).querySelector('.p-datatable-thead'))).not.toContain('Categoría');
-    expectColumns(fixture, 4);
+    expectColumns(fixture, 5);
 
     await chooseSection(fixture, 'Hogar'); // clicking again shows all of them
-    expectColumns(fixture, 5);
+    expectColumns(fixture, 6);
   });
 
   it('drops the category column for "Sin categoría" too', async () => {
@@ -270,7 +309,7 @@ describe('MovementsPanel', () => {
     await settle(fixture);
     await chooseSection(fixture, 'Sin categoría');
     expect(el(fixture).querySelector('.c-cat')).toBeNull();
-    expectColumns(fixture, 4);
+    expectColumns(fixture, 5);
   });
 
   it('draws the empty message as wide as the visible columns', async () => {
@@ -279,7 +318,7 @@ describe('MovementsPanel', () => {
     await chooseSection(fixture, 'Hogar');
     fixture.componentInstance['query'].set('zzz');
     await settle(fixture);
-    expect(el(fixture).querySelector<HTMLTableCellElement>('td.empty-cell')!.colSpan).toBe(4);
+    expect(el(fixture).querySelector<HTMLTableCellElement>('td.empty-cell')!.colSpan).toBe(5);
   });
 
   it('opens the movement in a dialog from the pencil at the end of its row', async () => {
@@ -308,205 +347,71 @@ describe('MovementsPanel', () => {
     expect(manual.querySelectorAll('td.c-edit app-icon')).toHaveLength(1);
   });
 
-  describe('grouping', () => {
-    const repeated = [
-      movement('MERCADONA', -2000, 'hogar'),
-      movement('Mercadona', -3500, 'hogar'),
-      movement('MERCADONA', -1500, 'ocio'),
-      movement('CINES CALLAO', -2500, 'ocio'),
-      movement('SUELDO', 150000, null),
+  describe('group by date', () => {
+    const twoDays = [
+      { ...movement('MERCADONA', -2000, 'hogar'), date: `${MONTH}-10`, month: MONTH },
+      { ...movement('CINES CALLAO', -2500, 'ocio'), date: `${MONTH}-10`, month: MONTH },
+      { ...movement('SUELDO', 150000, null), date: `${MONTH}-08`, month: MONTH },
     ];
 
-    const groupRows = (fixture: ComponentFixture<MovementsPanel>) => [
-      ...el(fixture).querySelectorAll('tr.mv-group'),
-    ];
-
-    const group = async (fixture: ComponentFixture<MovementsPanel>) => {
-      groupToggle(fixture).click();
-      await settle(fixture);
-    };
-
-    const mercadonaButton = (fixture: ComponentFixture<MovementsPanel>) =>
-      groupRows(fixture)
-        .find((r) => text(r).includes('MERCADONA'))!
-        .querySelector<HTMLButtonElement>('.group-btn')!;
-
-    it('puts a pressed-state toggle next to the filter, and starts as a feed', async () => {
-      const { fixture } = setup(repeated);
+    it('puts a pressed-state toggle next to the period, and starts as a plain table', async () => {
+      const { fixture } = setup(twoDays);
       await settle(fixture);
       const button = groupToggle(fixture);
-      expect(text(button)).toContain('Agrupar por comercio');
+      expect(text(button)).toContain('Agrupar por fecha');
       expect(button.getAttribute('aria-pressed')).toBe('false');
       expect(el(fixture).querySelector('.topline .period')!.nextElementSibling).toBe(button);
       expect(button.nextElementSibling!.classList.contains('search')).toBe(true);
-      expect(groupRows(fixture)).toHaveLength(0);
-      expect(el(fixture).querySelector('tr.day-row')).not.toBeNull();
-      // Switching it on groups the movements by place, and the day headings go.
+      expect(el(fixture).querySelector('tr.day-row')).toBeNull();
+      // Switching it on heads each day, and the date column goes.
       button.click();
       await settle(fixture);
       expect(button.getAttribute('aria-pressed')).toBe('true');
-      expect(groupRows(fixture).length).toBeGreaterThan(0);
+      expect(el(fixture).querySelectorAll('tr.day-row')).toHaveLength(2);
+      expect(el(fixture).querySelector('th.c-date')).toBeNull();
+    });
+
+    it('goes back to the plain table when switched off', async () => {
+      const { fixture } = setup(twoDays);
+      await settle(fixture);
+      groupToggle(fixture).click();
+      await settle(fixture);
+      groupToggle(fixture).click();
+      await settle(fixture);
       expect(el(fixture).querySelector('tr.day-row')).toBeNull();
+      expect(el(fixture).querySelectorAll('tr.mv-row')).toHaveLength(twoDays.length);
     });
 
-    it('lists one row per description with its count, total and category', async () => {
-      const { fixture } = setup(repeated);
+    it('sorts by date when switched on after sorting by another column', async () => {
+      const { fixture } = setup(twoDays);
       await settle(fixture);
-      await group(fixture);
-
-      expect(groupToggle(fixture).getAttribute('aria-pressed')).toBe('true');
-      // Every place is a group, a single movement included.
-      const rows = groupRows(fixture);
-      expect(rows).toHaveLength(3);
-      const mercadona = rows.find((r) => text(r).includes('MERCADONA'))!;
-      expect(text(mercadona.querySelector('.group-count'))).toBe('3 mov.');
-      expect(text(mercadona.querySelector('td.c-amount'))).toContain('70,00');
-      expect(text(mercadona.querySelector('td.c-cat'))).toBe('Varias');
-      const cines = rows.find((r) => text(r).includes('CINES'))!;
-      expect(text(cines.querySelector('.group-count'))).toBe('1 mov.');
-      expect(cines.querySelector('.group-btn')).not.toBeNull();
-      expect(text(cines.querySelector('td.c-cat'))).toBe('Ocio');
-      expect(el(fixture).querySelectorAll('tr.mv-child')).toHaveLength(0);
+      fixture.componentInstance['sortField'].set('amountCents');
+      await settle(fixture);
+      groupToggle(fixture).click();
+      await settle(fixture);
+      expect(el(fixture).querySelectorAll('tr.day-row')).toHaveLength(2);
     });
 
-    it('shows the dates only once a group is open, one on each of its movements', async () => {
-      const { fixture } = setup(repeated);
+    it('leaves the headers unsortable while grouped, and sortable again after', async () => {
+      const { fixture } = setup(twoDays);
       await settle(fixture);
-      await group(fixture);
-      for (const row of groupRows(fixture)) {
-        expect(text(row.querySelector('td.c-date')), text(row)).toBe('');
-      }
-      mercadonaButton(fixture).click();
+      const sortIcons = () => el(fixture).querySelectorAll('.p-datatable-thead p-sorticon').length;
+      const plain = sortIcons();
+      expect(plain).toBeGreaterThan(0);
+      groupToggle(fixture).click();
       await settle(fixture);
-      const children = [...el(fixture).querySelectorAll('tr.mv-child')];
-      expect(children).toHaveLength(3);
-      for (const child of children) {
-        expect(text(child.querySelector('.child-day')), text(child)).not.toBe('');
-      }
+      expect(sortIcons()).toBe(0);
+      groupToggle(fixture).click();
+      await settle(fixture);
+      expect(sortIcons()).toBe(plain);
     });
 
-    it('does not repeat the description on the movements of a group, but shows each category', async () => {
-      const { fixture } = setup([
-        movement('CINES', -1000, 'ocio'),
-        movement('Cines', -1200, 'ocio'),
-        movement('CINES  ', -900, 'ocio'),
-      ]);
+    it('hides the category column when a category is chosen, grouped or not', async () => {
+      const { fixture } = setup(twoDays, true);
       await settle(fixture);
-      await group(fixture);
-      groupRows(fixture)[0]!.querySelector<HTMLButtonElement>('.group-btn')!.click();
-      await settle(fixture);
-
-      const children = [...el(fixture).querySelectorAll('tr.mv-child')];
-      expect(children).toHaveLength(3);
-      for (const child of children) {
-        // The date takes the room of the date and description cells; the category is always
-        // there, so each movement of a place can be moved on its own.
-        expect(child.querySelector('td.c-desc')).toBeNull();
-        expect(child.querySelector<HTMLTableCellElement>('td.c-child')!.colSpan).toBe(2);
-        expect(text(child.querySelector('td.c-cat'))).toBe('Ocio');
-      }
-      // Only a description written differently is shown, next to its date.
-      expect(children.filter((c) => c.querySelector('.child-desc'))).toHaveLength(2);
-    });
-
-    it('shows the category of each movement when the group mixes them', async () => {
-      const { fixture } = setup(repeated);
-      await settle(fixture);
-      await group(fixture);
-      mercadonaButton(fixture).click();
-      await settle(fixture);
-      const cats = [...el(fixture).querySelectorAll('tr.mv-child td.c-cat')].map((c) => text(c));
-      expect(cats.sort()).toEqual(['Hogar', 'Hogar', 'Ocio']);
-    });
-
-    it('opens and closes a group to show every amount of that place', async () => {
-      const { fixture } = setup(repeated);
-      await settle(fixture);
-      await group(fixture);
-
-      expect(mercadonaButton(fixture).getAttribute('aria-expanded')).toBe('false');
-      mercadonaButton(fixture).click();
-      await settle(fixture);
-
-      expect(mercadonaButton(fixture).getAttribute('aria-expanded')).toBe('true');
-      const children = [...el(fixture).querySelectorAll('tr.mv-child')];
-      expect(children).toHaveLength(3);
-      const amounts = children.map((c) => text(c.querySelector('td.c-amount')));
-      expect(amounts.some((a) => a.includes('15,00'))).toBe(true);
-      expect(amounts.some((a) => a.includes('20,00'))).toBe(true);
-      expect(amounts.some((a) => a.includes('35,00'))).toBe(true);
-
-      mercadonaButton(fixture).click();
-      await settle(fixture);
-      expect(el(fixture).querySelectorAll('tr.mv-child')).toHaveLength(0);
-    });
-
-    it('keeps selecting and editing on the movements of an open group', async () => {
-      const { fixture } = setup(repeated);
-      await settle(fixture);
-      await group(fixture);
-      mercadonaButton(fixture).click();
-      await settle(fixture);
-
-      const child = el(fixture).querySelector('tr.mv-child')!;
-      child.querySelector<HTMLElement>('.p-checkbox-box, input')!.click();
-      await settle(fixture);
-      expect(text(el(fixture).querySelector('.bulk-count'))).toContain('1 seleccionada');
-
-      child.querySelector<HTMLButtonElement>('td.c-edit button')!.click();
-      await settle(fixture);
-      const dialog = [...document.querySelectorAll<HTMLElement>('.movement-dialog')].at(-1)!;
-      expect(text(dialog)).toContain('MERCADONA');
-    });
-
-    it('applies the filters before grouping', async () => {
-      const { fixture } = setup(repeated);
-      await settle(fixture);
-      await group(fixture);
-      fixture.componentInstance['query'].set('mercadona');
-      await settle(fixture);
-      expect(groupRows(fixture)).toHaveLength(1);
-      expect(text(groupRows(fixture)[0])).toContain('MERCADONA');
-      expect(el(fixture).querySelectorAll('tr.mv-row:not(.mv-group)')).toHaveLength(0);
-    });
-
-    it('hides the category column of groups and of their movements when a category is chosen', async () => {
-      const { fixture } = setup(repeated);
-      await settle(fixture);
-      await group(fixture);
       await chooseSection(fixture, 'Hogar');
-      groupRows(fixture)[0]!.querySelector<HTMLButtonElement>('.group-btn')!.click();
-      await settle(fixture);
-
       expect(el(fixture).querySelector('.c-cat')).toBeNull();
-      expect(el(fixture).querySelectorAll('tr.mv-child')).toHaveLength(2);
-      expectColumns(fixture, 5);
-    });
-
-    it('opens a group from anywhere on its row, with the indicator on the left', async () => {
-      const { fixture } = setup(repeated, true);
-      await settle(fixture);
-      const row = groupRows(fixture).find((r) => text(r).includes('MERCADONA'))!;
-      expect(row.querySelector('td.c-check .group-btn')).not.toBeNull();
-
-      row.querySelector<HTMLElement>('td.c-amount')!.click();
-      await settle(fixture);
-      expect(el(fixture).querySelectorAll('tr.mv-child')).toHaveLength(3);
-      expect(row.querySelector('.group-btn')!.getAttribute('aria-expanded')).toBe('true');
-
-      // The indicator itself toggles once, not twice (its click also reaches the row).
-      row.querySelector<HTMLButtonElement>('.group-btn')!.click();
-      await settle(fixture);
-      expect(el(fixture).querySelectorAll('tr.mv-child')).toHaveLength(0);
-    });
-
-    it('goes back to one row per movement when switched off', async () => {
-      const { fixture } = setup(repeated);
-      await settle(fixture);
-      await group(fixture);
-      await group(fixture);
-      expect(groupRows(fixture)).toHaveLength(0);
-      expect(el(fixture).querySelectorAll('tr.mv-row')).toHaveLength(repeated.length);
+      expectColumns(fixture, 4);
     });
   });
 });

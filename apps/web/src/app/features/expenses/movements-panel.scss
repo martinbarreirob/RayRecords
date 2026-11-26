@@ -192,7 +192,6 @@
 }
 
 .section {
-  display: block;
   width: 100%;
   padding: var(--space-2);
   border: 0;
@@ -215,16 +214,26 @@
   }
 }
 
-.section-row {
-  display: flex;
+/*
+ * As in the sales dashboard: the icon on the left across two lines; on the right the name and its
+ * amount over a thin bar against the largest one.
+ */
+.section {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon name total'
+    'icon bar bar';
   align-items: center;
-  /* As tall as a category's badge, so a row with only text ("Todas") is as tall as the others. */
-  min-height: 24px;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: 3px var(--space-2);
+}
+
+.section-icon {
+  grid-area: icon;
 }
 
 .section-name {
+  grid-area: name;
   min-width: 0;
   overflow: hidden;
   font-size: var(--text-sm);
@@ -233,25 +242,30 @@
 }
 
 .section-total {
-  flex: none;
+  grid-area: total;
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .section-bar {
+  grid-area: bar;
   display: block;
-  height: 4px;
-  margin-top: 6px;
+  height: 3px;
   overflow: hidden;
-  border-radius: 2px;
-  background: var(--line-soft);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
 
   i {
     display: block;
     height: 100%;
-    border-radius: 2px;
-    background: var(--accent);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--accent) 50%, var(--surface));
   }
+}
+
+.section:hover .section-bar,
+.section.active .section-bar {
+  background: var(--line-soft);
 }
 
 /* The foot of the card, after a rule: the category manager, the other views and what is left to review. */
@@ -556,9 +570,10 @@
     }
   }
 
-  .section-row {
-    min-height: calc(var(--touch-target) - 2px);
-    gap: var(--space-3);
+  /* A chip: icon, name and amount in a row, no bar. */
+  .section {
+    grid-template-areas: 'icon name total';
+    column-gap: var(--space-2);
   }
 
   .section-bar {

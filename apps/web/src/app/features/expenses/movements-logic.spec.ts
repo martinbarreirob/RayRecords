@@ -1,9 +1,6 @@
 import {
   dateOfMonth,
   filterMovements,
-  groupMovements,
-  MIXED_CATEGORY,
-  toggleExpanded,
   inPeriod,
   monthOfDate,
   normalizeText,
@@ -122,94 +119,5 @@ describe('period and date formatting', () => {
   it('shortens the day and adds the year only when it is not the current one', () => {
     expect(formatDay('2026-10-28', 2026)).toBe('28 oct');
     expect(formatDay('2025-10-28', 2026)).toBe('28 oct 2025');
-  });
-});
-
-describe('groupMovements', () => {
-  let seq = 0;
-  const mv = (description: string, amountCents: number, date: string, category: string | null) =>
-    row({
-      id: String(++seq).padStart(24, '0'),
-      description,
-      amountCents,
-      date,
-      category,
-      categoryName: category === null ? 'Sin categoría' : category.toUpperCase(),
-    });
-
-  it('groups by the normalised description and shows the first original one', () => {
-    const groups = groupMovements([
-      mv('Cafetería Ñandú', -200, '2026-11-01', 'ocio'),
-      mv('CAFETERIA ñandu', -300, '2026-11-05', 'ocio'),
-      mv('Alquiler', -50000, '2026-11-02', 'hogar'),
-    ]);
-    expect(groups).toHaveLength(2);
-    const cafe = groups.find((g) => g.count === 2)!;
-    expect(cafe.description).toBe('Cafetería Ñandú');
-    expect(cafe.id).toBe(normalizeText('Cafetería Ñandú'));
-  });
-
-  it('groups the movements of one place whose town and terminal reference differ', () => {
-    const groups = groupMovements([
-      mv('O FORNO PI \\PONTEVEDRA\\ES2609180829', -300, '2026-09-18', null),
-      mv('O FORNO PI \\PONTEVEDRA\\ES2609160812', -250, '2026-09-16', null),
-      mv('O FORNO PI \\PONTEVEDRA\\ES2609100844', -400, '2026-09-10', null),
-    ]);
-    expect(groups).toHaveLength(1);
-    expect(groups[0]!.count).toBe(3);
-    expect(groups[0]!.id).toBe('o forno pi');
-  });
-
-  it('sums the amounts, counts the movements and keeps the latest date', () => {
-    const [group] = groupMovements([
-      mv('Bar', -200, '2026-11-01', 'ocio'),
-      mv('bar', -300, '2026-11-09', 'ocio'),
-      mv('BAR', 100, '2026-11-04', 'ocio'),
-    ]);
-    expect(group!.amountCents).toBe(-400);
-    expect(group!.count).toBe(3);
-    expect(group!.date).toBe('2026-11-09');
-    expect(group!.rows.map((r) => r.date)).toEqual(['2026-11-09', '2026-11-04', '2026-11-01']);
-  });
-
-  it('keeps the shared category, or marks the group as mixed', () => {
-    const [same] = groupMovements([
-      mv('A', -1, '2026-11-01', 'ocio'),
-      mv('a', -1, '2026-11-02', 'ocio'),
-    ]);
-    expect(same!.mixed).toBe(false);
-    expect(same!.category).toBe('ocio');
-    expect(same!.categoryName).toBe('OCIO');
-
-    const [mixed] = groupMovements([
-      mv('A', -1, '2026-11-01', 'ocio'),
-      mv('a', -1, '2026-11-02', null),
-    ]);
-    expect(mixed!.mixed).toBe(true);
-    expect(mixed!.category).toBeNull();
-    expect(mixed!.categoryName).toBe(MIXED_CATEGORY);
-  });
-
-  it('orders the groups by the size of their total, largest first', () => {
-    const groups = groupMovements([
-      mv('Pequeño', -100, '2026-11-01', null),
-      mv('Grande', -9000, '2026-11-01', null),
-      mv('Ingreso', 5000, '2026-11-01', null),
-    ]);
-    expect(groups.map((g) => g.description)).toEqual(['Grande', 'Ingreso', 'Pequeño']);
-  });
-
-  it('is empty for no movements', () => {
-    expect(groupMovements([])).toEqual([]);
-  });
-});
-
-describe('toggleExpanded', () => {
-  it('adds and removes a key without touching the original set', () => {
-    const none = new Set<string>();
-    const one = toggleExpanded(none, 'bar');
-    expect([...one]).toEqual(['bar']);
-    expect(none.size).toBe(0);
-    expect(toggleExpanded(one, 'bar').size).toBe(0);
   });
 });

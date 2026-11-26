@@ -48,9 +48,40 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
 
     .layout {
       display: grid;
-      grid-template-columns: 270px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) 300px;
+      grid-template-areas: 'main side';
       gap: var(--space-4);
       align-items: start;
+    }
+
+    .side {
+      grid-area: side;
+    }
+
+    .main {
+      grid-area: main;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-1);
+    }
+
+    /* The three figures above the table: the balance, the expenses and the income. */
+    .figures {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .fig {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
     }
 
     .side {
@@ -63,19 +94,6 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       background: var(--surface);
-    }
-
-    .balance {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-      padding: var(--space-3) var(--space-4);
-    }
-
-    .balance .head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
     }
 
     .cats {
@@ -104,12 +122,41 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       min-width: 0;
     }
 
+    /* A category: its badge on the left across two lines; name and amount over a thin bar. */
     .cat-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      grid-template-areas:
+        'icon name amount'
+        'icon bar bar';
       align-items: center;
+      gap: 3px var(--space-2);
+      padding: var(--space-2);
+    }
+
+    .cat-row .badge {
+      grid-area: icon;
+    }
+
+    .cat-row .name {
+      grid-area: name;
+    }
+
+    .cat-row .amount {
+      grid-area: amount;
+      width: 56px;
+    }
+
+    .cat-row .bar {
+      grid-area: bar;
+      height: 3px;
+      border-radius: var(--radius-pill);
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--space-2);
-      height: 46px;
-      padding: 0 var(--space-2);
     }
 
     .table {
@@ -144,6 +191,12 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       display: grid;
       gap: var(--space-4);
       max-width: 640px;
+      margin-inline: auto;
+    }
+
+    /* Import keeps its reading width, like the real view. */
+    .import {
+      max-width: 720px;
       margin-inline: auto;
     }
 
@@ -254,31 +307,80 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       gap: var(--space-2);
     }
 
-    /* Rules: a card with its list and the form to add one, then the categories. */
+    /* Rules: the two buttons, then the categories on the left and the table of rules on the right. */
     .stack {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
     }
 
-    .rule {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      height: 44px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .fields {
-      display: grid;
-      grid-template-columns: 2fr 1.2fr 1.2fr 150px;
-      gap: var(--space-3);
-    }
-
-    .chips-row {
+    .rules-actions {
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-2);
+    }
+
+    .rules-actions .skeleton {
+      height: var(--control-height);
+      border-radius: var(--radius-control);
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-4);
+    }
+
+    .cats-col {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .cats-col .cats {
+      gap: var(--space-1);
+      padding: var(--space-2);
+    }
+
+    .plain-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      height: 40px;
+      padding: 0 var(--space-2);
+    }
+
+    .cats-col .manage {
+      height: var(--control-height);
+      border-radius: var(--radius-control);
+    }
+
+    .rules-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+
+    .rules-head .text {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .rule {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 9rem 1rem minmax(0, 11rem) 6.5rem auto auto;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 48px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .rule:last-child {
+      border-bottom: 0;
     }
 
     .line {
@@ -293,7 +395,14 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
 
     @media (width <= 1023px) {
       .layout {
-        grid-template-columns: 230px minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) 260px;
+      }
+    }
+
+    @media (width <= 1279px) {
+      .rule {
+        grid-template-columns: minmax(0, 1fr) 8rem 1rem minmax(0, 8rem) 5.5rem auto auto;
+        gap: var(--space-2);
       }
     }
 
@@ -308,14 +417,41 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       }
 
       .topline {
+        order: -2;
+      }
+
+      .figures {
         order: -1;
+        grid-template-columns: 1fr;
+        margin-bottom: var(--space-3);
+      }
+
+      .fig:nth-child(n + 2) {
+        display: none;
       }
 
       .side {
         margin-bottom: var(--space-3);
       }
 
+      .side-head,
+      .tools {
+        display: none;
+      }
+
       .cats .cat-row:nth-child(n + 4) {
+        display: none;
+      }
+
+      .columns {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .rule {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+      }
+
+      .rule .opt {
         display: none;
       }
 
@@ -325,10 +461,6 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
 
       .row .opt {
         display: none;
-      }
-
-      .fields {
-        grid-template-columns: 1fr;
       }
 
       .drop {
@@ -343,42 +475,26 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
       @switch (view()) {
         @case ('movements') {
           <div class="layout">
-            <div class="side">
-              <div class="card balance">
-                <div class="head">
-                  <span class="skeleton line" style="width: 56px"></span>
-                  <span class="skeleton line" style="width: 96px; height: 20px"></span>
-                </div>
-                <span class="skeleton line" style="width: 70%"></span>
-              </div>
-              <div class="card cats">
-                @for (width of categoryWidths; track $index) {
-                  <div class="cat-row">
-                    <span class="skeleton badge"></span>
-                    <span class="skeleton line" [style.width.%]="width"></span>
-                  </div>
-                }
-                <div class="cats-foot">
-                  <span class="skeleton"></span>
-                  <span class="skeleton"></span>
-                </div>
-              </div>
-            </div>
             <div class="main">
               <div class="topline">
-                <span class="skeleton" style="width: 220px"></span>
-                <span
-                  class="skeleton"
-                  style="width: 280px; max-width: 45%; margin-left: auto"
-                ></span>
-                <span class="skeleton" style="width: 96px"></span>
+                <span class="skeleton" style="width: 200px"></span>
+                <span class="skeleton" style="width: 180px"></span>
+                <span class="skeleton" style="flex: 1 1 200px"></span>
+              </div>
+              <div class="figures">
+                @for (item of figures; track $index) {
+                  <div class="card fig">
+                    <span class="skeleton line" style="width: 56px"></span>
+                    <span class="skeleton line" style="width: 110px; height: 20px"></span>
+                  </div>
+                }
               </div>
               <div class="card table">
                 <div class="row head">
-                  <span class="skeleton line"></span>
+                  <span class="skeleton line" style="height: 18px; width: 18px"></span>
                   <span class="opt skeleton line" style="width: 40px"></span>
                   <span class="skeleton line" style="width: 90px"></span>
-                  <span class="opt skeleton line" style="width: 60px"></span>
+                  <span class="skeleton line" style="width: 60px"></span>
                   <span class="opt skeleton line" style="width: 70px"></span>
                   <span class="opt"></span>
                 </div>
@@ -395,6 +511,29 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
                     <span class="opt skeleton line" style="height: 24px; width: 24px"></span>
                   </div>
                 }
+              </div>
+            </div>
+            <div class="side">
+              <div class="side-head">
+                <span class="skeleton line" style="width: 70px; height: 18px"></span>
+                <span class="skeleton line" style="width: 90px"></span>
+              </div>
+              <div class="card cats">
+                @for (width of categoryWidths; track $index) {
+                  <div class="cat-row">
+                    <span class="skeleton badge"></span>
+                    <span class="skeleton line name" [style.width.%]="width"></span>
+                    <span class="skeleton line amount"></span>
+                    <span class="skeleton bar" [style.width.%]="width + 20"></span>
+                  </div>
+                }
+                <div class="cats-foot">
+                  <span class="skeleton"></span>
+                  <div class="tools">
+                    <span class="skeleton"></span>
+                    <span class="skeleton"></span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -429,7 +568,7 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
           </div>
         }
         @case ('import') {
-          <div class="card form">
+          <div class="card form import">
             <span class="skeleton line" style="width: 240px; height: 20px"></span>
             <span class="skeleton line" style="width: 90%"></span>
             <span class="skeleton line" style="width: 60%"></span>
@@ -450,36 +589,51 @@ export type SkeletonView = 'movements' | 'review' | 'import' | 'rules';
         }
         @case ('rules') {
           <div class="stack">
-            <div class="card pad">
-              <span class="skeleton line" style="width: 240px; height: 20px"></span>
-              <span class="skeleton line" style="width: 80%; margin: 12px 0 16px"></span>
-              @for (width of ruleWidths; track $index) {
-                <div class="rule">
-                  <span class="skeleton line" [style.width.px]="width"></span>
-                  <span class="skeleton line" style="width: 76px"></span>
-                  <span class="skeleton badge"></span>
-                  <span class="skeleton line" style="width: 90px; margin-right: auto"></span>
-                  <span
-                    class="skeleton"
-                    style="width: 36px; height: 20px; border-radius: 99px"
-                  ></span>
-                </div>
-              }
-              <div class="fields" style="margin-top: 20px">
-                @for (item of fields; track $index) {
-                  <span class="skeleton" style="height: 36px; border-radius: 8px"></span>
-                }
-              </div>
+            <div class="rules-actions">
+              <span class="skeleton" style="width: 130px"></span>
+              <span class="skeleton" style="width: 300px; max-width: 100%"></span>
             </div>
-            <div class="card pad">
-              <span class="skeleton line" style="width: 120px; height: 20px"></span>
-              <div class="chips-row" style="margin-top: 16px">
-                @for (width of chipWidths; track $index) {
-                  <span
-                    class="skeleton"
-                    style="height: 30px; border-radius: 99px"
-                    [style.width.px]="width"
-                  ></span>
+            <div class="columns">
+              <div class="cats-col">
+                <span class="skeleton line" style="width: 90px; height: 20px"></span>
+                <div class="card cats">
+                  @for (width of categoryWidths; track $index) {
+                    <div class="plain-row">
+                      <span class="skeleton badge"></span>
+                      <span class="skeleton line" [style.width.%]="width"></span>
+                    </div>
+                  }
+                  <span class="skeleton manage box"></span>
+                </div>
+              </div>
+              <div class="card pad">
+                <div class="rules-head">
+                  <div class="text">
+                    <span class="skeleton line" style="width: 220px; height: 20px"></span>
+                    <span class="skeleton line" style="width: 90%"></span>
+                    <span class="skeleton line" style="width: 60%"></span>
+                  </div>
+                  <span class="skeleton line" style="width: 20px"></span>
+                </div>
+                @for (width of ruleWidths; track $index) {
+                  <div class="rule">
+                    <span class="skeleton line" [style.width.px]="width"></span>
+                    <span class="opt skeleton line" style="width: 76px"></span>
+                    <span class="opt"></span>
+                    <span class="opt" style="display: flex; align-items: center; gap: 8px">
+                      <span class="skeleton badge"></span>
+                      <span class="skeleton line" style="width: 70px"></span>
+                    </span>
+                    <span class="opt skeleton line" style="width: 70px"></span>
+                    <span
+                      class="skeleton"
+                      style="width: 36px; height: 20px; border-radius: 99px"
+                    ></span>
+                    <span
+                      class="skeleton"
+                      style="width: 32px; height: 32px; border-radius: 8px"
+                    ></span>
+                  </div>
                 }
               </div>
             </div>
@@ -495,7 +649,6 @@ export class ExpensesSkeleton {
   protected readonly categoryWidths = [62, 70, 54, 66, 58, 50];
   protected readonly rowWidths = [58, 70, 44, 64, 52, 68, 46, 60];
   protected readonly chips = [1, 2, 3, 4, 5, 6];
-  protected readonly ruleWidths = [150, 112, 132];
-  protected readonly fields = [1, 2, 3, 4];
-  protected readonly chipWidths = [128, 104, 140, 116, 124, 98, 110, 132];
+  protected readonly ruleWidths = [150, 112, 132, 140, 120, 126];
+  protected readonly figures = [1, 2, 3];
 }

@@ -294,6 +294,8 @@ export class CategoriesDialog {
   private readonly confirmation = inject(ConfirmationService);
 
   readonly open = input(false);
+  /** The category the editor starts on when it opens; the first one if there is none. */
+  readonly focusId = input<string | null>(null);
   readonly categories = input.required<ManagedCategory[]>();
   /** How many things each category holds, by id, to say what deleting one affects. */
   readonly counts = input.required<ReadonlyMap<string, number>>();
@@ -337,7 +339,8 @@ export class CategoriesDialog {
       untracked(() => {
         this.error.set('');
         this.query.set('');
-        const [first] = this.categories();
+        const first =
+          this.categories().find(({ id }) => id === this.focusId()) ?? this.categories()[0];
         if (first) this.edit(first);
         else this.startCreate();
       });

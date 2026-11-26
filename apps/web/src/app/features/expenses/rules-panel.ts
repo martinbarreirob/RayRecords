@@ -10,8 +10,9 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmationService } from 'primeng/api';
 import { Icon } from '../../core/ui/icon';
-import type { CategorizationRule, RuleMatchType } from '@rayrecords/shared';
+import type { CategorizationRule, Category, RuleMatchType } from '@rayrecords/shared';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
@@ -50,76 +51,23 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
       <p class="alert success" role="status">{{ message }}</p>
     }
 
-    <section class="card" aria-labelledby="rules-title">
-      <div class="head">
-        <div>
-          <h2 id="rules-title">Reglas de categorización</h2>
-          <p class="muted">
-            Se evalúan de mayor a menor prioridad sobre la descripción, sin acentos ni mayúsculas.
-            La primera que coincide gana, y nunca pisan una categoría corregida a mano.
-          </p>
-        </div>
-        <button type="button" class="btn" [disabled]="busy()" (click)="apply()">
-          {{ applying() ? 'Aplicando…' : 'Reaplicar a los movimientos sin categoría' }}
-        </button>
-      </div>
+    <div class="actions">
+      <button
+        type="button"
+        class="btn primary"
+        [attr.aria-expanded]="adding()"
+        (click)="adding.set(!adding())"
+      >
+        <app-icon name="plus" />
+        Nueva regla
+      </button>
+      <button type="button" class="btn" [disabled]="busy()" (click)="apply()">
+        {{ applying() ? 'Aplicando…' : 'Reaplicar a los movimientos sin categoría' }}
+      </button>
+    </div>
 
-      @if (!rulesLoaded()) {
-        <div aria-busy="true">
-          <p class="sr-only" role="status">Cargando reglas…</p>
-          <ul class="rules skel-in" aria-hidden="true">
-            @for (width of ghostRules; track $index) {
-              <li>
-                <span class="skeleton ghost-pattern" [style.width.px]="width"></span>
-                <span class="skeleton pill ghost-badge"></span>
-                <span class="skeleton pill ghost-badge"></span>
-                <span class="spacer"></span>
-                <span class="skeleton pill ghost-toggle"></span>
-                <span class="skeleton ghost-del"></span>
-              </li>
-            }
-          </ul>
-        </div>
-      } @else if (rules().length) {
-        <ul class="rules">
-          @for (rule of rules(); track rule.id) {
-            <li [class.inactive]="!rule.active">
-              <span class="pattern">«{{ rule.pattern }}»</span>
-              <span class="badge match">{{ labels[rule.matchType] }}</span>
-              <span class="arrow" aria-hidden="true">→</span>
-              <app-category-label
-                class="rule-cat"
-                [look]="store.category(rule.categoryKey)"
-                [name]="store.categoryName(rule.categoryKey)"
-              />
-              <span class="muted priority" title="Las de mayor prioridad se evalúan antes">
-                prioridad {{ rule.priority }}
-              </span>
-              <span class="spacer"></span>
-              <p-toggleswitch
-                [ngModel]="rule.active"
-                (ngModelChange)="toggle(rule, $event)"
-                [disabled]="busy()"
-                [ariaLabel]="'Regla «' + rule.pattern + '» activa'"
-              />
-              <button
-                type="button"
-                class="btn sm danger"
-                [attr.aria-label]="'Borrar la regla «' + rule.pattern + '»'"
-                [disabled]="busy()"
-                (click)="remove(rule)"
-              >
-                <app-icon class="del-icon" name="trash" />
-                <span class="del-label">Borrar</span>
-              </button>
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="empty">Todavía no hay reglas. Añade la primera abajo.</p>
-      }
-
-      <form class="add" (submit)="addRule($event)" novalidate>
+    @if (adding()) {
+      <form id="rule-form" class="add card" (submit)="addRule($event)" novalidate>
         <h3>Nueva regla</h3>
         <div class="grid">
           <label class="field pattern-field">
@@ -191,43 +139,111 @@ const MATCH_LABELS: Record<RuleMatchType, string> = {
           </button>
         </div>
       </form>
-    </section>
+    }
 
-    <section class="card" aria-labelledby="cats-title">
-      <div class="head">
-        <div>
-          <h2 id="cats-title">Categorías</h2>
-          <p class="muted">
-            Cada una con su icono y sus colores. Se crean, renombran y borran en el gestor; una
-            categoría en uso por reglas o movimientos no se puede borrar.
-          </p>
+    <div class="columns">
+      <section class="cats-col" aria-labelledby="cats-title">
+        <h2 id="cats-title">Categorías</h2>
+        <div class="card cats-card">
+          @if (!store.ready()) {
+            <div aria-busy="true">
+              <p class="sr-only" role="status">Cargando categorías…</p>
+              <ul class="cats skel-in" aria-hidden="true">
+                @for (width of ghostCats; track $index) {
+                  <li class="skeleton ghost-cat" [style.width.px]="width"></li>
+                }
+              </ul>
+            </div>
+          } @else if (store.categories().length) {
+            <ul class="cats">
+              @for (category of store.categories(); track category.key) {
+                <li>
+                  <button
+                    type="button"
+                    class="cat-row"
+                    [attr.aria-label]="'Editar la categoría ' + category.name"
+                    (click)="editCategory(category)"
+                  >
+                    <app-category-label [look]="category" [name]="category.name" />
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty">Todavía no hay categorías.</p>
+          }
+          <button type="button" class="btn manage" (click)="store.categoriesOpen.set(true)">
+            <app-icon name="tag" />
+            Categorías
+          </button>
         </div>
-        <button type="button" class="btn" (click)="store.categoriesOpen.set(true)">
-          Gestionar categorías
-        </button>
-      </div>
+      </section>
 
-      @if (!store.ready()) {
-        <div aria-busy="true">
-          <p class="sr-only" role="status">Cargando categorías…</p>
-          <ul class="cats skel-in" aria-hidden="true">
-            @for (width of ghostCats; track $index) {
-              <li class="skeleton ghost-cat" [style.width.px]="width"></li>
+      <section class="card rules-card" aria-labelledby="rules-title">
+        <header class="rules-head">
+          <div>
+            <h2 id="rules-title">Reglas de categorización</h2>
+            <p class="muted">
+              Se evalúan de mayor a menor prioridad sobre la descripción, sin acentos ni mayúsculas.
+              La primera que coincide gana, y nunca pisan una categoría corregida a mano.
+            </p>
+          </div>
+          <span class="muted count">{{ rules().length }}</span>
+        </header>
+        @if (!rulesLoaded()) {
+          <div aria-busy="true">
+            <p class="sr-only" role="status">Cargando reglas…</p>
+            <ul class="rules skel-in" aria-hidden="true">
+              @for (width of ghostRules; track $index) {
+                <li>
+                  <span class="skeleton ghost-pattern" [style.width.px]="width"></span>
+                  <span class="skeleton pill ghost-badge"></span>
+                  <span class="skeleton pill ghost-badge"></span>
+                  <span class="spacer"></span>
+                  <span class="skeleton pill ghost-toggle"></span>
+                  <span class="skeleton ghost-del"></span>
+                </li>
+              }
+            </ul>
+          </div>
+        } @else if (rules().length) {
+          <ul class="rules">
+            @for (rule of rules(); track rule.id) {
+              <li class="rule" [class.inactive]="!rule.active">
+                <span class="pattern" [title]="rule.pattern">«{{ rule.pattern }}»</span>
+                <span class="badge match">{{ labels[rule.matchType] }}</span>
+                <span class="arrow" aria-hidden="true">→</span>
+                <app-category-label
+                  class="rule-cat"
+                  [look]="store.category(rule.categoryKey)"
+                  [name]="store.categoryName(rule.categoryKey)"
+                />
+                <span class="muted priority" title="Las de mayor prioridad se evalúan antes">
+                  prioridad {{ rule.priority }}
+                </span>
+                <p-toggleswitch
+                  [ngModel]="rule.active"
+                  (ngModelChange)="toggle(rule, $event)"
+                  [disabled]="busy()"
+                  [ariaLabel]="'Regla «' + rule.pattern + '» activa'"
+                />
+                <button
+                  type="button"
+                  class="btn sm danger icon"
+                  [attr.aria-label]="'Borrar la regla «' + rule.pattern + '»'"
+                  [disabled]="busy()"
+                  (click)="remove(rule)"
+                >
+                  <app-icon name="trash" />
+                </button>
+              </li>
             }
           </ul>
-        </div>
-      } @else if (store.categories().length) {
-        <ul class="cats">
-          @for (category of store.categories(); track category.key) {
-            <li class="chip">
-              <app-category-label [look]="category" [name]="category.name" />
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="empty">Todavía no hay categorías.</p>
-      }
-    </section>
+        } @else {
+          <p class="empty">Todavía no hay reglas. Añade la primera con «Nueva regla».</p>
+        }
+      </section>
+    </div>
   `,
 })
 export class RulesPanel {
@@ -236,6 +252,7 @@ export class RulesPanel {
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly store = inject(FinanceStore);
+  private readonly confirmation = inject(ConfirmationService);
 
   protected readonly labels = MATCH_LABELS;
   protected readonly matchTypes = Object.entries(MATCH_LABELS).map(([value, label]) => ({
@@ -252,6 +269,8 @@ export class RulesPanel {
   /** A request is running: buttons are locked to avoid repeating it. */
   protected readonly busy = signal(false);
   protected readonly applying = signal(false);
+  /** The form of a new rule is open. */
+  protected readonly adding = signal(false);
 
   protected readonly pattern = signal('');
   protected readonly matchType = signal<RuleMatchType>('contains');
@@ -331,8 +350,24 @@ export class RulesPanel {
         active: true,
       }),
       `Regla «${pattern}» añadida. «Reaplicar» la usa con los movimientos sin categoría.`,
-      () => this.pattern.set(''),
+      () => {
+        this.pattern.set('');
+        this.adding.set(false);
+      },
     );
+  }
+
+  /** Opens the category manager on the chosen category, after asking. */
+  protected editCategory(category: Category): void {
+    this.confirmation.confirm({
+      header: 'Editar categoría',
+      message: `¿Abrir el gestor para modificar el icono o el nombre de «${category.name}»?`,
+      icon: 'pi pi-question-circle',
+      acceptLabel: 'Editar',
+      rejectLabel: 'Cancelar',
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () => this.store.manageCategory(category.key),
+    });
   }
 
   protected toggle(rule: CategorizationRule, active: boolean): void {
