@@ -1,5 +1,6 @@
 import type { Product, StockCategory } from '@rayrecords/shared';
 import { describe, expect, it } from 'vitest';
+import { formatCents } from '../../../core/format';
 import {
   EMPTY_DRAFT,
   NO_CATEGORY,
@@ -8,12 +9,14 @@ import {
   draftOf,
   filterProducts,
   levelOf,
+  marginText,
   parseQuantity,
   productCounts,
   readDraft,
   stockTotals,
   toCreate,
   toRows,
+  unitMargin,
 } from './stock-logic';
 
 const LOOK = { icon: 'tag', color: '#ededed', iconColor: '#2b2b2b' } as const;
@@ -35,6 +38,7 @@ function product(overrides: Partial<Product>): Product {
     quantity: 5,
     minQuantity: 0,
     priceCents: 100,
+    costCents: 0,
     createdAt: '2026-11-01T00:00:00.000Z',
     updatedAt: '2026-11-01T00:00:00.000Z',
     ...overrides,
@@ -151,6 +155,7 @@ describe('readDraft', () => {
       quantity: '12',
       minQuantity: '',
       price: '3,50',
+      cost: '1,40',
       notes: '',
     });
     expect(result).toEqual({
@@ -162,6 +167,7 @@ describe('readDraft', () => {
         quantity: 12,
         minQuantity: 0,
         priceCents: 350,
+        costCents: 140,
         notes: null,
       },
     });
@@ -179,6 +185,8 @@ describe('readDraft', () => {
       field: 'price',
     });
     expect(readDraft({ ...EMPTY_DRAFT, name: 'A', price: '-1' })).toMatchObject({ field: 'price' });
+    expect(readDraft({ ...EMPTY_DRAFT, name: 'A', cost: 'caro' })).toMatchObject({ field: 'cost' });
+    expect(readDraft({ ...EMPTY_DRAFT, name: 'A', cost: '-2' })).toMatchObject({ field: 'cost' });
   });
 
   it('round-trips an existing product', () => {
@@ -201,6 +209,32 @@ describe('toCreate', () => {
       quantity: 0,
       minQuantity: 0,
       priceCents: 0,
+      costCents: 0,
     });
+  });
+});
+
+describe('unit cost and margin', () => {
+  it('reads an empty cost as 0 and keeps the cost of an existing product', () => {
+    const result = readDraft({ ...EMPTY_DRAFT, name: 'Pilas', price: '5' });
+    expect(result).toMatchObject({ ok: true, values: { priceCents: 500, costCents: 0 } });
+    expect(draftOf({ ...products[0]!, costCents: 1234 }).cost).toBe('12,34');
+    expect(draftOf({ ...products[0]!, costCents: 0 }).cost).toBe('');
+  });
+
+  it('works out what a unit leaves, as an amount and as a share of the price', () => {
+    expect(unitMargin(350, 140)).toEqual({ cents: 210, percent: 60 });
+    expect(unitMargin(100, 130)).toEqual({ cents: -30, percent: -30 });
+    expect(unitMargin(0, 0)).toEqual({ cents: 0, percent: null });
+  });
+
+  it('writes the margin with its percentage, or only the amount without a price', () => {
+    expect(marginText(350, 140)).toBe(`${formatCents(210)} (60 %)`);
+    expect(marginText(0, 50)).toBe(formatCents(-50));
+  });
+
+  it('gives each row its margin', () => {
+    const [row] = toRows([{ ...products[0]!, priceCents: 350, costCents: 100 }], categories);
+    expect(row!.marginCents).toBe(250);
   });
 });

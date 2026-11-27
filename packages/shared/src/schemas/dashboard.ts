@@ -3,9 +3,13 @@ import { Cents, DateOnlySchema, IsoDateTime, ObjectIdString } from './common';
 
 const Count = z.number().int().nonnegative();
 
-/** What was sold over some span: money, number of tickets and units. */
+/**
+ * What was sold over some span: money, what those units cost the business, number of tickets and
+ * units. The profit is `totalCents - costCents`.
+ */
 export const SalesTotalsSchema = z.object({
   totalCents: Cents.nonnegative(),
+  costCents: Cents.nonnegative(),
   tickets: Count,
   units: Count,
 });
@@ -56,7 +60,10 @@ export const DashboardSchema = z.object({
   stock: z.object({
     products: Count,
     units: Count,
+    /** What the stock would sell for at the unit price. */
     valueCents: Cents.nonnegative(),
+    /** What the stock cost the business, at the unit cost. */
+    costValueCents: Cents.nonnegative(),
     ok: Count,
     low: Count,
     out: Count,

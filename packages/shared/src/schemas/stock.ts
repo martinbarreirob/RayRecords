@@ -54,8 +54,10 @@ export const ProductSchema = z.object({
   quantity: Quantity,
   /** At or below this quantity the product counts as low on stock; 0 turns the warning off. */
   minQuantity: Quantity,
-  /** Unit price. */
+  /** Unit price: what a customer pays. */
   priceCents: Cents.nonnegative(),
+  /** Unit cost: what one unit costs the business. 0 when it is not known. */
+  costCents: Cents.nonnegative(),
   notes: z.string().trim().min(1).max(500).optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
@@ -69,6 +71,7 @@ export const CreateProductSchema = z.object({
   quantity: Quantity.default(0),
   minQuantity: Quantity.default(0),
   priceCents: Cents.nonnegative().default(0),
+  costCents: Cents.nonnegative().default(0),
   notes: ProductSchema.shape.notes,
 });
 export type CreateProduct = z.input<typeof CreateProductSchema>;
@@ -81,6 +84,7 @@ export const UpdateProductSchema = z.object({
   quantity: Quantity.optional(),
   minQuantity: Quantity.optional(),
   priceCents: Cents.nonnegative().optional(),
+  costCents: Cents.nonnegative().optional(),
   notes: z.string().trim().min(1).max(500).nullable().optional(),
 });
 export type UpdateProduct = z.infer<typeof UpdateProductSchema>;

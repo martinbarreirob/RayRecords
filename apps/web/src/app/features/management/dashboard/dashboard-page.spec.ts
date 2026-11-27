@@ -22,13 +22,13 @@ const dashboard: Dashboard = {
   from: '2026-11-17',
   to: '2026-11-19',
   days: [
-    { date: '2026-11-17', totalCents: 1000, tickets: 1, units: 2 },
-    { date: '2026-11-18', totalCents: 4000, tickets: 2, units: 5 },
-    { date: '2026-11-19', totalCents: 0, tickets: 0, units: 0 },
+    { date: '2026-11-17', totalCents: 1000, costCents: 400, tickets: 1, units: 2 },
+    { date: '2026-11-18', totalCents: 4000, costCents: 1500, tickets: 2, units: 5 },
+    { date: '2026-11-19', totalCents: 0, costCents: 0, tickets: 0, units: 0 },
   ],
-  totals: { totalCents: 5000, tickets: 3, units: 7 },
-  previous: { totalCents: 4000, tickets: 2, units: 4 },
-  today: { totalCents: 0, tickets: 0, units: 0 },
+  totals: { totalCents: 5000, costCents: 1900, tickets: 3, units: 7 },
+  previous: { totalCents: 4000, costCents: 2000, tickets: 2, units: 4 },
+  today: { totalCents: 0, costCents: 0, tickets: 0, units: 0 },
   topProducts: [
     { productId: 'b'.repeat(24), name: 'Agua', categoryId: DRINKS, units: 5, totalCents: 300 },
     { productId: 'c'.repeat(24), name: 'Café', categoryId: null, units: 2, totalCents: 700 },
@@ -37,7 +37,15 @@ const dashboard: Dashboard = {
     { categoryId: DRINKS, units: 6, totalCents: 4500 },
     { categoryId: null, units: 1, totalCents: 500 },
   ],
-  stock: { products: 10, units: 120, valueCents: 98_765, ok: 7, low: 2, out: 1 },
+  stock: {
+    products: 10,
+    units: 120,
+    valueCents: 98_765,
+    costValueCents: 41_000,
+    ok: 7,
+    low: 2,
+    out: 1,
+  },
   topStock: [
     { id: 'b'.repeat(24), name: 'Agua', units: 5, quantity: 40, minQuantity: 0 },
     { id: 'd'.repeat(24), name: 'Pilas', units: 3, quantity: 0, minQuantity: 2 },
@@ -56,12 +64,18 @@ const dashboard: Dashboard = {
 
 const blank: Dashboard = {
   ...dashboard,
-  totals: { totalCents: 0, tickets: 0, units: 0 },
-  previous: { totalCents: 0, tickets: 0, units: 0 },
-  days: dashboard.days.map((day) => ({ ...day, totalCents: 0, tickets: 0, units: 0 })),
+  totals: { totalCents: 0, costCents: 0, tickets: 0, units: 0 },
+  previous: { totalCents: 0, costCents: 0, tickets: 0, units: 0 },
+  days: dashboard.days.map((day) => ({
+    ...day,
+    totalCents: 0,
+    costCents: 0,
+    tickets: 0,
+    units: 0,
+  })),
   topProducts: [],
   categories: [],
-  stock: { products: 0, units: 0, valueCents: 0, ok: 0, low: 0, out: 0 },
+  stock: { products: 0, units: 0, valueCents: 0, costValueCents: 0, ok: 0, low: 0, out: 0 },
   topStock: [],
   recentTickets: [],
 };
@@ -94,10 +108,34 @@ describe('DashboardPage', () => {
     const tiles = [...el(fixture).querySelectorAll('section.tile')].map((tile) => text(tile));
     expect(tiles[0]).toContain('50,00');
     expect(tiles[0]).toContain('+25 % frente a los 3 días anteriores');
-    expect(tiles[1]).toContain('Ticket medio 16,67');
+    expect(tiles[0]).toContain('3 tickets · ticket medio 16,67');
     expect(tiles[2]).toContain('0 tickets');
     expect(tiles[3]).toContain('987,65');
     expect(tiles[3]).toContain('10 productos · 120 unidades');
+    expect(tiles[3]).toContain('A coste 410,00');
+  });
+
+  it('shows the profit of the period, its margin and how it moved', () => {
+    const { fixture } = setup();
+    const tile = text(el(fixture).querySelectorAll('section.tile')[1]);
+    // 5.000 of sales, 1.900 of cost: 31,00 € left, 62 % of the sales; before it was 20,00 €.
+    expect(tile).toContain('Beneficio');
+    expect(tile).toContain('31,00');
+    expect(tile).toContain('Margen 62 % · coste 19,00');
+    expect(tile).toContain('+55 % frente a los 3 días anteriores');
+  });
+
+  it('asks for the costs when the sales have none, instead of calling it all profit', () => {
+    const noCosts: Dashboard = {
+      ...dashboard,
+      totals: { ...dashboard.totals, costCents: 0 },
+      stock: { ...dashboard.stock, costValueCents: 0 },
+    };
+    const { fixture } = setup(() => of(noCosts));
+    const tiles = [...el(fixture).querySelectorAll('section.tile')].map((tile) => text(tile));
+    expect(tiles[1]).toContain('Sin costes');
+    expect(tiles[1]).not.toContain('frente a los');
+    expect(tiles[3]).not.toContain('A coste');
   });
 
   it('draws a bar per day scaled to the best one, with a table for screen readers', () => {

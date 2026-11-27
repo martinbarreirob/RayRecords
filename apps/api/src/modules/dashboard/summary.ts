@@ -5,11 +5,28 @@ const TOP_PRODUCTS = 5;
 const TOP_STOCK = 6;
 const RECENT_TICKETS = 6;
 
-const empty = (): SalesTotals => ({ totalCents: 0, tickets: 0, units: 0 });
+const empty = (): SalesTotals => ({ totalCents: 0, costCents: 0, tickets: 0, units: 0 });
 const unitsOf = (ticket: TicketDoc) => ticket.lines.reduce((sum, line) => sum + line.quantity, 0);
 
-function add(totals: SalesTotals, ticket: TicketDoc): void {
+/**
+ * What the units of a line cost the business: the unit cost of the moment of the sale. A ticket
+ * made before costs were recorded uses the product's current cost (0 if it was deleted).
+ */
+function costOf(
+  line: TicketDoc['lines'][number],
+  productById: ReadonlyMap<string, ProductDoc>,
+): number {
+  const unit = line.unitCostCents ?? productById.get(line.productId.toHexString())?.costCents ?? 0;
+  return line.quantity * unit;
+}
+
+function add(
+  totals: SalesTotals,
+  ticket: TicketDoc,
+  productById: ReadonlyMap<string, ProductDoc>,
+): void {
   totals.totalCents += ticket.totalCents;
+  totals.costCents += ticket.lines.reduce((sum, line) => sum + costOf(line, productById), 0);
   totals.tickets += 1;
   totals.units += unitsOf(ticket);
 }
@@ -30,12 +47,12 @@ export function summarize(
   const from = addDays(to, -(days - 1));
   const previousFrom = addDays(from, -days);
 
+  const productById = new Map(products.map((product) => [product._id.toHexString(), product]));
   const byDay = new Map<string, SalesTotals>();
   for (let offset = 0; offset < days; offset++) byDay.set(addDays(from, offset), empty());
   const totals = empty();
   const previous = empty();
 
-  const productById = new Map(products.map((product) => [product._id.toHexString(), product]));
   const sold = new Map<string, { name: string; units: number; totalCents: number }>();
   const byCategory = new Map<string | null, { units: number; totalCents: number }>();
 
@@ -43,11 +60,11 @@ export function summarize(
     const day = todayIn(timeZone, ticket.createdAt);
     if (day > to || day < previousFrom) continue;
     if (day < from) {
-      add(previous, ticket);
+      add(previous, ticket, productById);
       continue;
     }
-    add(totals, ticket);
-    add(byDay.get(day)!, ticket);
+    add(totals, ticket, productById);
+    add(byDay.get(day)!, ticket, productById);
     for (const line of ticket.lines) {
       const id = line.productId.toHexString();
       const cents = line.quantity * line.unitPriceCents;
@@ -66,10 +83,19 @@ export function summarize(
     }
   }
 
-  const stock = { products: products.length, units: 0, valueCents: 0, ok: 0, low: 0, out: 0 };
+  const stock = {
+    products: products.length,
+    units: 0,
+    valueCents: 0,
+    costValueCents: 0,
+    ok: 0,
+    low: 0,
+    out: 0,
+  };
   for (const product of products) {
     stock.units += product.quantity;
     stock.valueCents += product.quantity * product.priceCents;
+    stock.costValueCents += product.quantity * (product.costCents ?? 0);
     if (product.quantity === 0) stock.out += 1;
     else if (product.minQuantity > 0 && product.quantity <= product.minQuantity) stock.low += 1;
     else stock.ok += 1;

@@ -50,6 +50,7 @@ function toProduct(doc: ProductDoc): Product {
     quantity: doc.quantity,
     minQuantity: doc.minQuantity,
     priceCents: doc.priceCents,
+    costCents: doc.costCents ?? 0,
     ...(doc.notes !== undefined && { notes: doc.notes }),
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),

@@ -95,7 +95,7 @@ export function buildStock(now: Date, rng: Rng): SeededStock {
   const categoryIds = new Map(categories.map((category) => [category.name, category._id]));
 
   const products: ProductDoc[] = ROWS.map(
-    ([name, sku, category, quantity, minQuantity, priceCents]) => ({
+    ([name, sku, category, quantity, minQuantity, priceCents], index) => ({
       _id: new ObjectId(),
       name,
       sku,
@@ -103,6 +103,7 @@ export function buildStock(now: Date, rng: Rng): SeededStock {
       quantity,
       minQuantity,
       priceCents,
+      costCents: unitCost(priceCents, index),
       createdAt: now,
       updatedAt: now,
     }),
@@ -134,6 +135,7 @@ export function buildStock(now: Date, rng: Rng): SeededStock {
       name: product.name,
       quantity,
       unitPriceCents: product.priceCents,
+      unitCostCents: product.costCents ?? 0,
     }));
     tickets.push({
       _id: new ObjectId(),
@@ -145,6 +147,14 @@ export function buildStock(now: Date, rng: Rng): SeededStock {
   }
 
   return { categories, products, tickets };
+}
+
+/**
+ * What a product costs the business: between 30 % and 65 % of its price, varying by position so
+ * the margins differ from one product to the next (no random numbers, so the sales do not shift).
+ */
+function unitCost(priceCents: number, index: number): number {
+  return Math.round((priceCents * (30 + ((index * 7) % 36))) / 100);
 }
 
 /** A moment within shop hours on one of the last days, never after `now`. */

@@ -86,8 +86,16 @@ export type StockCategoryDoc = Omit<StockCategory, 'id' | 'createdAt'> & {
 };
 
 /** `categoryId` is always stored (as `null`) so uncategorized products can be filtered. */
-export type ProductDoc = Omit<Product, 'id' | 'categoryId' | 'createdAt' | 'updatedAt'> &
-  Timestamps & { _id: ObjectId; categoryId: ObjectId | null };
+export type ProductDoc = Omit<
+  Product,
+  'id' | 'categoryId' | 'costCents' | 'createdAt' | 'updatedAt'
+> &
+  Timestamps & {
+    _id: ObjectId;
+    categoryId: ObjectId | null;
+    /** Missing on products saved before costs existed: it reads as 0. */
+    costCents?: number;
+  };
 
 /** A sale. `number` is consecutive and unique; the lines copy the name and price of the moment. */
 export type TicketDoc = Omit<Ticket, 'id' | 'lines' | 'createdAt'> & {

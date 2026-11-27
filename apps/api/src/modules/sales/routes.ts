@@ -89,6 +89,7 @@ export const salesRoutes: FastifyPluginAsyncZod = async (app) => {
           name: product.name,
           quantity,
           unitPriceCents: product.priceCents,
+          unitCostCents: product.costCents ?? 0,
         };
       });
 

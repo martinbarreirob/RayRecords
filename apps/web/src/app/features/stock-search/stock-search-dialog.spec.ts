@@ -15,6 +15,7 @@ const product = (id: string, name: string, quantity: number): Product => ({
   quantity,
   minQuantity: 0,
   priceCents: 250,
+  costCents: 0,
   createdAt: '2026-11-01T10:00:00.000Z',
   updatedAt: '2026-11-01T10:00:00.000Z',
 });

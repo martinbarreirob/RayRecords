@@ -1,6 +1,6 @@
 import { NO_CATEGORY } from '../../categories/uncategorized';
 import type { CreateProduct, Product, StockCategory } from '@rayrecords/shared';
-import { eurosToCents } from '../../../core/format';
+import { eurosToCents, formatCents } from '../../../core/format';
 import { normalizeText } from '../../../core/text';
 
 /** How a product stands: sold out, at or under its minimum, or fine. */
@@ -29,6 +29,8 @@ export interface ProductRow extends Product {
   level: StockLevel;
   /** Quantity times unit price. */
   valueCents: number;
+  /** Unit price minus unit cost: what one unit leaves. */
+  marginCents: number;
 }
 
 export const LEVEL_CHOICES: readonly { id: LevelFilter; label: string }[] = [
@@ -59,6 +61,7 @@ export function toRows(
       categoryName: category?.name ?? NO_CATEGORY,
       level: levelOf(product),
       valueCents: product.quantity * product.priceCents,
+      marginCents: product.priceCents - product.costCents,
     };
   });
 }
@@ -131,6 +134,7 @@ export interface ProductDraft {
   quantity: string;
   minQuantity: string;
   price: string;
+  cost: string;
   notes: string;
 }
 
@@ -141,6 +145,7 @@ export const EMPTY_DRAFT: ProductDraft = {
   quantity: '',
   minQuantity: '',
   price: '',
+  cost: '',
   notes: '',
 };
 
@@ -152,11 +157,12 @@ export function draftOf(product: Product): ProductDraft {
     quantity: String(product.quantity),
     minQuantity: product.minQuantity ? String(product.minQuantity) : '',
     price: product.priceCents ? (product.priceCents / 100).toFixed(2).replace('.', ',') : '',
+    cost: product.costCents ? (product.costCents / 100).toFixed(2).replace('.', ',') : '',
     notes: product.notes ?? '',
   };
 }
 
-export type DraftField = 'name' | 'quantity' | 'minQuantity' | 'price';
+export type DraftField = 'name' | 'quantity' | 'minQuantity' | 'price' | 'cost';
 
 /** Values ready to send. Empty `sku` and `notes` come as `null`, which clears them when editing. */
 export interface ProductValues {
@@ -166,6 +172,7 @@ export interface ProductValues {
   quantity: number;
   minQuantity: number;
   priceCents: number;
+  costCents: number;
   notes: string | null;
 }
 
@@ -187,6 +194,10 @@ export function readDraft(draft: ProductDraft): DraftResult {
   if (priceCents === null || priceCents < 0) {
     return { ok: false, field: 'price', message: 'El precio no es válido; por ejemplo 12,50' };
   }
+  const costCents = draft.cost.trim() === '' ? 0 : eurosToCents(draft.cost);
+  if (costCents === null || costCents < 0) {
+    return { ok: false, field: 'cost', message: 'El coste no es válido; por ejemplo 7,50' };
+  }
   return {
     ok: true,
     values: {
@@ -196,6 +207,7 @@ export function readDraft(draft: ProductDraft): DraftResult {
       quantity,
       minQuantity,
       priceCents,
+      costCents,
       notes: draft.notes.trim() || null,
     },
   };
@@ -205,4 +217,23 @@ export function readDraft(draft: ProductDraft): DraftResult {
 export function toCreate(values: ProductValues): CreateProduct {
   const { sku, notes, ...rest } = values;
   return { ...rest, ...(sku !== null && { sku }), ...(notes !== null && { notes }) };
+}
+
+/** What one unit leaves once its cost is paid: in euros and as a share of the price. */
+export interface UnitMargin {
+  cents: number;
+  /** Whole percentage of the price; `null` when the price is 0. */
+  percent: number | null;
+}
+
+export function unitMargin(priceCents: number, costCents: number): UnitMargin {
+  const cents = priceCents - costCents;
+  return { cents, percent: priceCents > 0 ? Math.round((cents / priceCents) * 100) : null };
+}
+
+/** "3,40 € (57 %)", or just the amount when there is no price to take a percentage of. */
+export function marginText(priceCents: number, costCents: number): string {
+  const { cents, percent } = unitMargin(priceCents, costCents);
+  const amount = formatCents(cents);
+  return percent === null ? amount : `${amount} (${percent} %)`;
 }

@@ -56,6 +56,7 @@ import {
   stockTotals,
   activeFilterCount,
   filterProducts,
+  marginText,
   productCounts,
   toRows,
   type CategoryFilter,
@@ -216,8 +217,14 @@ import { injectIsPhone } from '../../../core/ui/viewport';
               <th class="c-qty num" pSortableColumn="quantity">
                 <span class="th-sort">Cantidad <p-sorticon field="quantity" /></span>
               </th>
+              <th class="c-cost num" pSortableColumn="costCents">
+                <span class="th-sort">Coste <p-sorticon field="costCents" /></span>
+              </th>
               <th class="c-price num" pSortableColumn="priceCents">
                 <span class="th-sort">Precio <p-sorticon field="priceCents" /></span>
+              </th>
+              <th class="c-margin num" pSortableColumn="marginCents">
+                <span class="th-sort">Margen <p-sorticon field="marginCents" /></span>
               </th>
               <th class="c-value num" pSortableColumn="valueCents">
                 <span class="th-sort">Valor <p-sorticon field="valueCents" /></span>
@@ -257,7 +264,9 @@ import { injectIsPhone } from '../../../core/ui/viewport';
                 }
                 <span class="qty">{{ units(row.quantity) }}</span>
               </td>
+              <td class="c-cost num">{{ money(row.costCents) }}</td>
               <td class="c-price num">{{ money(row.priceCents) }}</td>
+              <td class="c-margin num">{{ margin(row) }}</td>
               <td class="c-value num">{{ money(row.valueCents) }}</td>
               <!-- Phone only: the row is an icon and two lines (name and price; stock and total). -->
               <td class="c-phone">
@@ -299,7 +308,9 @@ import { injectIsPhone } from '../../../core/ui/viewport';
                   </td>
                   <td class="c-cat"><span class="skeleton ghost-pill"></span></td>
                   <td class="c-qty num"><span class="skeleton ghost-num"></span></td>
+                  <td class="c-cost num"><span class="skeleton ghost-num"></span></td>
                   <td class="c-price num"><span class="skeleton ghost-num"></span></td>
+                  <td class="c-margin num"><span class="skeleton ghost-num"></span></td>
                   <td class="c-value num"><span class="skeleton ghost-num"></span></td>
                   <td class="c-actions"></td>
                   <td class="c-phone">
@@ -410,6 +421,8 @@ export class StockPage {
   };
 
   protected readonly money = formatCents;
+  protected margin = (product: Pick<Product, 'priceCents' | 'costCents'>): string =>
+    marginText(product.priceCents, product.costCents);
   protected readonly levels = LEVEL_CHOICES;
   protected readonly totals = computed(() => stockTotals(this.visible()));
   protected readonly shownLabel = computed(() => {

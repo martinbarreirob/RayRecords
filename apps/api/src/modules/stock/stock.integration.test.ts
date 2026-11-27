@@ -107,6 +107,7 @@ describe.skipIf(!h)('stock (integration)', () => {
         quantity: 0,
         minQuantity: 0,
         priceCents: 0,
+        costCents: 0,
       });
       expect(created.body.sku).toBeUndefined();
 
@@ -125,6 +126,18 @@ describe.skipIf(!h)('stock (integration)', () => {
       expect((await call('POST', '/stock/products', { name: 'X', priceCents: 1.5 })).status).toBe(
         400,
       );
+      expect((await call('POST', '/stock/products', { name: 'X', costCents: -1 })).status).toBe(
+        400,
+      );
+    });
+
+    it('updates the unit cost on its own and reads a product saved without one as cost 0', async () => {
+      const { body: product } = await call('POST', '/stock/products', {
+        name: 'Té',
+        priceCents: 300,
+      });
+      const priced = await call('PATCH', `/stock/products/${product.id}`, { costCents: 120 });
+      expect(priced.body).toMatchObject({ priceCents: 300, costCents: 120 });
     });
 
     it('a partial update keeps the rest, and null clears sku and notes', async () => {
@@ -136,6 +149,7 @@ describe.skipIf(!h)('stock (integration)', () => {
         quantity: 10,
         minQuantity: 3,
         priceCents: 250,
+        costCents: 140,
         notes: 'Pack de tres',
       });
 
@@ -144,6 +158,7 @@ describe.skipIf(!h)('stock (integration)', () => {
         quantity: 2,
         minQuantity: 3,
         priceCents: 250,
+        costCents: 140,
         sku: 'AT-01',
         categoryId: category.id,
       });

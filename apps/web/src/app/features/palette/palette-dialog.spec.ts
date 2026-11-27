@@ -48,6 +48,7 @@ const PRODUCT: Product = {
   quantity: 20,
   minQuantity: 0,
   priceCents: 1290,
+  costCents: 0,
   createdAt: NOW,
   updatedAt: NOW,
 };

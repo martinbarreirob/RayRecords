@@ -9,6 +9,8 @@ import {
   changePercent,
   dayBars,
   longDay,
+  marginPercent,
+  profitOf,
   productRows,
   shortDay,
   stockSlices,
@@ -17,6 +19,7 @@ import {
 const day = (date: string, totalCents: number): Dashboard['days'][number] => ({
   date,
   totalCents,
+  costCents: 0,
   tickets: totalCents ? 1 : 0,
   units: totalCents ? 2 : 0,
 });
@@ -59,8 +62,8 @@ describe('change against the period before', () => {
 
 describe('averageTicket', () => {
   it('divides the money by the tickets, and is 0 with none', () => {
-    expect(averageTicket({ totalCents: 1000, tickets: 3, units: 9 })).toBe(333);
-    expect(averageTicket({ totalCents: 0, tickets: 0, units: 0 })).toBe(0);
+    expect(averageTicket({ totalCents: 1000, costCents: 0, tickets: 3, units: 9 })).toBe(333);
+    expect(averageTicket({ totalCents: 0, costCents: 0, tickets: 0, units: 0 })).toBe(0);
   });
 });
 
@@ -146,7 +149,15 @@ describe('ranked rows', () => {
 
 describe('stockSlices', () => {
   it('shares the products out by state', () => {
-    const slices = stockSlices({ products: 20, units: 0, valueCents: 0, ok: 15, low: 3, out: 2 });
+    const slices = stockSlices({
+      products: 20,
+      units: 0,
+      valueCents: 0,
+      costValueCents: 0,
+      ok: 15,
+      low: 3,
+      out: 2,
+    });
     expect(slices.map((slice) => [slice.id, slice.count, slice.share])).toEqual([
       ['ok', 15, 75],
       ['low', 3, 15],
@@ -155,7 +166,29 @@ describe('stockSlices', () => {
   });
 
   it('is empty with no products', () => {
-    const slices = stockSlices({ products: 0, units: 0, valueCents: 0, ok: 0, low: 0, out: 0 });
+    const slices = stockSlices({
+      products: 0,
+      units: 0,
+      valueCents: 0,
+      costValueCents: 0,
+      ok: 0,
+      low: 0,
+      out: 0,
+    });
     expect(slices.every((slice) => slice.share === 0)).toBe(true);
+  });
+});
+
+describe('profit', () => {
+  it('is what the sales left after the cost, and its share of the sales', () => {
+    const totals = { totalCents: 5000, costCents: 1900, tickets: 3, units: 7 };
+    expect(profitOf(totals)).toBe(3100);
+    expect(marginPercent(totals)).toBe(62);
+  });
+
+  it('has no margin when nothing was sold', () => {
+    const none = { totalCents: 0, costCents: 0, tickets: 0, units: 0 };
+    expect(profitOf(none)).toBe(0);
+    expect(marginPercent(none)).toBeNull();
   });
 });

@@ -9,6 +9,8 @@ export const TicketLineSchema = z.object({
   name: z.string(),
   quantity: SoldQuantity,
   unitPriceCents: Cents.nonnegative(),
+  /** The product's unit cost at the time of the sale; missing on tickets made before costs existed. */
+  unitCostCents: Cents.nonnegative().optional(),
 });
 export type TicketLine = z.infer<typeof TicketLineSchema>;
 

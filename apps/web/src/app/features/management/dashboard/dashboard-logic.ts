@@ -47,6 +47,16 @@ export function changeLabel(current: number, previous: number, days: number): st
   return `${sign}${Math.abs(change)} % frente a los ${days} días anteriores`;
 }
 
+/** What the sales left once the units were paid for. */
+export function profitOf(totals: SalesTotals): number {
+  return totals.totalCents - totals.costCents;
+}
+
+/** Profit as a whole percentage of the sales; `null` when nothing was sold. */
+export function marginPercent(totals: SalesTotals): number | null {
+  return totals.totalCents === 0 ? null : Math.round((profitOf(totals) / totals.totalCents) * 100);
+}
+
 /** Average ticket, or 0 when there are no tickets. */
 export function averageTicket(totals: SalesTotals): number {
   return totals.tickets === 0 ? 0 : Math.round(totals.totalCents / totals.tickets);

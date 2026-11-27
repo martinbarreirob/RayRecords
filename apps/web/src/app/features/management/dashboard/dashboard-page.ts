@@ -14,6 +14,8 @@ import {
   PERIODS,
   averageTicket,
   axisDays,
+  marginPercent,
+  profitOf,
   bestDay,
   categoryRows,
   changeLabel,
@@ -65,11 +67,18 @@ import {
           <h2>Ventas · {{ days() }} días</h2>
           <p class="figure num">{{ money(d.totals.totalCents) }}</p>
           <p class="detail">{{ change() }}</p>
+          <p class="detail">
+            {{ count(d.totals.tickets) }} {{ d.totals.tickets === 1 ? 'ticket' : 'tickets' }} ·
+            ticket medio {{ money(average()) }}
+          </p>
         </section>
         <section class="tile">
-          <h2>Tickets</h2>
-          <p class="figure num">{{ count(d.totals.tickets) }}</p>
-          <p class="detail">Ticket medio {{ money(average()) }}</p>
+          <h2>Beneficio · {{ days() }} días</h2>
+          <p class="figure num">{{ money(profit()) }}</p>
+          <p class="detail">{{ profitDetail() }}</p>
+          @if (profitChange(); as text) {
+            <p class="detail">{{ text }}</p>
+          }
         </section>
         <section class="tile">
           <h2>Hoy</h2>
@@ -85,6 +94,9 @@ import {
           <p class="detail">
             {{ count(d.stock.products) }} productos · {{ count(d.stock.units) }} unidades
           </p>
+          @if (d.stock.costValueCents > 0) {
+            <p class="detail">A coste {{ money(d.stock.costValueCents) }}</p>
+          }
         </section>
 
         <!-- Sales day by day -->
@@ -342,6 +354,23 @@ export class DashboardPage {
   protected readonly average = computed(() => {
     const totals = this.data()?.totals;
     return totals ? averageTicket(totals) : 0;
+  });
+  protected readonly profit = computed(() => {
+    const totals = this.data()?.totals;
+    return totals ? profitOf(totals) : 0;
+  });
+  /** The margin of the period, or what to do when there is nothing to work it out from. */
+  protected readonly profitDetail = computed(() => {
+    const totals = this.data()?.totals;
+    if (!totals || totals.totalCents === 0) return 'Sin ventas todavía';
+    if (totals.costCents === 0) return 'Sin costes: añádelos a los productos en Stock';
+    return `Margen ${marginPercent(totals)} % · coste ${formatCents(totals.costCents)}`;
+  });
+  /** The profit against the period before; empty when no cost is known (it would just be the sales). */
+  protected readonly profitChange = computed(() => {
+    const data = this.data();
+    if (!data || data.totals.costCents === 0) return '';
+    return changeLabel(profitOf(data.totals), profitOf(data.previous), data.days.length);
   });
   protected readonly change = computed(() => {
     const data = this.data();

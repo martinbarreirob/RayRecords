@@ -23,12 +23,14 @@ function product(name: string, overrides: Partial<ProductDoc> = {}): ProductDoc 
 }
 
 let nextNumber = 1;
-function ticket(iso: string, lines: [ProductDoc, number][]): TicketDoc {
+/** `legacy` is a ticket made before costs were recorded: its lines carry no unit cost. */
+function ticket(iso: string, lines: [ProductDoc, number][], legacy = false): TicketDoc {
   const docs = lines.map(([p, quantity]) => ({
     productId: p._id,
     name: p.name,
     quantity,
     unitPriceCents: p.priceCents,
+    ...(!legacy && p.costCents !== undefined && { unitCostCents: p.costCents }),
   }));
   return {
     _id: new ObjectId(),
@@ -39,14 +41,25 @@ function ticket(iso: string, lines: [ProductDoc, number][]): TicketDoc {
   };
 }
 
-const water = product('Agua', { categoryId: DRINKS, priceCents: 60, quantity: 40 });
+const water = product('Agua', {
+  categoryId: DRINKS,
+  priceCents: 60,
+  costCents: 25,
+  quantity: 40,
+});
 const coffee = product('Café', {
   categoryId: DRINKS,
   priceCents: 350,
+  costCents: 200,
   quantity: 2,
   minQuantity: 5,
 });
-const batteries = product('Pilas', { priceCents: 500, quantity: 0, minQuantity: 2 });
+const batteries = product('Pilas', {
+  priceCents: 500,
+  costCents: 300,
+  quantity: 0,
+  minQuantity: 2,
+});
 const gone = product('Descatalogado', { priceCents: 1000 });
 const products = [water, coffee, batteries];
 
@@ -56,7 +69,7 @@ const tickets = [
     [coffee, 1],
     [batteries, 2],
   ]), // today: 1350
-  ticket('2026-11-17T23:30:00.000Z', [[water, 10]]), // already the 18th in Madrid: 600
+  ticket('2026-11-17T23:30:00.000Z', [[water, 10]], true), // already the 18th in Madrid: 600
   ticket('2026-11-13T12:00:00.000Z', [[gone, 1]]), // first day of the 7-day period: 1000
   ticket('2026-11-12T22:59:00.000Z', [[coffee, 2]]), // still the 12th: previous period, 700
   ticket('2026-11-06T12:00:00.000Z', [[water, 1]]), // first day of the previous period: 60
@@ -88,9 +101,15 @@ describe('summarize', () => {
   });
 
   it('totals the period, the one before it and today', () => {
-    expect(summary.totals).toEqual({ totalCents: 180 + 1350 + 600 + 1000, tickets: 4, units: 17 });
-    expect(summary.previous).toEqual({ totalCents: 760, tickets: 2, units: 3 });
-    expect(summary.today).toMatchObject({ totalCents: 1530, tickets: 2, units: 6 });
+    // Costs: 75 + 800, the legacy ticket at the current cost (250) and the deleted product (0).
+    expect(summary.totals).toEqual({
+      totalCents: 180 + 1350 + 600 + 1000,
+      costCents: 75 + 800 + 250,
+      tickets: 4,
+      units: 17,
+    });
+    expect(summary.previous).toEqual({ totalCents: 760, costCents: 425, tickets: 2, units: 3 });
+    expect(summary.today).toMatchObject({ totalCents: 1530, costCents: 875, tickets: 2, units: 6 });
   });
 
   it('ranks the best sellers of the period by units', () => {
@@ -116,11 +135,19 @@ describe('summarize', () => {
     ]);
   });
 
+  it('costs a line at the unit cost of the sale, not at the one of today', () => {
+    const repriced = { ...water, costCents: 50 };
+    const sale = ticket('2026-11-19T09:00:00.000Z', [[water, 4]]); // sold when it cost 25
+    const result = summarize([sale], [repriced], 7, ZONE, NOW);
+    expect(result.totals).toMatchObject({ totalCents: 240, costCents: 100 });
+  });
+
   it('describes the stock as it is now', () => {
     expect(summary.stock).toEqual({
       products: 3,
       units: 42,
       valueCents: 40 * 60 + 2 * 350,
+      costValueCents: 40 * 25 + 2 * 200,
       ok: 1,
       low: 1,
       out: 1,
@@ -151,7 +178,7 @@ describe('summarize', () => {
   it('is all zeros with no sales and no products', () => {
     const blank = summarize([], [], 30, ZONE, NOW);
     expect(blank.days).toHaveLength(30);
-    expect(blank.totals).toEqual({ totalCents: 0, tickets: 0, units: 0 });
+    expect(blank.totals).toEqual({ totalCents: 0, costCents: 0, tickets: 0, units: 0 });
     expect(blank.topProducts).toEqual([]);
     expect(blank.stock.products).toBe(0);
   });

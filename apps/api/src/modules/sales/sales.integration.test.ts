@@ -12,15 +12,16 @@ describe.skipIf(!h)('sales (integration)', () => {
     await h?.close();
   });
 
-  const create = async (name: string, quantity: number, priceCents: number) =>
-    (await call('POST', '/stock/products', { name, quantity, priceCents })).body as Product;
+  const create = async (name: string, quantity: number, priceCents: number, costCents = 0) =>
+    (await call('POST', '/stock/products', { name, quantity, priceCents, costCents }))
+      .body as Product;
 
   const quantityOf = async (id: string) =>
     ((await call('GET', '/stock/products')).body as Product[]).find((p) => p.id === id)?.quantity;
 
   it('creates a numbered ticket, copies name and price and takes the units out', async () => {
-    const water = await create('Agua', 10, 60);
-    const coffee = await create('Café', 5, 350);
+    const water = await create('Agua', 10, 60, 25);
+    const coffee = await create('Café', 5, 350, 180);
 
     const first = await call('POST', '/tickets', {
       lines: [
@@ -33,8 +34,8 @@ describe.skipIf(!h)('sales (integration)', () => {
     expect(ticket.number).toBe(1);
     expect(ticket.totalCents).toBe(3 * 60 + 350);
     expect(ticket.lines).toEqual([
-      { productId: water.id, name: 'Agua', quantity: 3, unitPriceCents: 60 },
-      { productId: coffee.id, name: 'Café', quantity: 1, unitPriceCents: 350 },
+      { productId: water.id, name: 'Agua', quantity: 3, unitPriceCents: 60, unitCostCents: 25 },
+      { productId: coffee.id, name: 'Café', quantity: 1, unitPriceCents: 350, unitCostCents: 180 },
     ]);
     expect(await quantityOf(water.id)).toBe(7);
     expect(await quantityOf(coffee.id)).toBe(4);
@@ -45,10 +46,11 @@ describe.skipIf(!h)('sales (integration)', () => {
     expect(second.body.number).toBe(2);
 
     // A later price change does not rewrite the ticket.
-    await call('PATCH', `/stock/products/${water.id}`, { priceCents: 99 });
+    await call('PATCH', `/stock/products/${water.id}`, { priceCents: 99, costCents: 70 });
     const list = (await call('GET', '/tickets')).body as Ticket[];
     expect(list.map((t) => t.number)).toEqual([2, 1]);
     expect(list[1]?.lines[0]?.unitPriceCents).toBe(60);
+    expect(list[1]?.lines[0]?.unitCostCents).toBe(25);
   });
 
   it('adds up a product repeated on several lines', async () => {
@@ -60,7 +62,7 @@ describe.skipIf(!h)('sales (integration)', () => {
       ],
     });
     expect(body.lines).toEqual([
-      { productId: product.id, name: 'Pilas', quantity: 5, unitPriceCents: 500 },
+      { productId: product.id, name: 'Pilas', quantity: 5, unitPriceCents: 500, unitCostCents: 0 },
     ]);
     expect(await quantityOf(product.id)).toBe(5);
   });

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import type { Product, StockCategory } from '@rayrecords/shared';
 import { ApiClient } from '../../../core/api/api-client';
 import { apiErrorMessage } from '../../../core/api/errors';
+import { eurosToCents } from '../../../core/format';
 import { prefersNativePickers } from '../../../core/ui/native-pickers';
 import { CategorySelect, type CategoryOption } from '../../categories/category-select';
 import {
@@ -12,6 +13,7 @@ import {
   toCreate,
   type DraftField,
   type ProductDraft,
+  marginText,
 } from './stock-logic';
 
 /**
@@ -150,6 +152,23 @@ import {
       </label>
 
       <label class="field">
+        <span>Coste (€)</span>
+        <input
+          [id]="fieldId('cost')"
+          class="input num"
+          type="text"
+          name="cost"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="0,00"
+          [attr.aria-describedby]="fieldId('margin')"
+          [attr.aria-invalid]="invalid() === 'cost' ? 'true' : null"
+          [ngModel]="draft().cost"
+          (ngModelChange)="patch('cost', $event)"
+        />
+      </label>
+
+      <label class="field">
         <span>Precio (€)</span>
         <input
           [id]="fieldId('price')"
@@ -164,6 +183,10 @@ import {
           (ngModelChange)="patch('price', $event)"
         />
       </label>
+
+      <small [id]="fieldId('margin')" class="help two margin" aria-live="polite">
+        {{ marginHelp() }}
+      </small>
 
       <small [id]="fieldId('min-help')" class="help wide">
         Con esa cantidad o menos, el producto se marca como «stock bajo». Con 0 no avisa.
@@ -207,6 +230,17 @@ export class ProductForm {
   );
 
   protected readonly draft = signal<ProductDraft>(EMPTY_DRAFT);
+  /** What a unit leaves, worked out as the price and the cost are typed. */
+  protected readonly marginHelp = computed(() => {
+    const { price, cost } = this.draft();
+    const priceCents = price.trim() === '' ? 0 : eurosToCents(price);
+    const costCents = cost.trim() === '' ? 0 : eurosToCents(cost);
+    if (priceCents === null || costCents === null)
+      return 'Escribe importes válidos para ver el margen.';
+    if (costCents === 0)
+      return 'Sin coste: el beneficio de este producto se cuenta como todo el precio.';
+    return `Margen por unidad: ${marginText(priceCents, costCents)}`;
+  });
   readonly error = signal('');
   protected readonly invalid = signal<DraftField | null>(null);
   readonly saving = signal(false);

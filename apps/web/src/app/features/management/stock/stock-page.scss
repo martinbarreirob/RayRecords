@@ -207,9 +207,16 @@
 }
 
 .c-qty,
+.c-cost,
 .c-price,
 .c-value {
-  width: 130px;
+  width: 110px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.c-margin {
+  width: 140px;
   text-align: right;
   white-space: nowrap;
 }

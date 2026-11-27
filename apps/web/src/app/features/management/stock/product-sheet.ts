@@ -19,7 +19,7 @@ import { BottomSheet, type SheetState } from '../../../core/ui/bottom-sheet';
 import { CategoryBadge } from '../../categories/category-badge';
 import { UNCATEGORIZED_LOOK } from '../../categories/uncategorized';
 import { ProductForm } from './product-form';
-import type { ProductRow } from './stock-logic';
+import { marginText, type ProductRow } from './stock-logic';
 
 /** The quick steps to either side of the amount; anything else is typed (a minus takes units out). */
 const ADD_STEPS = [1, 5, 10] as const;
@@ -303,6 +303,14 @@ const MAX_UNITS = 1_000_000;
                 <dd>{{ money(product.priceCents) }}</dd>
               </div>
               <div>
+                <dt>Coste unidad</dt>
+                <dd>{{ money(product.costCents) }}</dd>
+              </div>
+              <div>
+                <dt>Margen</dt>
+                <dd>{{ margin(product) }}</dd>
+              </div>
+              <div>
                 <dt>Valor total</dt>
                 <dd>{{ money(product.valueCents) }}</dd>
               </div>
@@ -370,6 +378,8 @@ export class ProductSheet {
   private readonly api = inject(ApiClient);
   protected readonly form = viewChild(ProductForm);
   protected readonly money = formatCents;
+  protected margin = (product: Pick<Product, 'priceCents' | 'costCents'>): string =>
+    marginText(product.priceCents, product.costCents);
   protected readonly addSteps = ADD_STEPS;
   protected readonly takeSteps = TAKE_STEPS;
   protected readonly uncategorized = UNCATEGORIZED_LOOK;
